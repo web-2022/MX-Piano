@@ -9,6 +9,8 @@
 //     (la voz humana y la TV cambian de tono; el piano no).
 //  4. Ruido de la casa: el nivel de fondo se mide solo y sube el umbral si hace falta.
 //  5. Afinación: si el piano de casa está un poco desafinado, se compensa poco a poco.
+//  6. Fuerza y duración: cada nota informa qué tan fuerte se tocó y, al soltarla, cuánto duró
+//     (el apagador del piano corta el sonido de golpe; eso se nota como una caída brusca).
 //
 // La lógica está en NucleoDetector (sin Web Audio) para poder probarla con señales sintéticas.
 import { detectarTono } from './tono.js';
@@ -26,6 +28,7 @@ export class NucleoDetector {
     this.cuadrosSinGolpe = 6;   // si no se oyó el golpe, exige más cuadros (~100 ms)
     this.maxDeslizamiento = 0.3;  // semitonos que puede variar mientras se confirma
     this.compensarAfinacion = true;
+    this.caidaFin = 0.5;        // caída de volumen (en ~65 ms) que indica que soltó la tecla
 
     this.ruido = 0;        // nivel de ruido de fondo medido (rms)
     this.ruidoAgudo = 0;   // energía aguda de fondo
@@ -47,6 +50,8 @@ export class NucleoDetector {
     this.rmsAnterior = 0;
     this.rmsAntesGolpe = 0;
     this.rmsDesdeGolpe = 0;
+    this.activa = null;        // nota que está sonando: { midi, inicio, pico }
+    this.rmsRecientes = [];
   }
 
   umbralEfectivo() {
@@ -88,6 +93,7 @@ export class NucleoDetector {
       desvio: Math.round(this.desvio * 100),
       escuchando: !silenciado,
       nota: null,
+      fin: null,   // { midi, duracion, instante } cuando se suelta una nota
     };
 
     // --- Ruido de fondo: solo se mide cuando no hay nota ni golpe ---
@@ -114,6 +120,22 @@ export class NucleoDetector {
     }
     this.rmsDesdeGolpe = Math.max(this.rmsDesdeGolpe, rms);
     this.rmsAnterior = rms;
+
+    // --- ¿Se soltó la nota que sonaba? ---
+    this.rmsRecientes.push(rms);
+    if (this.rmsRecientes.length > 5) this.rmsRecientes.shift();
+    if (this.activa) {
+      const a = this.activa;
+      a.pico = Math.max(a.pico, rms);
+      const r = this.rmsRecientes;
+      const caidaBrusca = r.length === 5 && rms < r[0] * this.caidaFin && rms < a.pico * 0.6 && !golpe;
+      if (caidaBrusca || rms < umbral) {
+        // La caída se nota unos 50 ms después de soltar: se descuentan.
+        const instante = Math.max(a.inicio + 20, ahora - (caidaBrusca ? 50 : 30));
+        info.fin = { midi: a.midi, duracion: instante - a.inicio, instante };
+        this.activa = null;
+      }
+    }
 
     // ¿La nota anterior ya se apagó? Entonces se puede volver a tocar la misma.
     if (rms < umbral) this.armado = true;
@@ -158,12 +180,21 @@ export class NucleoDetector {
     if (aceptar) {
       const u = h.slice(-this.cuadrosEstables);
       const promedio = u.reduce((a, v) => a + v, 0) / u.length;
+      const instante = golpeReciente ? this.ultimoGolpe : ahora - cuenta * 16;
       info.nota = {
         midi,
         frecuencia,
         // Momento del golpe: sirve para medir el ritmo con precisión.
-        instante: golpeReciente ? this.ultimoGolpe : ahora - cuenta * 16,
+        instante,
+        // Fuerza: el volumen más alto desde el golpe (para "fuerte" y "suave").
+        fuerza: golpeReciente ? Math.max(this.rmsDesdeGolpe, rms) : rms,
       };
+      // Si la anterior seguía sonando (ligado), termina justo cuando empieza esta.
+      if (this.activa && !info.fin) {
+        info.fin = { midi: this.activa.midi, duracion: instante - this.activa.inicio, instante, ligada: true };
+      }
+      this.activa = { midi, inicio: instante, pico: rms };
+      this.rmsRecientes = [];
       this.ultimaClase = claseNota(midi);
       this.ultimoMidi = midi;
       this.armado = false;
@@ -191,7 +222,8 @@ export class Detector {
     this.silenciadoHasta = 0;
 
     // Callbacks
-    this.onNota = null;   // (midi, frecuencia, origen, instante) => {}
+    this.onNota = null;   // (midi, frecuencia, origen, instante, fuerza) => {}
+    this.onFin = null;    // (midi, duracion, origen, instante, ligada) => {}
     this.onNivel = null;  // (info) => {}
   }
 
@@ -265,11 +297,28 @@ export class Detector {
     const ahora = performance.now();
     const info = this.nucleo.procesar(this.bufTono, this.bufCrudo, this.ctx.sampleRate, ahora, ahora < this.silenciadoHasta);
     this.onNivel?.(info);
-    if (info.nota) this.onNota?.(info.nota.midi, info.nota.frecuencia, 'mic', info.nota.instante);
+    // Primero el fin de la nota anterior y después la nueva (importa en el ligado).
+    if (info.fin) this.onFin?.(info.fin.midi, info.fin.duracion, 'mic', info.fin.instante, !!info.fin.ligada);
+    if (info.nota) this.onNota?.(info.nota.midi, info.nota.frecuencia, 'mic', info.nota.instante, info.nota.fuerza);
   }
 
   // Simula una nota (teclado de la pantalla, para probar sin piano).
-  simular(midi) {
-    this.onNota?.(midi, 0, 'pantalla', performance.now());
+  // fuerza: 0 a 1 (en la pantalla, tocar abajo en la tecla = fuerte, arriba = suave).
+  simular(midi, fuerza = 0.5) {
+    const ahora = performance.now();
+    if (this.teclaPantalla) {
+      const t = this.teclaPantalla;
+      this.onFin?.(t.midi, ahora - t.inicio, 'pantalla', ahora, true);
+    }
+    this.teclaPantalla = { midi, inicio: ahora };
+    this.onNota?.(midi, 0, 'pantalla', ahora, fuerza);
+  }
+
+  simularFin(midi) {
+    const t = this.teclaPantalla;
+    if (!t || t.midi !== midi) return;
+    this.teclaPantalla = null;
+    const ahora = performance.now();
+    this.onFin?.(midi, ahora - t.inicio, 'pantalla', ahora, false);
   }
 }

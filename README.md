@@ -15,9 +15,43 @@ El iPad escucha por el micrófono y reconoce la nota que se tocó.
 | 5 | Cueva de la Mano Izquierda | Do a Sol graves y clave de Fa |
 | 6 | Cumbre del Teclado | La, Si, escala de Do con paso del pulgar, teclas negras, Estrellita |
 | 7 | Lago de las Dos Manos | Melodías que alternan derecha e izquierda |
+| 8 | Selva de las Corcheas | Corcheas ("ti-ti"), negra y blanca con puntillo, compás de 3 |
+| 9 | Castillo del Fuerte y Suave | Dinámica: fuerte (f) y suave (p) |
+| 10 | Charco Saltarín | Articulación: picado (corta), larga y ligado |
 
 Cada lección se desbloquea al terminar la anterior. En ⚙️ el profesor puede
 **desbloquear todas** para saltar a cualquier lección.
+
+## Fuerte y suave · Picado y ligado
+
+- **Fuerte y suave:** al empezar, Ranita pide un Do fuerte 🦁 y uno suave 🐭 para conocer *ese* piano
+  (cada piano y cada iPad suenan distinto). Después compara cada nota con la mitad entre ambos.
+  El medidor león/ratón muestra qué tan fuerte se tocó.
+- **Picado:** tocar y soltar en menos de 0,35 s. **Larga:** mantener hasta que se llene el círculo (1 s).
+  **Ligado:** la nota siguiente debe empezar antes de soltar la anterior (o casi al mismo tiempo).
+- Los límites están al inicio de `js/expresion.js` (`CORTA_MS`, `LARGA_MS`).
+- Con el teclado de la pantalla: tocar **abajo** en la tecla = fuerte, **arriba** = suave.
+
+## Acompañamiento 🎻
+
+- En las canciones, **🎶 Escuchar la canción** la toca completa con bajo y acordes (Do, Fa y Sol, elegidos solos).
+- Al terminar una canción o un ritmo: **🎻 Escuchar mi canción con orquesta**.
+- En ⚙️ se puede activar **acompañar con acordes mientras toca** (mejor con audífonos: si no, el micrófono
+  también escucha los acordes).
+- Para que una canción suene con su ritmo real, agrega `tiempos: [...]` (1 = negra, 2 = blanca, 0.5 = corchea).
+
+## Voz grabada de Ranita 🎙️
+
+En ⚙️ → **Grabar la voz de Ranita**. Toca ●, di la frase y toca ■. Ranita usará tu voz en esas frases
+(con la opción "voz más aguda, de rana"); las que no grabes las dice la voz del iPad.
+Se guardan solo en ese iPad. Las frases están en `js/voz.js`.
+
+## Modo para mayores de 8 años 🚀
+
+La primera vez la app pregunta la edad (se cambia en ⚙️). En el modo 8+:
+- Un **mundo entero se abre** cuando el anterior tiene estrellas en 3 lecciones (no hace falta ir de una en una).
+- Ranita habla menos (no repite "Toca Re" en cada nota) y es más pequeña.
+- Un poco más de notas por lección y ritmos un 15 % más rápidos.
 
 ## Parque de juegos 🎪
 
@@ -53,6 +87,9 @@ pianito/
 │   ├── lecciones.js      ← CONTENIDO: aquí agregas niveles y canciones
 │   ├── detector.js       Escucha el micrófono y avisa cada nota nueva
 │   ├── juegos.js         Mini-juegos: atrapa moscas, eco y carrera
+│   ├── expresion.js      Fuerte y suave · picado, largo y ligado
+│   ├── acompanamiento.js Armonía automática y canción con orquesta
+│   ├── voz.js            Voz grabada de Ranita
 │   ├── pentagrama.js     Dibuja el pentagrama, las claves y las figuras
 │   ├── tono.js           Algoritmo que calcula la frecuencia (método McLeod)
 │   ├── notas.js          Nombres, colores y frecuencias de las notas
@@ -98,6 +135,7 @@ Cada vez que publiques cambios, sube el número de `VERSION` en `sw.js`.
 4. **Ruido de la casa:** mide solo el ruido de fondo y ajusta el umbral.
 5. **Afinación:** si el piano de casa está un poco desafinado, lo compensa poco a poco (se ve en "Mostrar lo que escucha el micrófono").
 6. Una nota larga que se va apagando **no se cuenta dos veces**.
+7. **Fuerza y duración:** mide qué tan fuerte se tocó y, al soltar la tecla (el apagador corta el sonido de golpe), cuánto duró.
 
 Para comprobarlo sin micrófono (en la terminal de VS Code):
 
@@ -156,7 +194,6 @@ Para canciones usa solo obras de **dominio público** (tradicionales o clásicas
 
 ## Lo que sigue
 
-- Niveles 9 y 10: corcheas y puntillo; dinámica (fuerte/suave) y legato/staccato.
-- Acompañamiento musical de fondo en las canciones.
-- Voz grabada para Ranita en lugar de la voz del sistema.
-- Modo para mayores de 8 años.
+- Ajustar en el iPad real los límites de fuerte/suave y de picado/ligado.
+- Varios perfiles de niños en el mismo iPad.
+- Más canciones en el Valle de las Canciones.

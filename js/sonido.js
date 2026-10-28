@@ -23,8 +23,8 @@ function tono(ctx, frecuencia, inicio, duracion, volumen = 0.3, nodos = null) {
   });
 }
 
-export function tocarNota(ctx, midi, duracion = 1.2) {
-  tono(ctx, midiAFrecuencia(midi), ctx.currentTime, duracion);
+export function tocarNota(ctx, midi, duracion = 1.2, volumen = 0.3) {
+  tono(ctx, midiAFrecuencia(midi), ctx.currentTime, duracion, volumen);
   return duracion * 1000;
 }
 
@@ -43,12 +43,12 @@ export function sonidoFinal(ctx) {
 // ---- Programación precisa para el modo ritmo ----
 // "cuando" es un tiempo del AudioContext (segundos). "nodos" guarda lo programado para poder detenerlo.
 
-export function programarNota(ctx, midi, cuando, duracion, nodos) {
-  tono(ctx, midiAFrecuencia(midi), cuando, Math.max(0.2, duracion), 0.3, nodos);
+export function programarNota(ctx, midi, cuando, duracion, nodos, volumen = 0.3) {
+  tono(ctx, midiAFrecuencia(midi), cuando, Math.max(0.2, duracion), volumen, nodos);
 }
 
 let ruido = null;
-export function programarClic(ctx, cuando, acento, nodos) {
+export function programarClic(ctx, cuando, acento, nodos, volumen = 1) {
   // Clic corto y agudo (ruido filtrado): el detector de notas no lo confunde con una nota.
   if (!ruido || ruido.sampleRate !== ctx.sampleRate) {
     ruido = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.03), ctx.sampleRate);
@@ -61,7 +61,7 @@ export function programarClic(ctx, cuando, acento, nodos) {
   filtro.type = 'highpass';
   filtro.frequency.value = acento ? 2500 : 3500;
   const g = ctx.createGain();
-  g.gain.value = acento ? 0.9 : 0.5;
+  g.gain.value = (acento ? 0.9 : 0.5) * volumen;
   fuente.connect(filtro).connect(g).connect(ctx.destination);
   fuente.start(cuando);
   nodos?.push(fuente);

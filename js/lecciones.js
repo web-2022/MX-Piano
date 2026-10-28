@@ -16,6 +16,18 @@
 //   registro: true                      (exige la octava: grave = mano izquierda, agudo = derecha)
 //   teclado: [desde, hasta]             (rango del teclado en pantalla, en números MIDI; 60 = Do central)
 //   dedos: [..]                         (dedo de cada nota en canciones, si no es la posición de Do)
+//   tiempos: [..]                       (canciones: duración de cada nota, para "Escuchar la canción"
+//                                        con acompañamiento. Si falta, todas duran 1 y la última 2)
+//   tempo: 90                           (canciones: velocidad al escucharlas; ritmo: pulsos por minuto)
+//   subdividir: true                    (ritmo: el metrónomo marca también la mitad del pulso, "ti-ti")
+//   compas: 3                           (ritmo: pulsos por compás; por defecto 4)
+//
+//   dinamica     -> fuerte (f) y suave (p). "notas" + "cantidad" al azar, o "secuencia" fija:
+//                   secuencia: [['Do4', 'f'], ['Do4', 'p'], ...]
+//                   Al empezar, Ranita pide un Do fuerte y uno suave para conocer el piano.
+//   articulacion -> cómo se toca: 'corta' (picado, salta), 'larga' (mantener) o 'ligada'
+//                   (la siguiente nota empieza antes de soltar esta). "notas" + "cantidad" + "modo"
+//                   ('corta' | 'larga' | 'mezcla'), o "secuencia": [['Do4', 'ligada'], ...]
 //
 // Notas: 'Do4' = Do central. Sostenido: 'Fa#4'. En ritmo, null = silencio.
 // Duración en ritmo: 1 = negra, 2 = blanca, 4 = redonda.
@@ -80,6 +92,7 @@ export const MUNDOS = [
         // Beethoven, Sinfonía n.º 9 (dominio público). Primera frase.
         notas: ['Mi4', 'Mi4', 'Fa4', 'Sol4', 'Sol4', 'Fa4', 'Mi4', 'Re4',
                 'Do4', 'Do4', 'Re4', 'Mi4', 'Mi4', 'Re4', 'Re4'],
+        tiempos: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5, 0.5, 2],
         consejo: '¡La primera canción! Si se pierde, que vuelva a empezar despacio. La app lo espera.',
       },
     ],
@@ -122,6 +135,7 @@ export const MUNDOS = [
         tipo: 'cancion', vista: 'pentagrama', clave: 'sol', colores: true, mostrarNombre: false,
         // "Au clair de la lune", canción tradicional francesa (dominio público).
         notas: ['Do4', 'Do4', 'Do4', 'Re4', 'Mi4', 'Re4', 'Do4', 'Mi4', 'Re4', 'Re4', 'Do4'],
+        tiempos: [1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 4],
         consejo: 'Su primera canción leída en el pentagrama. Que vaya despacio: la app espera cada nota.',
       },
     ],
@@ -189,6 +203,7 @@ export const MUNDOS = [
         // "Frère Jacques", canción tradicional francesa (dominio público). Primera parte.
         notas: ['Do4', 'Re4', 'Mi4', 'Do4', 'Do4', 'Re4', 'Mi4', 'Do4',
                 'Mi4', 'Fa4', 'Sol4', 'Mi4', 'Fa4', 'Sol4'],
+        tiempos: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2],
         consejo: 'Pueden cantarla juntos mientras toca: "Martinillo, Martinillo, ¿dónde estás?".',
       },
       {
@@ -198,6 +213,7 @@ export const MUNDOS = [
                 'Re4', 'Re4', 'Re4', 'Mi4', 'Sol4', 'Sol4',
                 'Mi4', 'Re4', 'Do4', 'Re4', 'Mi4', 'Mi4', 'Mi4',
                 'Mi4', 'Re4', 'Re4', 'Mi4', 'Re4', 'Do4'],
+        tiempos: [1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4],
         consejo: 'La canción completa. Ya conoce el comienzo del Río del Ritmo.',
       },
       {
@@ -208,6 +224,7 @@ export const MUNDOS = [
                 'Do4', 'Re4', 'Mi4', 'Fa4', 'Sol4', 'Sol4', 'Sol4',
                 'Sol4', 'Mi4', 'Mi4', 'Fa4', 'Re4', 'Re4',
                 'Do4', 'Mi4', 'Sol4', 'Sol4', 'Do4'],
+        tiempos: [1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 4],
         consejo: 'Empieza con el meñique en Sol. Fíjense que sube y baja como un bote en el agua.',
       },
       {
@@ -217,6 +234,8 @@ export const MUNDOS = [
                 'Do4', 'Do4', 'Re4', 'Mi4', 'Mi4', 'Re4', 'Re4',
                 'Mi4', 'Mi4', 'Fa4', 'Sol4', 'Sol4', 'Fa4', 'Mi4', 'Re4',
                 'Do4', 'Do4', 'Re4', 'Mi4', 'Re4', 'Do4', 'Do4'],
+        tiempos: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5, 0.5, 2,
+                  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5, 0.5, 2],
         consejo: 'Las dos frases. La segunda termina distinto: "Re, Do, Do", y vuelve a casa.',
       },
       {
@@ -227,6 +246,9 @@ export const MUNDOS = [
                 'Mi4', 'Sol4', 'Do4', 'Re4', 'Mi4',
                 'Fa4', 'Fa4', 'Fa4', 'Fa4', 'Fa4', 'Mi4', 'Mi4', 'Mi4',
                 'Mi4', 'Re4', 'Re4', 'Mi4', 'Re4', 'Sol4'],
+        tiempos: [1, 1, 2, 1, 1, 2, 1, 1, 1.5, 0.5, 4,
+                  1, 1, 1.5, 0.5, 1, 1, 1, 0.5, 0.5, 1, 1, 1, 2, 2],
+        tempo: 110,
         consejo: '¡Muchos Mi seguidos! Que levante el dedo entre cada uno para que el piano suene otra vez.',
       },
     ],
@@ -270,6 +292,7 @@ export const MUNDOS = [
         tipo: 'cancion', ayudaVisual: false,
         mano: 'izquierda', registro: true, teclado: DOS_MANOS,
         notas: ['Do3', 'Do3', 'Do3', 'Re3', 'Mi3', 'Re3', 'Do3', 'Mi3', 'Re3', 'Re3', 'Do3'],
+        tiempos: [1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 4],
         consejo: 'La misma canción del Bosque, ahora con la mano izquierda. Suena más grave, como un oso.',
       },
     ],
@@ -317,6 +340,7 @@ export const MUNDOS = [
                 'Sol4', 'Sol4', 'Fa4', 'Fa4', 'Mi4', 'Mi4', 'Re4',
                 'Do4', 'Do4', 'Sol4', 'Sol4', 'La4', 'La4', 'Sol4',
                 'Fa4', 'Fa4', 'Mi4', 'Mi4', 'Re4', 'Re4', 'Do4'],
+        tiempos: [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2],
         consejo: 'La canción favorita de los niños. Para el La, el meñique se estira un poquito.',
       },
     ],
@@ -364,7 +388,134 @@ export const MUNDOS = [
                 'Do4', 'Do4', 'Re4', 'Mi4', 'Mi4', 'Re4', 'Re4',
                 'Mi3', 'Mi3', 'Fa3', 'Sol3', 'Sol3', 'Fa3', 'Mi3', 'Re3',
                 'Do3', 'Do3', 'Re3', 'Mi3', 'Re3', 'Do3', 'Do3'],
+        tiempos: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5, 0.5, 2,
+                  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5, 0.5, 2],
         consejo: 'La primera frase con la derecha y la respuesta con la izquierda. ¡El gran final del viaje!',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 8 ─────────────────────────
+  {
+    id: 'mundo8',
+    emoji: '🐒',
+    titulo: 'Selva de las Corcheas',
+    nivel: 8,
+    color: '#d9f99d',
+    lecciones: [
+      {
+        id: 'n8-1', titulo: 'Corcheas: ti-ti', emoji: '🐇',
+        tipo: 'ritmo', tempo: 56, subdividir: true,
+        figuras: [['Do4', 1], ['Do4', 1], ['Do4', 0.5], ['Do4', 0.5], ['Do4', 1],
+                  ['Re4', 0.5], ['Re4', 0.5], ['Re4', 0.5], ['Re4', 0.5], ['Mi4', 2]],
+        consejo: 'Dos corcheas caben en un pulso. Digan juntos: la negra es "ta" y las dos corcheas "ti-ti". Ta, ta, ti-ti, ta.',
+      },
+      {
+        id: 'n8-2', titulo: 'Ta y ti-ti', emoji: '🥕',
+        tipo: 'ritmo', tempo: 60, subdividir: true,
+        figuras: [['Mi4', 0.5], ['Mi4', 0.5], ['Re4', 1], ['Do4', 0.5], ['Do4', 0.5], ['Re4', 1],
+                  ['Mi4', 0.5], ['Mi4', 0.5], ['Mi4', 0.5], ['Mi4', 0.5], ['Re4', 2]],
+        consejo: 'Ahora las corcheas van primero. Que levante un poquito el dedo entre las dos corcheas iguales.',
+      },
+      {
+        id: 'n8-3', titulo: 'Negra con puntillo', emoji: '🍎',
+        tipo: 'ritmo', tempo: 56, subdividir: true,
+        figuras: [['Do4', 1.5], ['Re4', 0.5], ['Mi4', 2], ['Mi4', 1.5], ['Fa4', 0.5], ['Sol4', 2]],
+        consejo: 'El puntillo alarga la nota la mitad. La negra con puntillo dura un pulso y medio: "taaa-ti".',
+      },
+      {
+        id: 'n8-4', titulo: 'Blanca con puntillo: tres pulsos', emoji: '🎠',
+        tipo: 'ritmo', tempo: 72, compas: 3,
+        figuras: [['Do4', 3], ['Mi4', 3], ['Sol4', 3], ['Do4', 3]],
+        consejo: 'Contamos de a tres, como un vals: "uno, dos, tres". La blanca con puntillo dura los tres pulsos.',
+      },
+      {
+        id: 'n8-5', titulo: 'Ritmo: Jingle Bells', emoji: '🔔', premio: true,
+        tipo: 'ritmo', tempo: 80, subdividir: true,
+        // "Jingle Bells" (James Lord Pierpont, 1857, dominio público).
+        figuras: [['Mi4', 1], ['Mi4', 1], ['Mi4', 2], ['Mi4', 1], ['Mi4', 1], ['Mi4', 2],
+                  ['Mi4', 1], ['Sol4', 1], ['Do4', 1.5], ['Re4', 0.5], ['Mi4', 4]],
+        consejo: 'Tiene de todo: negras, blancas, una negra con puntillo y una corchea. El Do es largo y el Re es cortito.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 9 ─────────────────────────
+  {
+    id: 'mundo9',
+    emoji: '🏰',
+    titulo: 'Castillo del Fuerte y Suave',
+    nivel: 9,
+    color: '#fed7aa',
+    lecciones: [
+      {
+        id: 'n9-1', titulo: 'El león y el ratón', emoji: '🦁',
+        tipo: 'dinamica', notas: ['Do4'], cantidad: 8,
+        consejo: 'Fuerte (f) es como un león: dedo firme y rápido. Suave (p) es como un ratoncito: dedo lento y delicado. Al inicio Ranita escucha un Do fuerte y uno suave para conocer su piano.',
+      },
+      {
+        id: 'n9-2', titulo: 'Fuerte y suave con tres notas', emoji: '🐭',
+        tipo: 'dinamica', notas: ['Do4', 'Re4', 'Mi4'], cantidad: 10,
+        consejo: 'Ahora cambia la nota y también la fuerza. Primero que mire la letra: f = fuerte, p = suave.',
+      },
+      {
+        id: 'n9-3', titulo: 'Gigante y enanito', emoji: '🏔️',
+        tipo: 'dinamica',
+        secuencia: [['Do4', 'f'], ['Re4', 'f'], ['Mi4', 'f'], ['Do4', 'p'], ['Re4', 'p'], ['Mi4', 'p'],
+                    ['Mi4', 'f'], ['Re4', 'f'], ['Do4', 'f'], ['Mi4', 'p'], ['Re4', 'p'], ['Do4', 'p']],
+        consejo: 'Tres pasos de gigante (fuerte) y tres de enanito (suave). Pueden pisar fuerte y suave en el suelo antes de tocar.',
+      },
+      {
+        id: 'n9-4', titulo: 'Martinillo con eco', emoji: '🔔', premio: true,
+        tipo: 'dinamica',
+        // "Frère Jacques", canción tradicional (dominio público). Cada frase fuerte y su eco suave.
+        secuencia: [['Do4', 'f'], ['Re4', 'f'], ['Mi4', 'f'], ['Do4', 'f'],
+                    ['Do4', 'p'], ['Re4', 'p'], ['Mi4', 'p'], ['Do4', 'p'],
+                    ['Mi4', 'f'], ['Fa4', 'f'], ['Sol4', 'f'],
+                    ['Mi4', 'p'], ['Fa4', 'p'], ['Sol4', 'p']],
+        consejo: 'Cada frase se toca fuerte y se repite suave, como el eco de una campana lejana.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 10 ─────────────────────────
+  {
+    id: 'mundo10',
+    emoji: '💧',
+    titulo: 'Charco Saltarín',
+    nivel: 10,
+    color: '#99f6e4',
+    lecciones: [
+      {
+        id: 'n10-1', titulo: 'Picado: notas que saltan', emoji: '🏀',
+        tipo: 'articulacion', modo: 'corta', notas: ['Do4', 'Re4', 'Mi4'], cantidad: 8,
+        consejo: 'Picado (staccato) es tocar y soltar enseguida, como si la tecla quemara o como una pelota que rebota. El puntito debajo de la nota significa "corta".',
+      },
+      {
+        id: 'n10-2', titulo: 'Notas largas', emoji: '🐍',
+        tipo: 'articulacion', modo: 'larga', notas: ['Do4', 'Mi4', 'Sol4'], cantidad: 6,
+        consejo: 'Ahora al revés: tocar y mantener la tecla hasta que el círculo se llene. La rayita sobre la nota significa "larga".',
+      },
+      {
+        id: 'n10-3', titulo: 'Cortas y largas', emoji: '🐸',
+        tipo: 'articulacion', modo: 'mezcla', notas: ['Do4', 'Re4', 'Mi4', 'Fa4', 'Sol4'], cantidad: 10,
+        consejo: 'Se mezclan: puntito = corta y salta, rayita = larga y se mantiene.',
+      },
+      {
+        id: 'n10-4', titulo: 'Ligado: dedos pegaditos', emoji: '🐛',
+        tipo: 'articulacion',
+        secuencia: [['Do4', 'ligada'], ['Re4', 'ligada'], ['Mi4', 'ligada'], ['Fa4', 'ligada'], ['Sol4', 'larga'],
+                    ['Sol4', 'ligada'], ['Fa4', 'ligada'], ['Mi4', 'ligada'], ['Re4', 'ligada'], ['Do4', 'larga']],
+        consejo: 'Ligado (legato) es pasar de una nota a otra sin silencio: el dedo nuevo baja y recién entonces sube el anterior, como un gusanito que camina.',
+      },
+      {
+        id: 'n10-5', titulo: 'Oda picada y ligada', emoji: '🏆', premio: true,
+        tipo: 'articulacion',
+        secuencia: [['Mi4', 'ligada'], ['Mi4', 'corta'], ['Fa4', 'ligada'], ['Sol4', 'corta'],
+                    ['Sol4', 'ligada'], ['Fa4', 'ligada'], ['Mi4', 'ligada'], ['Re4', 'corta'],
+                    ['Do4', 'corta'], ['Do4', 'corta'], ['Re4', 'corta'], ['Mi4', 'corta'],
+                    ['Mi4', 'ligada'], ['Re4', 'ligada'], ['Re4', 'larga']],
+        consejo: 'La Oda a la alegría con picado y ligado. Arcos = ligado, puntitos = picado. ¡El gran final del Charco Saltarín!',
       },
     ],
   },

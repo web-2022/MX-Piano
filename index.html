@@ -44,6 +44,13 @@
       <h1 class="logo">Pianito</h1>
       <p class="lema">¡Aprende piano jugando con Ranita!</p>
       <button id="btn-empezar" class="boton-grande">¡A tocar! 🎹</button>
+      <div id="eleccion-edad" class="eleccion-edad oculto">
+        <p class="pregunta-edad">¿Cuántos años tienes?</p>
+        <div class="botones-edad">
+          <button class="boton-edad" data-modo="peques"><span>🐣</span>4 a 7 años</button>
+          <button class="boton-edad grande" data-modo="grandes"><span>🚀</span>8 años o más</button>
+        </div>
+      </div>
       <p id="mensaje-inicio" class="mensaje-inicio" role="status"></p>
     </div>
   </section>
@@ -104,7 +111,10 @@
           <span id="nota-dedo" class="nota-dedo"></span>
         </div>
         <div id="escenario" class="escenario oculto"></div>
-        <button id="btn-escuchar" class="boton-escuchar">🔊 Escuchar</button>
+        <div class="botones-escuchar">
+          <button id="btn-escuchar" class="boton-escuchar">🔊 Escuchar</button>
+          <button id="btn-cancion" class="boton-escuchar oculto">🎶 Escuchar la canción</button>
+        </div>
       </div>
 
       <div id="progreso-juego" class="progreso-juego"></div>
@@ -125,6 +135,7 @@
         <button id="btn-repetir" class="boton-secundario">🔁 Otra vez</button>
         <button id="btn-mapa" class="boton-grande">Seguir ➜</button>
       </div>
+      <button id="btn-orquesta" class="boton-orquesta oculto">🎻 Escuchar mi canción con orquesta</button>
     </div>
   </section>
 
@@ -132,8 +143,15 @@
   <dialog id="dialogo-ajustes" class="dialogo">
     <form method="dialog">
       <h2>Ajustes para padres</h2>
+      <div class="fila fila-modo">
+        <span>Edad:</span>
+        <label><input type="radio" name="aj-modo" value="peques"> 4 a 7 años</label>
+        <label><input type="radio" name="aj-modo" value="grandes"> 8 o más</label>
+      </div>
       <label class="fila"><input type="checkbox" id="aj-voz"> Voz de Ranita</label>
+      <button type="button" id="btn-voz" class="boton-secundario boton-voz">🎙️ Grabar la voz de Ranita</button>
       <label class="fila"><input type="checkbox" id="aj-referencia"> Tocar la nota antes de pedirla</label>
+      <label class="fila"><input type="checkbox" id="aj-acompanar"> Acompañar con acordes mientras toca las canciones (mejor con audífonos)</label>
       <label class="fila"><input type="checkbox" id="aj-teclado"> Usar el teclado de la pantalla (probar sin piano)</label>
       <label class="fila"><input type="checkbox" id="aj-detector"> Mostrar lo que escucha el micrófono</label>
       <label class="fila"><input type="checkbox" id="aj-desbloquear"> Desbloquear todas las lecciones (profesor)</label>
@@ -143,6 +161,20 @@
         <small>Súbela si no reconoce las notas. Bájala si hay ruido en casa.</small>
       </label>
       <button type="button" id="btn-borrar-progreso" class="boton-peligro">Borrar progreso</button>
+      <button value="cerrar" class="boton-grande">Listo</button>
+    </form>
+  </dialog>
+
+  <!-- Grabar la voz de Ranita (para el adulto) -->
+  <dialog id="dialogo-voz" class="dialogo dialogo-voz">
+    <form method="dialog">
+      <h2>🎙️ La voz de Ranita</h2>
+      <p class="voz-ayuda">Graba las frases con tu voz y Ranita hablará como tú. Toca <b>●</b>, di la frase y toca <b>■</b>.
+        Las que no grabes las dice la voz del iPad. Todo queda guardado solo en este iPad.</p>
+      <label class="fila"><input type="checkbox" id="aj-voz-aguda"> Voz más aguda, de rana 🐸</label>
+      <p id="voz-contador" class="voz-contador"></p>
+      <div id="voz-lista" class="voz-lista"></div>
+      <button type="button" id="btn-voz-borrar" class="boton-peligro">Borrar todas las grabaciones</button>
       <button value="cerrar" class="boton-grande">Listo</button>
     </form>
   </dialog>
@@ -162,7 +194,7 @@
   <!-- Consejo para el adulto al empezar cada lección -->
   <dialog id="dialogo-consejo" class="dialogo">
     <form method="dialog">
-      <p class="consejo-etiqueta">👨‍👩‍👧 Para el adulto</p>
+      <p id="consejo-etiqueta" class="consejo-etiqueta">👨‍👩‍👧 Para el adulto</p>
       <p id="consejo-texto"></p>
       <button value="ok" class="boton-grande">¡Empezar!</button>
     </form>

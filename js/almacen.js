@@ -18,8 +18,11 @@ function escribir(clave, valor) {
 }
 
 const AJUSTES_DEFECTO = {
+  modo: null,          // 'peques' (4 a 7 años) | 'grandes' (8 o más). null = todavía no eligió
   voz: true,
   notaReferencia: true,
+  acompanarVivo: false,
+  vozAguda: true,
   tecladoPantalla: false,
   mostrarDetector: false,
   desbloquearTodo: false,

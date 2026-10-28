@@ -69,7 +69,8 @@ export function pentagramaSVG(midi, { clave = 'sol', colores = true, mostrarNomb
   return `<svg viewBox="0 0 ${ANCHO} ${ALTO}" class="pentagrama-svg" role="img" aria-label="Pentagrama">${lineas}${claveSVG}${nota}</svg>`;
 }
 
-// Icono de figura rítmica: 4 = redonda, 2 = blanca, 1 = negra. silencio = true para silencios.
+// Icono de figura rítmica: 4 = redonda, 3 = blanca con puntillo, 2 = blanca, 1.5 = negra con puntillo,
+// 1 = negra, 0.5 = corchea. silencio = true para silencios.
 export function figuraSVG(tiempos, { color = '#1e1b4b', silencio = false } = {}) {
   if (silencio) {
     if (tiempos >= 2) {
@@ -77,13 +78,22 @@ export function figuraSVG(tiempos, { color = '#1e1b4b', silencio = false } = {})
       return `<svg viewBox="0 0 40 60" class="figura"><line x1="6" x2="34" y1="32" y2="32" stroke="${color}" stroke-width="2"/>
               <rect x="11" y="22" width="18" height="10" fill="${color}"/></svg>`;
     }
+    if (tiempos < 1) {
+      // silencio de corchea: un "7" con bolita
+      return `<svg viewBox="0 0 40 60" class="figura"><circle cx="15" cy="20" r="4.5" fill="${color}"/>
+              <path d="M15 24 Q22 25 28 17 L18 50" fill="none" stroke="${color}" stroke-width="2.6" stroke-linecap="round"/></svg>`;
+    }
     // silencio de negra (zigzag)
     return `<svg viewBox="0 0 40 60" class="figura"><path d="M16 8 L26 20 L17 30 L27 42 Q15 38 18 52 Q8 40 22 40 L13 30 L22 20 Z"
             fill="${color}"/></svg>`;
   }
-  const hueca = tiempos >= 2;
+  const puntillo = tiempos === 1.5 || tiempos === 3;
+  const base = puntillo ? tiempos / 1.5 : tiempos;
+  const hueca = base >= 2;
   const cabeza = `<ellipse cx="17" cy="46" rx="9" ry="6.5" transform="rotate(-20 17 46)"
                   fill="${hueca ? 'none' : color}" stroke="${color}" stroke-width="${hueca ? 3 : 1.5}"/>`;
-  const plica = tiempos >= 4 ? '' : `<line x1="25" x2="25" y1="44" y2="8" stroke="${color}" stroke-width="2.6"/>`;
-  return `<svg viewBox="0 0 40 60" class="figura">${plica}${cabeza}</svg>`;
+  const plica = base >= 4 ? '' : `<line x1="25" x2="25" y1="44" y2="8" stroke="${color}" stroke-width="2.6"/>`;
+  const bandera = base < 1 ? `<path d="M25 8 Q27 18 36 22 Q31 27 33 36 Q30 26 25 22 Z" fill="${color}"/>` : '';
+  const punto = puntillo ? `<circle cx="33" cy="44" r="3.2" fill="${color}"/>` : '';
+  return `<svg viewBox="0 0 40 60" class="figura">${plica}${bandera}${cabeza}${punto}</svg>`;
 }

@@ -8,6 +8,8 @@ import {
 } from './sonido.js';
 import { MUNDOS, JUEGOS, buscarLeccion } from './lecciones.js';
 import { crearJuego } from './juegos.js';
+import { programarCancion, acordeEnVivo, tieneMelodia } from './acompanamiento.js';
+import * as voz from './voz.js';
 import { pentagramaSVG, figuraSVG } from './pentagrama.js';
 import { cargarAjustes, guardarAjustes, cargarProgreso, guardarProgreso } from './almacen.js';
 
@@ -21,7 +23,15 @@ const estado = {
   progreso: cargarProgreso(),
   juego: null,
   pausa: false,   // true mientras está abierta la pregunta de salir
+  memoria: {},    // datos de esta sesión (por ejemplo, la fuerza de "fuerte" y "suave")
 };
+
+// Modo para mayores de 8 años: menos voz, mundos abiertos, un poco más de velocidad.
+const esGrande = () => estado.ajustes.modo === 'grandes';
+function aplicarModo() {
+  document.body.classList.toggle('grandes', esGrande());
+  $('#consejo-etiqueta').textContent = esGrande() ? '💡 Antes de empezar' : '👨‍👩‍👧 Para el adulto';
+}
 
 const FRASES_ACIERTO = ['¡Muy bien!', '¡Genial!', '¡Bravo!', '¡Eso es!', '¡Súper!', '¡Lo lograste!'];
 const FRASES_ERROR = ['¡Casi! Otra vez', '¡Uy! Prueba de nuevo', 'Tú puedes, otra vez'];
@@ -51,8 +61,19 @@ if ('speechSynthesis' in window) {
   speechSynthesis.addEventListener?.('voiceschanged', elegirVoz);
 }
 
-function decir(texto) {
-  if (!estado.ajustes.voz || !('speechSynthesis' in window)) return Promise.resolve();
+// menor: frases que se repiten mucho ("Toca Re", "¡Casi!"). En el modo de 8+ no se dicen.
+function decir(texto, { menor = false } = {}) {
+  if (!estado.ajustes.voz || (menor && esGrande())) return Promise.resolve();
+  // ¿Está grabada por el adulto? Entonces se usa su voz.
+  const grabada = estado.ctx ? voz.plan(texto) : null;
+  if (grabada) {
+    estado.detector.silenciarHasta(Infinity);
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    return voz.reproducir(estado.ctx, grabada, { aguda: estado.ajustes.vozAguda })
+      .catch(() => {})
+      .finally(() => estado.detector.silenciarHasta(performance.now() + 300));
+  }
+  if (!('speechSynthesis' in window)) return Promise.resolve();
   return new Promise((resolver) => {
     const u = new SpeechSynthesisUtterance(texto);
     u.lang = vozElegida?.lang || 'es-MX';
@@ -84,7 +105,28 @@ function sonar(fn, ...args) {
 }
 
 // ================= Inicio =================
-$('#btn-empezar').addEventListener('click', async () => {
+// La primera vez se pregunta la edad; después, el botón "¡A tocar!" va directo.
+if (!estado.ajustes.modo) {
+  $('#btn-empezar').classList.add('oculto');
+  $('#eleccion-edad').classList.remove('oculto');
+}
+aplicarModo();
+
+document.querySelectorAll('.boton-edad').forEach((b) => {
+  b.addEventListener('click', () => {
+    estado.ajustes.modo = b.dataset.modo;
+    if (b.dataset.modo === 'grandes') estado.ajustes.notaReferencia = false;
+    guardarAjustes(estado.ajustes);
+    aplicarModo();
+    $('#eleccion-edad').classList.add('oculto');
+    $('#btn-empezar').classList.remove('oculto');
+    arrancar();
+  });
+});
+
+$('#btn-empezar').addEventListener('click', arrancar);
+
+async function arrancar() {
   const msg = $('#mensaje-inicio');
   msg.textContent = '';
   try {
@@ -114,7 +156,7 @@ $('#btn-empezar').addEventListener('click', async () => {
   aplicarAjustesDetector();
   dibujarMapa();
   mostrar('pantalla-mapa');
-});
+}
 
 document.addEventListener('visibilitychange', async () => {
   if (document.hidden) return;
@@ -156,7 +198,13 @@ function dibujarMapa() {
   let total = 0;
   let botonSiguiente = null;
 
+  // Modo 8+: un mundo entero se abre cuando el anterior tiene al menos 3 lecciones con estrellas.
+  let mundoAbierto = true;
+
   for (const mundo of MUNDOS) {
+    const abiertoEste = mundoAbierto;
+    const conEstrellas = mundo.lecciones.filter((l) => estrellasDe(l.id) > 0).length;
+    mundoAbierto = conEstrellas >= Math.min(3, mundo.lecciones.length);
     const seccion = document.createElement('section');
     seccion.className = 'mundo';
     seccion.style.setProperty('--color-mundo', mundo.color);
@@ -173,7 +221,8 @@ function dibujarMapa() {
     for (const leccion of mundo.lecciones) {
       const est = estrellasDe(leccion.id);
       total += est;
-      const bloqueada = !anteriorCompletada && !estado.ajustes.desbloquearTodo;
+      const bloqueada = !estado.ajustes.desbloquearTodo &&
+        (esGrande() ? !abiertoEste : !anteriorCompletada);
       const siguiente = !bloqueada && est === 0 && !siguienteMarcada;
       if (siguiente) siguienteMarcada = true;
       const boton = botonParada(leccion, { bloqueada, siguiente, est });
@@ -181,7 +230,8 @@ function dibujarMapa() {
       boton.addEventListener('click', () => {
         if (bloqueada) {
           sacudir(boton);
-          decir('Primero termina la lección anterior');
+          if (esGrande()) globoMapa(boton, 'Gana estrellas en 3 lecciones del mundo anterior');
+          else decir('Primero termina la lección anterior');
           return;
         }
         empezarLeccion(leccion.id);
@@ -200,6 +250,17 @@ function dibujarMapa() {
   if (botonSiguiente && !$('#mapa').classList.contains('oculto')) {
     requestAnimationFrame(() => botonSiguiente.scrollIntoView({ block: 'center', behavior: 'smooth' }));
   }
+}
+
+// Aviso corto escrito (modo 8+: en vez de hablar).
+function globoMapa(el, texto) {
+  const aviso = $('#ayuda-padres');
+  aviso.textContent = texto;
+  aviso.classList.add('visible');
+  setTimeout(() => {
+    aviso.classList.remove('visible');
+    aviso.textContent = 'Adulto: mantén presionado ⚙️';
+  }, 2400);
 }
 
 function dibujarParque() {
@@ -326,13 +387,27 @@ function dibujarTeclado([desde, hasta] = [60, 72]) {
   }
 
   teclado.querySelectorAll('[data-midi]').forEach((t) => {
-    t.addEventListener('pointerdown', () => {
+    t.addEventListener('pointerdown', (e) => {
       if (!estado.ajustes.tecladoPantalla) return;
       const midi = Number(t.dataset.midi);
+      // Abajo en la tecla = fuerte, arriba = suave (para las lecciones de fuerte y suave).
+      const r = t.getBoundingClientRect();
+      const fuerza = r.height ? Math.max(0.05, Math.min(1, (e.clientY - r.top) / r.height)) : 0.5;
       const enRitmo = estado.juego?.ritmo?.corriendo;
       if (enRitmo) programarNota(estado.ctx, midi, estado.ctx.currentTime, 0.4, estado.juego.ritmo.nodos);
-      else sonar(tocarNota, midi, 0.6);
-      estado.detector.simular(midi);
+      else if (estado.ctx) {
+        tocarNota(estado.ctx, midi, 0.6, 0.12 + fuerza * 0.3);
+        estado.detector.silenciar(750); // que el micrófono (si está activo) no oiga el parlante
+      }
+      estado.detector.simular(midi, fuerza);
+      const soltar = (ev) => {
+        if (ev.pointerId !== e.pointerId) return; // con varios dedos, solo el que se levantó
+        window.removeEventListener('pointerup', soltar);
+        window.removeEventListener('pointercancel', soltar);
+        estado.detector.simularFin(midi);
+      };
+      window.addEventListener('pointerup', soltar);
+      window.addEventListener('pointercancel', soltar);
     });
   });
 }
@@ -431,16 +506,18 @@ function mostrarObjetivo(midi, indice) {
 }
 
 // ================= Juego =================
-const TIPOS_JUEGO = ['atrapa', 'eco', 'carrera'];
+// Tipos que dibuja su propio módulo (js/juegos.js y js/expresion.js) dentro de #escenario.
+const TIPOS_JUEGO = ['atrapa', 'eco', 'carrera', 'dinamica', 'articulacion'];
 const esMiniJuego = (l) => TIPOS_JUEGO.includes(l.tipo);
 
 function generarObjetivos(leccion) {
   if (leccion.tipo === 'ritmo' || esMiniJuego(leccion)) return [];
   const notas = leccion.notas.map(notaAMidi);
   if (leccion.tipo === 'cancion') return notas;
-  if (leccion.tipo === 'buscar') return Array(leccion.cantidad).fill(notas[0]);
+  const cantidad = Math.round(leccion.cantidad * (esGrande() ? 1.25 : 1));
+  if (leccion.tipo === 'buscar') return Array(cantidad).fill(notas[0]);
   const lista = [];
-  for (let i = 0; i < leccion.cantidad; i++) {
+  for (let i = 0; i < cantidad; i++) {
     let n;
     do { n = azar(notas); } while (notas.length > 1 && n === lista[lista.length - 1]);
     lista.push(n);
@@ -470,6 +547,8 @@ async function empezarLeccion(id) {
   $('#btn-escuchar').textContent = esRitmo ? '🔊 Escuchar el ritmo' : leccion.tipo === 'eco' ? '🔊 Otra vez' : '🔊 Escuchar';
   $('#pulso').classList.toggle('oculto', !esRitmo);
   $('#escenario').classList.toggle('oculto', !esJuego);
+  $('#btn-cancion').classList.toggle('oculto', leccion.tipo !== 'cancion');
+  pararCancion();
   $('#escenario').innerHTML = '';
   dibujarTeclado(leccion.teclado);
   iluminarObjetivo(null);
@@ -528,7 +607,7 @@ function apiJuego(j) {
   const activo = () => estado.juego === j;
   return {
     escenario: $('#escenario'),
-    decir: (t) => (activo() ? decir(t) : Promise.resolve()),
+    decir: (t, opciones) => (activo() ? decir(t, opciones) : Promise.resolve()),
     esperar,
     globo: (t) => { if (activo()) globo(t); },
     animarMascota: (c) => { if (activo()) animarMascota(c); },
@@ -536,6 +615,9 @@ function apiJuego(j) {
     iluminarObjetivo,
     mostrarObjetivo: (midi, i) => { if (activo()) mostrarObjetivo(midi, i); },
     sacudirObjetivo: () => sacudir($('#nota-objetivo')),
+    sacudir,
+    memoria: estado.memoria,
+    esPantalla: () => !!estado.ajustes.tecladoPantalla,
     esAcierto: (tocada, objetivo) => esAcierto(j.leccion, tocada, objetivo),
     contarError: () => { j.errores++; },
     chispas,
@@ -601,7 +683,7 @@ async function presentarObjetivo() {
   if (l.tipo !== 'cancion') {
     globo(nombre ? `¡Toca ${nombre}!` : '¿Qué nota es?');
     if (nueva || l.tipo === 'buscar') {
-      await decir(nombre ? `Toca ${nombre}` : 'Toca esta nota');
+      await decir(nombre ? `Toca ${nombre}` : 'Toca esta nota', { menor: true });
       if (estado.ajustes.notaReferencia && nueva) await esperar(sonar(tocarNota, midi));
     }
   } else {
@@ -615,7 +697,7 @@ function objetivoVisible() {
   return $('#nota-objetivo').classList.contains('oculto') ? $('#pentagrama') : $('#nota-objetivo');
 }
 
-async function alRecibirNota(midi, frecuencia, origen, instante) {
+async function alRecibirNota(midi, frecuencia, origen, instante, fuerza) {
   const j = estado.juego;
   if (!j || estado.pausa || !$('#pantalla-juego').classList.contains('activa')) return;
   if (j.leccion.tipo === 'ritmo') {
@@ -623,7 +705,7 @@ async function alRecibirNota(midi, frecuencia, origen, instante) {
     return;
   }
   if (j.minijuego) {
-    j.minijuego.nota(midi, origen);
+    j.minijuego.nota(midi, origen, fuerza, instante);
     return;
   }
   if (!j.esperando) return;
@@ -633,6 +715,9 @@ async function alRecibirNota(midi, frecuencia, origen, instante) {
 
   if (esAcierto(l, midi, objetivo)) {
     j.esperando = false;
+    if (l.tipo === 'cancion' && estado.ajustes.acompanarVivo && estado.ctx) {
+      acordeEnVivo(estado.ctx, l, j.indice, estado.nodosVivo || (estado.nodosVivo = []));
+    }
     marcarTecla(midi, 'acierto');
     animarMascota('feliz');
     chispas(objetivoVisible());
@@ -674,7 +759,7 @@ async function alRecibirNota(midi, frecuencia, origen, instante) {
     const texto = objetivo < 60 ? '¡Bien la nota! Pero más abajo, con la izquierda' : '¡Bien la nota! Pero más arriba, con la derecha';
     globo(texto);
     j.esperando = false;
-    await decir(texto);
+    await decir(texto, { menor: true });
     if (estado.juego === j) j.esperando = true;
     return;
   }
@@ -682,7 +767,7 @@ async function alRecibirNota(midi, frecuencia, origen, instante) {
   globo(l.tipo === 'cancion' ? '¡Casi! Busca la nota' : azar(FRASES_ERROR));
   if (j.erroresNota === 1 && l.tipo !== 'cancion') {
     j.esperando = false;
-    await decir('¡Casi! Otra vez');
+    await decir('¡Casi! Otra vez', { menor: true });
     if (estado.juego === j) j.esperando = true;
   }
 }
@@ -699,6 +784,7 @@ function totalNotas(j) {
   if (l.tipo === 'atrapa') return l.cantidad;
   if (l.tipo === 'eco') return l.rondas.reduce((a, b) => a + b, 0);
   if (l.tipo === 'carrera') return l.meta;
+  if (l.tipo === 'dinamica' || l.tipo === 'articulacion') return l.secuencia?.length || l.cantidad;
   return j.objetivos.length;
 }
 
@@ -707,21 +793,27 @@ function terminarLeccion(opciones = {}) {
   const j = estado.juego;
   j.minijuego?.detener();
   iluminarObjetivo(null);
-  const estrellas = opciones.estrellas ?? calcularEstrellas(j.errores, totalNotas(j));
+  // Ritmo sin ninguna nota a tiempo: no hay estrellas (y no se abre la siguiente lección).
+  const nada = j.leccion.tipo === 'ritmo' && !j.ritmo.eventos.some((e) => e.estado === 'bien' || e.estado === 'perfecto');
+  const estrellas = nada ? 0 : opciones.estrellas ?? calcularEstrellas(j.errores, totalNotas(j));
   const id = j.leccion.id;
   estado.progreso.estrellas[id] = Math.max(estrellasDe(id), estrellas);
   guardarProgreso(estado.progreso);
 
   $('#resultado-titulo').textContent = opciones.titulo
-    || (estrellas === 3 ? '¡Perfecto!' : estrellas === 2 ? '¡Muy bien!' : '¡Lo lograste!');
+    || (estrellas === 3 ? '¡Perfecto!' : estrellas === 2 ? '¡Muy bien!' : estrellas === 1 ? '¡Lo lograste!' : '¡Probemos otra vez!');
   $('#resultado-estrellas').innerHTML = [1, 2, 3]
     .map((n, i) => `<span class="${n <= estrellas ? '' : 'apagada'}" style="animation-delay:${i * 0.25}s">⭐</span>`)
     .join('');
+  $('#btn-orquesta').classList.toggle('oculto', !tieneMelodia(j.leccion));
+  $('#btn-orquesta').textContent = '🎻 Escuchar mi canción con orquesta';
   mostrar('pantalla-resultado');
-  confeti();
+  if (estrellas > 0) confeti();
   sonar(sonidoFinal);
-  const frase = estrellas === 3 ? '¡Perfecto! Tres estrellas' : `¡Muy bien! Ganaste ${estrellas} ${estrellas === 1 ? 'estrella' : 'estrellas'}`;
-  decir(opciones.frase ? `${opciones.frase}. ${frase}` : frase);
+  const frase = estrellas === 3 ? '¡Perfecto! Tres estrellas'
+    : estrellas === 0 ? '¡Probemos otra vez! Toca junto con los clics'
+      : `¡Muy bien! Ganaste ${estrellas} ${estrellas === 1 ? 'estrella' : 'estrellas'}`;
+  decir(opciones.frase ? `${opciones.frase} ${frase}` : frase);
 }
 
 // ================= Modo ritmo =================
@@ -738,7 +830,9 @@ function prepararRitmo() {
     t += tiempos;
     return e;
   });
-  j.ritmo = { eventos, total: t, corriendo: false, demo: false, nodos: [], actual: -1 };
+  // Ventana para aceptar cada nota: más estrecha si hay corcheas, para no confundir notas vecinas.
+  const minimo = Math.min(...eventos.map((e) => e.tiempos));
+  j.ritmo = { eventos, total: t, corriendo: false, demo: false, nodos: [], actual: -1, minimo };
   dibujarCarril();
 }
 
@@ -761,7 +855,7 @@ function dibujarCarril() {
     b.style.setProperty('--color', color);
     b.innerHTML = `${figuraSVG(e.tiempos, { color, silencio: e.midi == null })}
       <span>${e.midi == null || !mostrarNombreDe(l) ? '&nbsp;' : nombreNota(e.midi)}</span>`;
-    if (Math.round(e.inicio) % 4 === 0 && e.inicio > 0) b.classList.add('compas');
+    if (e.inicio % (l.compas || 4) === 0 && e.inicio > 0) b.classList.add('compas');
     pista.appendChild(b);
   });
   const cursor = document.createElement('div');
@@ -794,8 +888,10 @@ function correrRitmo(demo) {
   if (!ctx) return Promise.resolve();
   detenerTodo(r.nodos);
 
-  const beatMs = 60000 / j.leccion.tempo;
+  const beatMs = 60000 / (j.leccion.tempo * (esGrande() ? 1.15 : 1));
   r.beatMs = beatMs;
+  r.tolerancia = Math.min(TOLERANCIA_MS, beatMs * r.minimo * 0.45);
+  const compas = j.leccion.compas || 4;
   r.demo = demo;
   r.corriendo = true;
   r.actual = -1;
@@ -808,7 +904,10 @@ function correrRitmo(demo) {
   r.inicio = performance.now() + margen * 1000 + CUENTA * beatMs; // momento del primer pulso del ritmo
   const pulsosTotales = CUENTA + r.total;
   for (let k = 0; k < pulsosTotales; k++) {
-    programarClic(ctx, ctxInicio + (k * beatMs) / 1000, k % 4 === 0, r.nodos);
+    const acento = k < CUENTA ? k === 0 : (k - CUENTA) % compas === 0;
+    programarClic(ctx, ctxInicio + (k * beatMs) / 1000, acento, r.nodos);
+    // "ti-ti": un clic suave en la mitad de cada pulso (solo mientras suena el ritmo)
+    if (j.leccion.subdividir && k >= CUENTA) programarClic(ctx, ctxInicio + ((k + 0.5) * beatMs) / 1000, false, r.nodos, 0.25);
   }
   if (demo) {
     for (const e of r.eventos) {
@@ -833,7 +932,8 @@ function correrRitmo(demo) {
       const pulso = Math.floor(t + CUENTA);
       if (pulso !== ultimoPulso && pulso >= 0) {
         ultimoPulso = pulso;
-        pulsos.forEach((p, i) => p.classList.toggle('activo', i === ((pulso % 4) + 4) % 4));
+        const luz = pulso < CUENTA ? pulso % 4 : (pulso - CUENTA) % compas;
+        pulsos.forEach((p, i) => p.classList.toggle('activo', i === luz));
         if (t < 0) globo(String(pulso + 1));
         else if (pulso === CUENTA) globo(demo ? '♪ ♪ ♪' : '¡Ya!');
         $('#mascota-juego').classList.toggle('pulso-salto', pulso % 2 === 0);
@@ -844,7 +944,7 @@ function correrRitmo(demo) {
       if (cursor) cursor.style.left = `${Math.max(0, Math.min(1, t / r.total)) * 100}%`;
 
       // Nota actual (la próxima que hay que tocar)
-      const actual = r.eventos.findIndex((e) => e.estado === 'pendiente' && (t - e.inicio) * beatMs <= TOLERANCIA_MS);
+      const actual = r.eventos.findIndex((e) => e.estado === 'pendiente' && (t - e.inicio) * beatMs <= r.tolerancia);
       if (actual !== r.actual) {
         if (r.actual >= 0 && r.eventos[r.actual].estado === 'pendiente') estadoBloque(r.actual, null);
         r.actual = actual;
@@ -860,7 +960,7 @@ function correrRitmo(demo) {
       if (!demo) {
         r.eventos.forEach((e, i) => {
           if (e.estado !== 'pendiente') return;
-          if ((t - e.inicio) * beatMs > TOLERANCIA_MS) {
+          if ((t - e.inicio) * beatMs > r.tolerancia) {
             if (e.midi == null) { e.estado = 'silencio'; estadoBloque(i, 'bien'); return; }
             e.estado = 'fallo';
             j.errores++;
@@ -904,13 +1004,13 @@ function notaEnRitmo(midi, origen, instante = performance.now()) {
   r.eventos.forEach((e, i) => {
     if (e.estado !== 'pendiente' || e.midi == null) return;
     const d = Math.abs(t - e.inicio) * r.beatMs;
-    if (d <= TOLERANCIA_MS && d < distancia) { mejor = i; distancia = d; }
+    if (d <= r.tolerancia && d < distancia) { mejor = i; distancia = d; }
   });
   if (mejor < 0) return; // tocó fuera de tiempo: no se cuenta
 
   const e = r.eventos[mejor];
   if (esAcierto(j.leccion, midi, e.midi)) {
-    e.estado = distancia <= PERFECTO_MS ? 'perfecto' : 'bien';
+    e.estado = distancia <= Math.min(PERFECTO_MS, r.tolerancia * 0.5) ? 'perfecto' : 'bien';
     estadoBloque(mejor, e.estado);
     marcarTecla(midi, 'acierto');
     animarMascota('feliz');
@@ -926,7 +1026,14 @@ function notaEnRitmo(midi, origen, instante = performance.now()) {
   }
 }
 
-estado.detector.onNota = (midi, frecuencia, origen, instante) => alRecibirNota(midi, frecuencia, origen, instante);
+estado.detector.onNota = (midi, frecuencia, origen, instante, fuerza) => alRecibirNota(midi, frecuencia, origen, instante, fuerza);
+
+// Fin de una nota (al soltar la tecla): lo usan las lecciones de picado, largo y ligado.
+estado.detector.onFin = (midi, duracion, origen, instante, ligada) => {
+  const j = estado.juego;
+  if (!j || estado.pausa || !$('#pantalla-juego').classList.contains('activa')) return;
+  j.minijuego?.fin?.(midi, duracion, origen, instante, ligada);
+};
 
 // Indicador de escucha: el aro de Ranita se pone verde y crece con el sonido del piano;
 // mientras ella habla o suena algo, se pone gris (así el niño sabe que debe esperar).
@@ -954,6 +1061,7 @@ estado.detector.onNivel = (info) => {
 // ================= Botones del juego =================
 function volverAlMapa() {
   detenerRitmo();
+  pararCancion();
   estado.juego?.minijuego?.detener();
   estado.juego = null;
   if ('speechSynthesis' in window) speechSynthesis.cancel();
@@ -996,6 +1104,50 @@ $('#btn-escuchar').addEventListener('click', async () => {
 });
 
 $('#btn-repetir').addEventListener('click', () => empezarLeccion(estado.juego.leccion.id));
+
+// ================= Canción con acompañamiento =================
+// Toca la melodía con bajo y acordes, iluminando cada nota. Un segundo toque la detiene.
+const cancion = { nodos: [], esperas: [], boton: null };
+
+function pararCancion() {
+  const sonaba = !!cancion.boton;
+  detenerTodo(cancion.nodos);
+  cancion.esperas.forEach(clearTimeout);
+  cancion.esperas = [];
+  if (cancion.boton) cancion.boton.textContent = cancion.boton.dataset.texto;
+  cancion.boton = null;
+  document.querySelectorAll('.burbuja.suena').forEach((b) => b.classList.remove('suena'));
+  if (sonaba) estado.detector.silenciarHasta(performance.now() + 200);
+}
+
+function escucharCancion(boton, leccion) {
+  if (!estado.ctx) return;
+  if (cancion.boton === boton) { pararCancion(); return; }
+  pararCancion();
+  const { ms, marcas } = programarCancion(estado.ctx, leccion, cancion.nodos, { acompanar: true });
+  estado.detector.silenciarHasta(performance.now() + ms + 250);
+  boton.dataset.texto = boton.dataset.texto || boton.textContent;
+  boton.textContent = '⏹ Parar';
+  cancion.boton = boton;
+  const burbujas = [...document.querySelectorAll('#progreso-juego .burbuja')];
+  for (const m of marcas) {
+    cancion.esperas.push(setTimeout(() => {
+      burbujas.forEach((b, i) => b.classList.toggle('suena', i === m.indice));
+      const nota = leccion.notas?.[m.indice];
+      if (nota && $('#pantalla-juego').classList.contains('activa')) marcarTecla(notaAMidi(nota), 'objetivo', 350);
+    }, m.ms));
+  }
+  cancion.esperas.push(setTimeout(pararCancion, ms));
+}
+
+$('#btn-cancion').addEventListener('click', () => {
+  const j = estado.juego;
+  if (j) escucharCancion($('#btn-cancion'), j.leccion);
+});
+$('#btn-orquesta').addEventListener('click', () => {
+  const j = estado.juego;
+  if (j) escucharCancion($('#btn-orquesta'), j.leccion);
+});
 $('#btn-mapa').addEventListener('click', volverAlMapa);
 
 // ================= Ajustes =================
@@ -1041,8 +1193,10 @@ botonAjustes.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key
 
 function abrirAjustes() {
   const a = estado.ajustes;
+  document.querySelectorAll('[name="aj-modo"]').forEach((r) => { r.checked = r.value === (a.modo || 'peques'); });
   $('#aj-voz').checked = a.voz;
   $('#aj-referencia').checked = a.notaReferencia;
+  $('#aj-acompanar').checked = a.acompanarVivo;
   $('#aj-teclado').checked = a.tecladoPantalla;
   $('#aj-detector').checked = a.mostrarDetector;
   $('#aj-desbloquear').checked = a.desbloquearTodo;
@@ -1057,8 +1211,11 @@ $('#aj-sensibilidad').addEventListener('input', (e) => {
 
 $('#dialogo-ajustes').addEventListener('close', async () => {
   const a = estado.ajustes;
+  a.modo = document.querySelector('[name="aj-modo"]:checked')?.value || a.modo;
+  aplicarModo();
   a.voz = $('#aj-voz').checked;
   a.notaReferencia = $('#aj-referencia').checked;
+  a.acompanarVivo = $('#aj-acompanar').checked;
   a.tecladoPantalla = $('#aj-teclado').checked;
   a.mostrarDetector = $('#aj-detector').checked;
   a.desbloquearTodo = $('#aj-desbloquear').checked;
@@ -1084,6 +1241,133 @@ $('#btn-borrar-progreso').addEventListener('click', () => {
     guardarProgreso(estado.progreso);
     dibujarMapa();
   }
+});
+
+// ================= Voz grabada de Ranita =================
+voz.cargarIndice().then(actualizarBotonVoz);
+
+function actualizarBotonVoz() {
+  const n = voz.cuantasGrabadas();
+  document.querySelectorAll('#voz-lista details').forEach((d, i) => {
+    const g = voz.GRUPOS[i];
+    const small = d.querySelector('summary small');
+    if (g && small) small.textContent = `${g.frases.filter(voz.estaGrabada).length}/${g.frases.length}`;
+  });
+  $('#btn-voz').textContent = `🎙️ Grabar la voz de Ranita${n ? ` (${n} de ${voz.TOTAL_FRASES})` : ''}`;
+  $('#voz-contador').textContent = `${n} de ${voz.TOTAL_FRASES} frases grabadas`;
+}
+
+const grabacion = { actual: null, fila: null };
+
+async function microfonoParaGrabar() {
+  if (estado.detector.stream && !estado.detector.necesitaReiniciar()) return estado.detector.stream;
+  if (!estado.streamVoz || estado.streamVoz.getAudioTracks()[0]?.readyState === 'ended') {
+    estado.streamVoz = await navigator.mediaDevices.getUserMedia({ audio: true });
+  }
+  return estado.streamVoz;
+}
+
+function dibujarListaVoz() {
+  const lista = $('#voz-lista');
+  lista.innerHTML = '';
+  for (const grupo of voz.GRUPOS) {
+    const det = document.createElement('details');
+    const hechas = grupo.frases.filter(voz.estaGrabada).length;
+    det.innerHTML = `<summary>${grupo.titulo} <small>${hechas}/${grupo.frases.length}</small></summary>`;
+    for (const frase of grupo.frases) {
+      const fila = document.createElement('div');
+      fila.className = 'voz-fila';
+      fila.classList.toggle('grabada', voz.estaGrabada(frase));
+      fila.innerHTML = `
+        <span class="voz-texto">${frase}</span>
+        <button type="button" class="voz-grabar" aria-label="Grabar">●</button>
+        <button type="button" class="voz-oir" aria-label="Escuchar">▶</button>
+        <button type="button" class="voz-borrar" aria-label="Borrar">🗑</button>`;
+      fila.querySelector('.voz-grabar').addEventListener('click', () => alternarGrabacion(frase, fila));
+      fila.querySelector('.voz-oir').addEventListener('click', () => {
+        if (voz.estaGrabada(frase)) voz.reproducir(estado.ctx, [frase], { aguda: $('#aj-voz-aguda').checked });
+        else decirConSistema(frase);
+      });
+      fila.querySelector('.voz-borrar').addEventListener('click', async () => {
+        await voz.borrar(frase).catch(() => {});
+        fila.classList.remove('grabada');
+        actualizarBotonVoz();
+      });
+      det.appendChild(fila);
+    }
+    lista.appendChild(det);
+  }
+}
+
+// Para comparar: cómo suena la frase con la voz del iPad.
+function decirConSistema(texto) {
+  if (!('speechSynthesis' in window)) return;
+  const u = new SpeechSynthesisUtterance(texto);
+  u.lang = vozElegida?.lang || 'es-MX';
+  if (vozElegida) u.voice = vozElegida;
+  u.pitch = 1.25;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+
+async function alternarGrabacion(frase, fila) {
+  // Segundo toque: detener y guardar.
+  if (grabacion.actual) {
+    if (grabacion.fila !== fila) return;
+    grabacion.actual.detener();
+    return;
+  }
+  let stream;
+  try {
+    stream = await microfonoParaGrabar();
+  } catch {
+    alert('No pude usar el micrófono para grabar. Revisa el permiso del navegador.');
+    return;
+  }
+  if (!window.MediaRecorder) {
+    alert('Este navegador no permite grabar audio. Actualiza el iPad o prueba con Safari.');
+    return;
+  }
+  estado.detector.silenciarHasta(Infinity);
+  grabacion.actual = voz.grabar(stream);
+  grabacion.fila = fila;
+  fila.classList.add('grabando');
+  fila.querySelector('.voz-grabar').textContent = '■';
+  const blob = await grabacion.actual.listo;
+  grabacion.actual = null;
+  grabacion.fila = null;
+  fila.classList.remove('grabando');
+  fila.querySelector('.voz-grabar').textContent = '●';
+  estado.detector.silenciarHasta(performance.now() + 300);
+  if (blob.size < 500) return; // demasiado corta: se ignora
+  try {
+    await voz.guardar(frase, blob);
+    fila.classList.add('grabada');
+    actualizarBotonVoz();
+    voz.reproducir(estado.ctx, [frase], { aguda: $('#aj-voz-aguda').checked }); // para que la escuche
+  } catch {
+    alert('No pude guardar la grabación (¿navegación privada?).');
+  }
+}
+
+$('#btn-voz').addEventListener('click', () => {
+  $('#aj-voz-aguda').checked = estado.ajustes.vozAguda;
+  dibujarListaVoz();
+  actualizarBotonVoz();
+  $('#dialogo-voz').showModal();
+});
+
+$('#dialogo-voz').addEventListener('close', () => {
+  grabacion.actual?.detener();
+  estado.ajustes.vozAguda = $('#aj-voz-aguda').checked;
+  guardarAjustes(estado.ajustes);
+});
+
+$('#btn-voz-borrar').addEventListener('click', async () => {
+  if (!confirm('¿Borrar todas las grabaciones de la voz de Ranita?')) return;
+  await voz.borrarTodo().catch(() => {});
+  dibujarListaVoz();
+  actualizarBotonVoz();
 });
 
 // ================= PWA =================

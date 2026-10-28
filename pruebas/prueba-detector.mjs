@@ -182,5 +182,63 @@ function caso(nombre, s, esperadas, opciones = {}) {
   caso('Teclas negras', s, ['Do♯4', 'Fa♯4', 'La♯4']);
 }
 
+
+// ───── Fuerza y duración ─────
+function eventos(s) {
+  const det = new NucleoDetector();
+  det.umbralRms = 0.05 * Math.pow(0.7, 4);
+  const tono = filtrar(s);
+  const notas = [];
+  const fines = [];
+  for (let fin = 2048; fin <= s.length; fin += HOP) {
+    const info = det.procesar(tono.subarray(fin - 2048, fin), s.subarray(fin - 1024, fin), SR, (fin / SR) * 1000);
+    if (info.fin) fines.push({ nota: nombreConOctava(info.fin.midi), duracion: Math.round(info.fin.duracion), ligada: !!info.fin.ligada });
+    if (info.nota) notas.push({ nota: nombreConOctava(info.nota.midi), fuerza: info.nota.fuerza });
+  }
+  return { notas, fines };
+}
+function comprobar(nombre, ok, detalle) {
+  if (!ok) fallos++;
+  console.log(`${ok ? '✅' : '❌'} ${nombre}\n   ${detalle}`);
+}
+// 11. Fuerte y suave
+{
+  const s = nuevaSenal(3); ruido(s, 0.002);
+  piano(s, 'Do4', 0.3, { vol: 0.3, dur: 0.5 });
+  piano(s, 'Do4', 1.1, { vol: 0.06, dur: 0.5 });
+  piano(s, 'Re4', 1.9, { vol: 0.25, dur: 0.5 });
+  const { notas } = eventos(s);
+  const f = notas.map((n) => n.fuerza);
+  comprobar('Fuerte, suave, fuerte', notas.length === 3 && f[0] > f[1] * 2.5 && f[2] > f[1] * 2.5,
+    `fuerzas ${f.map((x) => x.toFixed(3)).join(' / ')}`);
+}
+// 12. Corta (picado) y larga
+{
+  const s = nuevaSenal(3.5); ruido(s, 0.002);
+  piano(s, 'Mi4', 0.3, { dur: 0.18 });
+  piano(s, 'Mi4', 0.9, { dur: 0.2 });
+  piano(s, 'Sol4', 1.5, { dur: 1.3 });
+  const { fines } = eventos(s);
+  const d = fines.map((x) => x.duracion);
+  comprobar('Duraciones: corta, corta, larga', fines.length === 3 && d[0] < 320 && d[1] < 320 && d[2] > 1000 && d[2] < 1550,
+    `duraciones ${d.join(' / ')} ms (tocadas: 180 / 200 / 1300)`);
+}
+// 13. Ligado: cada nota empieza antes de soltar la anterior
+{
+  const s = nuevaSenal(2.5); ruido(s, 0.002);
+  ['Do4', 'Re4', 'Mi4'].forEach((n, i) => piano(s, n, 0.3 + i * 0.5, { dur: 0.56 }));
+  const { fines } = eventos(s);
+  comprobar('Ligado Do-Re-Mi', fines.length === 3 && fines[0].ligada && fines[1].ligada && !fines[2].ligada,
+    fines.map((f) => `${f.nota} ${f.duracion} ms${f.ligada ? ' (ligada)' : ''}`).join(' · '));
+}
+// 14. Picado: suelta antes de la siguiente
+{
+  const s = nuevaSenal(2.5); ruido(s, 0.002);
+  ['Do4', 'Re4', 'Mi4'].forEach((n, i) => piano(s, n, 0.3 + i * 0.5, { dur: 0.2 }));
+  const { fines } = eventos(s);
+  comprobar('Picado Do-Re-Mi', fines.length === 3 && fines.every((f) => !f.ligada && f.duracion < 320),
+    fines.map((f) => `${f.nota} ${f.duracion} ms${f.ligada ? ' (ligada)' : ''}`).join(' · '));
+}
+
 console.log(fallos ? `\n${fallos} caso(s) con fallas` : '\nTodo bien');
 process.exit(fallos ? 1 : 0);

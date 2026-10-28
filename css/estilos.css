@@ -897,3 +897,176 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; }
   .camino::before { top: 60px; }
   .pestana span { display: none; }
 }
+
+/* =====================================================================
+   EXPRESIÓN: fuerte y suave, picado, largo y ligado
+   ===================================================================== */
+.expresion { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.exp-objetivo { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.exp-circulo {
+  --color: #ef4444;
+  position: relative;
+  width: clamp(130px, 24vh, 190px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--color);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, .18), inset 0 -10px 0 rgba(0, 0, 0, .12);
+  text-shadow: 0 3px 0 rgba(0, 0, 0, .18);
+  transition: transform .25s;
+}
+.exp-circulo.aparece { animation: aparecer .35s ease; }
+.exp-nombre { font-size: clamp(2.2rem, 6vh, 3.4rem); line-height: 1; }
+.exp-marca { font-size: clamp(1.6rem, 4.5vh, 2.4rem); font-family: Georgia, "Times New Roman", serif; font-style: italic; line-height: 1; }
+.exp-circulo.fuerte { transform: scale(1.12); }
+.exp-circulo.suave { transform: scale(.78); opacity: .85; }
+.exp-circulo[data-art] .exp-marca { font-family: var(--fuente); font-style: normal; }
+.exp-etiqueta { font-weight: 900; font-size: clamp(1.1rem, 2.6vw, 1.5rem); background: #fff; padding: .2em .8em; border-radius: 999px; box-shadow: var(--sombra); }
+.exp-anillo {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  translate: -50% 0;
+  width: calc(clamp(130px, 24vh, 190px) + 24px);
+  height: calc(clamp(130px, 24vh, 190px) + 24px);
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+.exp-anillo circle { fill: none; stroke: #22c55e; stroke-width: 6; stroke-linecap: round; stroke-dasharray: 289; stroke-dashoffset: 289; }
+
+/* Medidor león / ratón */
+.medidor-fuerza { display: flex; align-items: center; gap: 10px; width: min(460px, 86vw); font-size: 2rem; }
+.barra-fuerza {
+  position: relative;
+  flex: 1;
+  height: 22px;
+  border-radius: 11px;
+  background: linear-gradient(90deg, #bae6fd, #fde68a 55%, #fb923c);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, .15);
+}
+.linea-fuerza { position: absolute; top: -6px; bottom: -6px; left: 50%; width: 4px; margin-left: -2px; background: var(--tinta); border-radius: 2px; opacity: .45; }
+.marcador-fuerza {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 30px; height: 30px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: #fff;
+  border: 5px solid var(--primario);
+  transition: left .25s cubic-bezier(.3, 1.5, .6, 1);
+}
+.marcador-fuerza.salta { animation: eco-suena .3s ease; }
+.exp-pista { margin: 0; font-weight: 700; color: var(--tinta-suave); font-size: .95rem; text-align: center; }
+
+.exp-progreso { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.exp-progreso i { width: 18px; height: 18px; border-radius: 50%; background: #e5dccb; transition: transform .2s; }
+.exp-progreso i.actual { background: var(--primario); transform: scale(1.3); }
+.exp-progreso i.hecho { background: var(--exito); }
+.exp-progreso i.mal { background: #fda4af; }
+
+/* Burbujas con marcas de articulación */
+.exp-cancion { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px 6px; max-width: 760px; padding-top: 14px; }
+.exp-burbuja {
+  position: relative;
+  min-width: 46px; height: 46px;
+  padding: 0 6px;
+  border-radius: 23px;
+  background: var(--color);
+  color: #fff;
+  display: grid; place-items: center;
+  font-weight: 900;
+  font-size: .95rem;
+  opacity: .5;
+  transition: transform .15s, opacity .15s;
+}
+.exp-burbuja.actual { opacity: 1; transform: scale(1.2); box-shadow: 0 4px 0 rgba(0, 0, 0, .2); }
+.exp-burbuja.bien { opacity: 1; outline: 4px solid #4ade80; }
+.exp-burbuja.mal { opacity: 1; outline: 4px solid #fb7185; }
+.exp-burbuja.corta::after { content: ""; position: absolute; bottom: -12px; left: 50%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: var(--tinta); }
+.exp-burbuja.larga::after { content: ""; position: absolute; top: -11px; left: 18%; right: 18%; height: 5px; border-radius: 3px; background: var(--tinta); }
+.exp-burbuja.ligada::before {
+  content: "";
+  position: absolute;
+  top: -14px; left: 50%;
+  width: calc(100% + 10px); height: 14px;
+  border: 4px solid var(--tinta);
+  border-bottom: 0;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  opacity: .7;
+}
+.pantalla[data-modo="dinamica"] .zona-objetivo,
+.pantalla[data-modo="articulacion"] .zona-objetivo { gap: 8px; }
+
+/* ---------- Canción con orquesta ---------- */
+.botones-escuchar { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.burbuja.suena { opacity: 1 !important; transform: scale(1.3); box-shadow: 0 0 18px var(--color); }
+.boton-orquesta {
+  margin-top: 6px;
+  background: linear-gradient(90deg, #fde68a, #fbcfe8);
+  font-weight: 900;
+  font-size: clamp(1.05rem, 2.4vw, 1.35rem);
+  padding: .65em 1.3em;
+  border-radius: 999px;
+  box-shadow: 0 5px 0 rgba(180, 83, 9, .3);
+}
+.boton-orquesta:active { transform: translateY(3px); }
+
+/* ---------- Voz de Ranita (para el adulto) ---------- */
+.boton-voz { font-size: 1.05rem; }
+.dialogo-voz { width: min(640px, calc(100% - 24px)); max-height: calc(100% - 32px); }
+.voz-ayuda { margin: 0; color: var(--tinta-suave); line-height: 1.4; }
+.voz-contador { margin: 0; font-weight: 800; color: var(--primario); }
+.voz-lista { display: flex; flex-direction: column; gap: 8px; }
+.voz-lista details { background: #faf5ff; border-radius: 16px; padding: 8px 12px; }
+.voz-lista summary { font-weight: 800; cursor: pointer; padding: 4px 0; }
+.voz-lista summary small { color: var(--tinta-suave); margin-left: .4em; }
+.voz-fila { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid #ede9fe; }
+.voz-texto { flex: 1; font-weight: 600; }
+.voz-fila button { width: 44px; height: 44px; border-radius: 12px; background: #fff; box-shadow: var(--sombra); font-size: 1.1rem; flex: none; }
+.voz-grabar { color: var(--error); font-size: 1.4rem !important; }
+.voz-fila.grabada .voz-texto::before { content: "✓ "; color: var(--exito); font-weight: 900; }
+.voz-fila:not(.grabada) .voz-borrar { visibility: hidden; }
+.voz-fila.grabando { background: #fee2e2; border-radius: 12px; }
+.voz-fila.grabando .voz-grabar { background: var(--error); color: #fff; animation: latido 1s ease-in-out infinite; }
+
+/* ---------- Elección de edad y modo 8+ ---------- */
+.eleccion-edad { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.pregunta-edad { margin: 0; font-size: clamp(1.4rem, 3.4vw, 2rem); font-weight: 900; }
+.botones-edad { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
+.boton-edad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 190px;
+  padding: 18px 22px;
+  border-radius: 28px;
+  background: #fff;
+  font-size: clamp(1.2rem, 2.8vw, 1.6rem);
+  font-weight: 900;
+  box-shadow: 0 7px 0 rgba(91, 33, 182, .3);
+  border: 4px solid #ddd6fe;
+  transition: transform .1s;
+}
+.boton-edad span { font-size: 3.2rem; line-height: 1.1; }
+.boton-edad.grande { background: linear-gradient(160deg, #ede9fe, #c4b5fd); }
+.boton-edad:active { transform: translateY(4px); }
+.fila-modo { flex-wrap: wrap; }
+.fila-modo label { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.fila-modo input { width: 22px; height: 22px; accent-color: var(--primario); }
+
+/* Modo 8+: Ranita más pequeña y textos más sobrios */
+body.grandes .zona-mascota .mascota { width: clamp(80px, 16vh, 120px); height: clamp(80px, 16vh, 120px); }
+body.grandes .globo { font-size: clamp(1rem, 2.2vw, 1.3rem); }
+body.grandes .parada .nombre { font-size: 1rem; }
+body.grandes .rana-aqui { width: 48px; height: 48px; top: -30px; }
+body.grandes .notas-flotantes { opacity: .5; }
+
+/* Ritmo: círculo más chico para que el carril de figuras no choque con el teclado */
+.pantalla[data-modo="ritmo"] .nota-objetivo { width: min(22vh, 30vw, 170px); font-size: clamp(2rem, 5.5vh, 3.2rem); }
+.pantalla[data-modo="ritmo"] .zona-objetivo { gap: 8px; }

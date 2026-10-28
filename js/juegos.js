@@ -3,6 +3,7 @@
 // y devuelve un objeto con: iniciar(), nota(midi), escuchar(), detener().
 import { nombreNota, colorNota, notaAMidi, claseNota } from './notas.js';
 import { pentagramaSVG } from './pentagrama.js';
+import { dinamica, articulacion } from './expresion.js';
 
 const azar = (lista) => lista[Math.floor(Math.random() * lista.length)];
 
@@ -31,6 +32,8 @@ export function crearJuego(leccion, api) {
   if (leccion.tipo === 'atrapa') return atrapaMoscas(leccion, api);
   if (leccion.tipo === 'eco') return eco(leccion, api);
   if (leccion.tipo === 'carrera') return carrera(leccion, api);
+  if (leccion.tipo === 'dinamica') return dinamica(leccion, api);
+  if (leccion.tipo === 'articulacion') return articulacion(leccion, api);
   throw new Error('Juego desconocido: ' + leccion.tipo);
 }
 
@@ -71,7 +74,7 @@ function atrapaMoscas(leccion, api) {
     mosca = { midi, el, progreso: 0, estado: 'vuela', fase: Math.random() * 6 };
     api.iluminarObjetivo(leccion.ayudaVisual ? midi : null);
     api.globo(leccion.mostrarNombre === false ? '¡Atrápala!' : `¡Atrapa ${nombreNota(midi)}!`);
-    if (indice < 2 && leccion.mostrarNombre !== false) api.decir(nombreNota(midi));
+    if (indice < 2 && leccion.mostrarNombre !== false) api.decir(nombreNota(midi), { menor: true });
     ultimo = performance.now();
     requestAnimationFrame(volar);
   }
