@@ -28,6 +28,7 @@ export const MUNDOS = [
   // ───────────────────────── NIVEL 0 ─────────────────────────
   {
     id: 'mundo0',
+    emoji: '🏝️',
     titulo: 'Isla del Do',
     nivel: 0,
     color: '#fecaca',
@@ -48,6 +49,7 @@ export const MUNDOS = [
   // ───────────────────────── NIVEL 1 ─────────────────────────
   {
     id: 'mundo1',
+    emoji: '⛰️',
     titulo: 'Montaña de las 5 notas',
     nivel: 1,
     color: '#bae6fd',
@@ -86,6 +88,7 @@ export const MUNDOS = [
   // ───────────────────────── NIVEL 2 ─────────────────────────
   {
     id: 'mundo2',
+    emoji: '🌳',
     titulo: 'Bosque del Pentagrama',
     nivel: 2,
     color: '#bbf7d0',
@@ -127,6 +130,7 @@ export const MUNDOS = [
   // ───────────────────────── NIVEL 3 ─────────────────────────
   {
     id: 'mundo3',
+    emoji: '🌊',
     titulo: 'Río del Ritmo',
     nivel: 3,
     color: '#a5f3fc',
@@ -174,6 +178,7 @@ export const MUNDOS = [
   // ───────────────────────── NIVEL 4 ─────────────────────────
   {
     id: 'mundo4',
+    emoji: '🌼',
     titulo: 'Valle de las Canciones',
     nivel: 4,
     color: '#fde68a',
@@ -230,6 +235,7 @@ export const MUNDOS = [
   // ───────────────────────── NIVEL 5 ─────────────────────────
   {
     id: 'mundo5',
+    emoji: '🦇',
     titulo: 'Cueva de la Mano Izquierda',
     nivel: 5,
     color: '#ddd6fe',
@@ -272,6 +278,7 @@ export const MUNDOS = [
   // ───────────────────────── NIVEL 6 ─────────────────────────
   {
     id: 'mundo6',
+    emoji: '🏔️',
     titulo: 'Cumbre del Teclado',
     nivel: 6,
     color: '#fbcfe8',
@@ -318,6 +325,7 @@ export const MUNDOS = [
   // ───────────────────────── NIVEL 7 ─────────────────────────
   {
     id: 'mundo7',
+    emoji: '🦢',
     titulo: 'Lago de las Dos Manos',
     nivel: 7,
     color: '#c7d2fe',
@@ -362,9 +370,60 @@ export const MUNDOS = [
   },
 ];
 
+// ───────────────────────── PARQUE DE JUEGOS ─────────────────────────
+// Mini-juegos para practicar lo aprendido. No bloquean el viaje: cada uno se abre
+// cuando se gana al menos una estrella en la lección indicada en "requiere".
+//
+// TIPOS DE JUEGO
+//   atrapa   -> pasan moscas con una nota; al tocarla, Ranita la atrapa con la lengua.
+//               cantidad: moscas · velocidad: ms que tarda una mosca en cruzar
+//   eco      -> Ranita toca unas notas y el niño las repite (oído y memoria).
+//               rondas: cuántas notas tiene cada ronda · soloOido: true = sin colores ni nombres
+//   carrera  -> Ranita corre contra el caracol: cada nota correcta es un salto.
+//               meta: saltos para llegar · tiempo: segundos que tarda el caracol
+export const JUEGOS = [
+  {
+    id: 'j-moscas-1', titulo: 'Atrapa moscas', emoji: '🪰', requiere: 'n1-2',
+    tipo: 'atrapa', notas: ['Do4', 'Re4', 'Mi4'], cantidad: 8, velocidad: 9000, ayudaVisual: true,
+    consejo: 'Cada mosca lleva una nota. Si la toca antes de que llegue al otro lado, Ranita se la come. ¡Sin apuro!',
+  },
+  {
+    id: 'j-eco-1', titulo: 'El eco de Ranita', emoji: '🦜', requiere: 'n1-2',
+    tipo: 'eco', notas: ['Do4', 'Re4', 'Mi4'], rondas: [2, 2, 3, 3, 3],
+    consejo: 'Ranita toca unas notas y el niño las repite igualito. Entrena el oído y la memoria.',
+  },
+  {
+    id: 'j-carrera-1', titulo: 'Carrera con el caracol', emoji: '🐌', requiere: 'n1-4',
+    tipo: 'carrera', notas: CINCO_DERECHA, meta: 10, tiempo: 45, ayudaVisual: false,
+    consejo: 'Cada nota correcta es un salto de Ranita. ¿Le gana al caracol? Mejor despacio y bien que rápido y mal.',
+  },
+  {
+    id: 'j-moscas-2', titulo: 'Moscas de las 5 notas', emoji: '🐸', requiere: 'n1-5',
+    tipo: 'atrapa', notas: CINCO_DERECHA, cantidad: 10, velocidad: 8000, ayudaVisual: false,
+    consejo: 'Ahora con las cinco notas y sin ayuda en la pantalla.',
+  },
+  {
+    id: 'j-eco-2', titulo: 'Eco solo con el oído', emoji: '👂', requiere: 'n2-5',
+    tipo: 'eco', notas: ['Do4', 'Re4', 'Mi4'], rondas: [2, 2, 3, 3, 3], soloOido: true,
+    consejo: 'Ya no se ven los colores: solo se escucha. Puede tocar varias veces hasta encontrar la nota de Ranita.',
+  },
+  {
+    id: 'j-moscas-3', titulo: 'Moscas en el pentagrama', emoji: '🎼', requiere: 'n2-4',
+    tipo: 'atrapa', vista: 'pentagrama', clave: 'sol', colores: false, mostrarNombre: false,
+    notas: CINCO_DERECHA, cantidad: 10, velocidad: 10000, ayudaVisual: false,
+    consejo: 'Las moscas llevan la nota escrita en el pentagrama. Hay que leerla para atraparla.',
+  },
+  {
+    id: 'j-carrera-2', titulo: 'Gran carrera del teclado', emoji: '🏁', requiere: 'n6-2',
+    tipo: 'carrera', notas: ['Do4', 'Re4', 'Mi4', 'Fa4', 'Sol4', 'La4', 'Si4', 'Do5'], meta: 14, tiempo: 50,
+    ayudaVisual: false,
+    consejo: 'Todas las teclas blancas. Que mire la nota y busque con calma.',
+  },
+];
+
 // Todas las lecciones en orden, para saber cuál se desbloquea después de cuál.
 export const LECCIONES = MUNDOS.flatMap((m) => m.lecciones);
 
 export function buscarLeccion(id) {
-  return LECCIONES.find((l) => l.id === id);
+  return LECCIONES.find((l) => l.id === id) || JUEGOS.find((l) => l.id === id);
 }

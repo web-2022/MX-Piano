@@ -6,7 +6,8 @@ import { Detector } from './detector.js';
 import {
   tocarNota, sonidoExito, sonidoFinal, programarNota, programarClic, detenerTodo,
 } from './sonido.js';
-import { MUNDOS, buscarLeccion } from './lecciones.js';
+import { MUNDOS, JUEGOS, buscarLeccion } from './lecciones.js';
+import { crearJuego } from './juegos.js';
 import { pentagramaSVG, figuraSVG } from './pentagrama.js';
 import { cargarAjustes, guardarAjustes, cargarProgreso, guardarProgreso } from './almacen.js';
 
@@ -19,6 +20,7 @@ const estado = {
   ajustes: cargarAjustes(),
   progreso: cargarProgreso(),
   juego: null,
+  pausa: false,   // true mientras está abierta la pregunta de salir
 };
 
 const FRASES_ACIERTO = ['¡Muy bien!', '¡Genial!', '¡Bravo!', '¡Eso es!', '¡Súper!', '¡Lo lograste!'];
@@ -114,13 +116,36 @@ $('#btn-empezar').addEventListener('click', async () => {
   mostrar('pantalla-mapa');
 });
 
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && estado.ctx?.state === 'suspended') estado.ctx.resume();
+document.addEventListener('visibilitychange', async () => {
+  if (document.hidden) return;
+  if (estado.ctx?.state === 'suspended') estado.ctx.resume();
+  // En iPad, al volver a la app el micrófono puede haberse cortado: se vuelve a abrir.
+  if (estado.micListo && estado.detector.necesitaReiniciar()) {
+    try { await estado.detector.iniciar(estado.ctx); } catch { /* se intenta en el próximo toque */ }
+  }
 });
 
 // ================= Mapa =================
 function estrellasDe(id) {
   return estado.progreso.estrellas[id] || 0;
+}
+
+function botonParada(leccion, { bloqueada, siguiente, est }) {
+  const boton = document.createElement('button');
+  boton.className = 'parada';
+  if (leccion.premio) boton.classList.add('premio');
+  if (bloqueada) boton.classList.add('bloqueada');
+  if (siguiente) boton.classList.add('siguiente');
+  if (est > 0) boton.classList.add('hecha');
+  boton.setAttribute('aria-label', bloqueada ? `${leccion.titulo} (bloqueada)` : leccion.titulo);
+  boton.innerHTML = `
+    <span class="piedra">
+      <span class="emoji">${bloqueada ? '🔒' : leccion.emoji}</span>
+      ${siguiente ? '<img class="rana-aqui" src="img/rana.png" alt="">' : ''}
+    </span>
+    <span class="estrellas">${[1, 2, 3].map((n) => `<i class="${n <= est ? 'ganada' : ''}">★</i>`).join('')}</span>
+    <span class="nombre">${leccion.titulo}</span>`;
+  return boton;
 }
 
 function dibujarMapa() {
@@ -129,12 +154,19 @@ function dibujarMapa() {
   let anteriorCompletada = true;
   let siguienteMarcada = false;
   let total = 0;
+  let botonSiguiente = null;
 
   for (const mundo of MUNDOS) {
     const seccion = document.createElement('section');
     seccion.className = 'mundo';
     seccion.style.setProperty('--color-mundo', mundo.color);
-    seccion.innerHTML = `<h2>${mundo.titulo}<small>Nivel ${mundo.nivel}</small></h2>`;
+    const ganadas = mundo.lecciones.reduce((sum, l) => sum + estrellasDe(l.id), 0);
+    seccion.innerHTML = `
+      <header class="mundo-cabecera">
+        <span class="mundo-emoji">${mundo.emoji || '🎵'}</span>
+        <h2>${mundo.titulo}<small>Nivel ${mundo.nivel}</small></h2>
+        <span class="mundo-estrellas">★ ${ganadas}/${mundo.lecciones.length * 3}</span>
+      </header>`;
     const camino = document.createElement('div');
     camino.className = 'camino';
 
@@ -142,20 +174,13 @@ function dibujarMapa() {
       const est = estrellasDe(leccion.id);
       total += est;
       const bloqueada = !anteriorCompletada && !estado.ajustes.desbloquearTodo;
-      const boton = document.createElement('button');
-      boton.className = 'parada';
-      if (leccion.premio) boton.classList.add('premio');
-      if (bloqueada) boton.classList.add('bloqueada');
-      if (!bloqueada && est === 0 && !siguienteMarcada) {
-        boton.classList.add('siguiente');
-        siguienteMarcada = true;
-      }
-      boton.innerHTML = `
-        <span class="emoji">${bloqueada ? '🔒' : leccion.emoji}</span>
-        <span class="nombre">${leccion.titulo}</span>
-        <span class="estrellas">${'⭐'.repeat(est)}${'☆'.repeat(3 - est)}</span>`;
+      const siguiente = !bloqueada && est === 0 && !siguienteMarcada;
+      if (siguiente) siguienteMarcada = true;
+      const boton = botonParada(leccion, { bloqueada, siguiente, est });
+      if (siguiente) botonSiguiente = boton;
       boton.addEventListener('click', () => {
         if (bloqueada) {
+          sacudir(boton);
           decir('Primero termina la lección anterior');
           return;
         }
@@ -167,7 +192,107 @@ function dibujarMapa() {
     seccion.appendChild(camino);
     mapa.appendChild(seccion);
   }
+  for (const juego of JUEGOS) total += estrellasDe(juego.id);
   $('#total-estrellas').textContent = `⭐ ${total}`;
+  dibujarParque();
+
+  // Llevar la vista hasta la próxima lección, para que el niño no tenga que buscarla.
+  if (botonSiguiente && !$('#mapa').classList.contains('oculto')) {
+    requestAnimationFrame(() => botonSiguiente.scrollIntoView({ block: 'center', behavior: 'smooth' }));
+  }
+}
+
+function dibujarParque() {
+  const parque = $('#parque');
+  parque.innerHTML = `<p class="parque-intro">🐸 ¡Juegos para practicar! Se abren a medida que avanzas en el viaje.</p>`;
+  const rejilla = document.createElement('div');
+  rejilla.className = 'rejilla-juegos';
+  let nuevos = 0;
+  for (const juego of JUEGOS) {
+    const est = estrellasDe(juego.id);
+    const abierto = estado.ajustes.desbloquearTodo || estrellasDe(juego.requiere) > 0;
+    if (abierto && est === 0) nuevos++;
+    const req = buscarLeccion(juego.requiere);
+    const tarjeta = document.createElement('button');
+    tarjeta.className = 'tarjeta-juego';
+    if (!abierto) tarjeta.classList.add('bloqueada');
+    tarjeta.innerHTML = `
+      <span class="juego-emoji">${abierto ? juego.emoji : '🔒'}</span>
+      <span class="nombre">${juego.titulo}</span>
+      <span class="estrellas">${[1, 2, 3].map((n) => `<i class="${n <= est ? 'ganada' : ''}">★</i>`).join('')}</span>
+      ${abierto ? '' : `<small>Se abre con: ${req?.titulo || ''}</small>`}`;
+    tarjeta.addEventListener('click', () => {
+      if (!abierto) {
+        sacudir(tarjeta);
+        decir('Este juego se abre más adelante en tu viaje');
+        return;
+      }
+      empezarLeccion(juego.id);
+    });
+    rejilla.appendChild(tarjeta);
+  }
+  parque.appendChild(rejilla);
+  const pestana = $('[data-pestana="parque"]');
+  pestana.dataset.nuevos = nuevos || '';
+}
+
+document.querySelectorAll('.pestana').forEach((p) => {
+  p.addEventListener('click', () => {
+    document.querySelectorAll('.pestana').forEach((x) => x.classList.toggle('activa', x === p));
+    const ver = p.dataset.pestana;
+    $('#mapa').classList.toggle('oculto', ver !== 'mapa');
+    $('#parque').classList.toggle('oculto', ver !== 'parque');
+    if (ver === 'mapa') dibujarMapa();
+  });
+});
+
+// ================= Efectos =================
+function sacudir(el) {
+  if (!el) return;
+  el.classList.remove('sacudir');
+  void el.offsetWidth;
+  el.classList.add('sacudir');
+}
+
+// Estrellitas que salen disparadas desde un elemento (premio de cada acierto).
+function chispas(el) {
+  if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width / 2;
+  const cy = r.top + r.height / 2;
+  const simbolos = ['✦', '★', '✨', '♪'];
+  for (let i = 0; i < 10; i++) {
+    const c = document.createElement('span');
+    c.className = 'chispa';
+    c.textContent = simbolos[i % simbolos.length];
+    const ang = (i / 10) * Math.PI * 2 + Math.random() * 0.4;
+    const dist = 70 + Math.random() * 60;
+    c.style.left = `${cx}px`;
+    c.style.top = `${cy}px`;
+    c.style.setProperty('--dx', `${Math.cos(ang) * dist}px`);
+    c.style.setProperty('--dy', `${Math.sin(ang) * dist}px`);
+    c.style.color = ['#facc15', '#f472b6', '#22c55e', '#38bdf8', '#a855f7'][i % 5];
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 800);
+  }
+}
+
+function confeti() {
+  const cont = $('#confeti');
+  cont.innerHTML = '';
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const colores = ['#f43f5e', '#f97316', '#facc15', '#22c55e', '#06b6d4', '#8b5cf6', '#ec4899'];
+  for (let i = 0; i < 60; i++) {
+    const p = document.createElement('i');
+    p.style.left = `${Math.random() * 100}%`;
+    p.style.background = colores[i % colores.length];
+    p.style.animationDelay = `${Math.random() * 0.8}s`;
+    p.style.animationDuration = `${2.2 + Math.random() * 1.6}s`;
+    p.style.setProperty('--giro', `${(Math.random() * 2 - 1) * 720}deg`);
+    p.style.setProperty('--deriva', `${(Math.random() * 2 - 1) * 80}px`);
+    cont.appendChild(p);
+  }
+  setTimeout(() => { cont.innerHTML = ''; }, 4500);
 }
 
 // ================= Teclado en pantalla =================
@@ -306,8 +431,11 @@ function mostrarObjetivo(midi, indice) {
 }
 
 // ================= Juego =================
+const TIPOS_JUEGO = ['atrapa', 'eco', 'carrera'];
+const esMiniJuego = (l) => TIPOS_JUEGO.includes(l.tipo);
+
 function generarObjetivos(leccion) {
-  if (leccion.tipo === 'ritmo') return [];
+  if (leccion.tipo === 'ritmo' || esMiniJuego(leccion)) return [];
   const notas = leccion.notas.map(notaAMidi);
   if (leccion.tipo === 'cancion') return notas;
   if (leccion.tipo === 'buscar') return Array(leccion.cantidad).fill(notas[0]);
@@ -322,6 +450,7 @@ function generarObjetivos(leccion) {
 
 async function empezarLeccion(id) {
   detenerRitmo();
+  estado.juego?.minijuego?.detener();
   const leccion = buscarLeccion(id);
   estado.juego = {
     leccion,
@@ -334,14 +463,25 @@ async function empezarLeccion(id) {
   };
   const j = estado.juego;
   const esRitmo = leccion.tipo === 'ritmo';
+  const esJuego = esMiniJuego(leccion);
 
+  $('#pantalla-juego').dataset.modo = leccion.tipo;
   $('#juego-titulo').textContent = `${leccion.emoji} ${leccion.titulo}`;
-  $('#btn-escuchar').textContent = esRitmo ? '🔊 Escuchar el ritmo' : '🔊 Escuchar';
+  $('#btn-escuchar').textContent = esRitmo ? '🔊 Escuchar el ritmo' : leccion.tipo === 'eco' ? '🔊 Otra vez' : '🔊 Escuchar';
   $('#pulso').classList.toggle('oculto', !esRitmo);
+  $('#escenario').classList.toggle('oculto', !esJuego);
+  $('#escenario').innerHTML = '';
   dibujarTeclado(leccion.teclado);
+  iluminarObjetivo(null);
   globo('¡Hola!');
 
-  if (esRitmo) {
+  if (esJuego) {
+    $('#progreso-juego').innerHTML = '';
+    $('#progreso-juego').className = 'progreso-juego';
+    $('#nota-objetivo').classList.add('oculto');
+    $('#pentagrama').classList.add('oculto');
+    j.minijuego = crearJuego(leccion, apiJuego(j));
+  } else if (esRitmo) {
     prepararRitmo();
     mostrarObjetivo(j.ritmo.eventos[0].midi, 0);
   } else {
@@ -357,6 +497,11 @@ async function empezarLeccion(id) {
     await new Promise((r) => dlg.addEventListener('close', r, { once: true }));
   }
   if (estado.juego !== j) return;
+
+  if (esJuego) {
+    j.minijuego.iniciar();
+    return;
+  }
 
   if (esRitmo) {
     await decir('Primero escucha. Después te toca a ti.');
@@ -378,6 +523,32 @@ async function empezarLeccion(id) {
   presentarObjetivo();
 }
 
+// Lo que la app ofrece a los mini-juegos (js/juegos.js).
+function apiJuego(j) {
+  const activo = () => estado.juego === j;
+  return {
+    escenario: $('#escenario'),
+    decir: (t) => (activo() ? decir(t) : Promise.resolve()),
+    esperar,
+    globo: (t) => { if (activo()) globo(t); },
+    animarMascota: (c) => { if (activo()) animarMascota(c); },
+    marcarTecla,
+    iluminarObjetivo,
+    mostrarObjetivo: (midi, i) => { if (activo()) mostrarObjetivo(midi, i); },
+    sacudirObjetivo: () => sacudir($('#nota-objetivo')),
+    esAcierto: (tocada, objetivo) => esAcierto(j.leccion, tocada, objetivo),
+    contarError: () => { j.errores++; },
+    chispas,
+    escuchando: () => estado.detector.escuchando,
+    pausado: () => estado.pausa,
+    sonar: (tipo, midi, dur) => {
+      if (!activo()) return 0;
+      return tipo === 'exito' ? sonar(sonidoExito) : sonar(tocarNota, midi, dur);
+    },
+    terminar: (opciones) => { if (activo()) terminarLeccion(opciones); },
+  };
+}
+
 function dibujarProgreso() {
   const j = estado.juego;
   const l = j.leccion;
@@ -392,7 +563,8 @@ function dibujarProgreso() {
       el.textContent = mostrarNombreDe(l) ? nombreNota(m) : '♪';
       if (l.mano === 'ambas' && m < 60) el.classList.add('izq');
     } else {
-      el.className = 'punto';
+      el.className = 'nenufar';
+      if (i === j.indice) el.innerHTML = '<img src="img/rana.png" alt="">';
     }
     if (i < j.indice) el.classList.add('hecho');
     if (i === j.indice) el.classList.add('actual');
@@ -439,11 +611,19 @@ async function presentarObjetivo() {
   if (estado.juego === j) j.esperando = true;
 }
 
-async function alRecibirNota(midi, frecuencia, origen) {
+function objetivoVisible() {
+  return $('#nota-objetivo').classList.contains('oculto') ? $('#pentagrama') : $('#nota-objetivo');
+}
+
+async function alRecibirNota(midi, frecuencia, origen, instante) {
   const j = estado.juego;
-  if (!j || !$('#pantalla-juego').classList.contains('activa')) return;
+  if (!j || estado.pausa || !$('#pantalla-juego').classList.contains('activa')) return;
   if (j.leccion.tipo === 'ritmo') {
-    notaEnRitmo(midi, origen);
+    notaEnRitmo(midi, origen, instante);
+    return;
+  }
+  if (j.minijuego) {
+    j.minijuego.nota(midi, origen);
     return;
   }
   if (!j.esperando) return;
@@ -455,6 +635,7 @@ async function alRecibirNota(midi, frecuencia, origen) {
     j.esperando = false;
     marcarTecla(midi, 'acierto');
     animarMascota('feliz');
+    chispas(objetivoVisible());
     globo(azar(FRASES_ACIERTO));
     j.indice++;
 
@@ -473,6 +654,7 @@ async function alRecibirNota(midi, frecuencia, origen) {
   j.erroresNota++;
   marcarTecla(midi, 'error');
   animarMascota('animo');
+  sacudir(objetivoVisible());
 
   // Nota correcta pero en la octava equivocada (la otra mano).
   const otraMano = claseNota(midi) === claseNota(objetivo);
@@ -511,29 +693,41 @@ function calcularEstrellas(errores, total) {
   return 1;
 }
 
-function terminarLeccion() {
+function totalNotas(j) {
+  const l = j.leccion;
+  if (l.tipo === 'ritmo') return j.ritmo.eventos.filter((e) => e.midi != null).length;
+  if (l.tipo === 'atrapa') return l.cantidad;
+  if (l.tipo === 'eco') return l.rondas.reduce((a, b) => a + b, 0);
+  if (l.tipo === 'carrera') return l.meta;
+  return j.objetivos.length;
+}
+
+// opciones (mini-juegos): { estrellas, titulo, frase }
+function terminarLeccion(opciones = {}) {
   const j = estado.juego;
-  const total = j.leccion.tipo === 'ritmo'
-    ? j.ritmo.eventos.filter((e) => e.midi != null).length
-    : j.objetivos.length;
-  const estrellas = calcularEstrellas(j.errores, total);
+  j.minijuego?.detener();
+  iluminarObjetivo(null);
+  const estrellas = opciones.estrellas ?? calcularEstrellas(j.errores, totalNotas(j));
   const id = j.leccion.id;
   estado.progreso.estrellas[id] = Math.max(estrellasDe(id), estrellas);
   guardarProgreso(estado.progreso);
 
-  $('#resultado-titulo').textContent = estrellas === 3 ? '¡Perfecto!' : estrellas === 2 ? '¡Muy bien!' : '¡Lo lograste!';
+  $('#resultado-titulo').textContent = opciones.titulo
+    || (estrellas === 3 ? '¡Perfecto!' : estrellas === 2 ? '¡Muy bien!' : '¡Lo lograste!');
   $('#resultado-estrellas').innerHTML = [1, 2, 3]
     .map((n, i) => `<span class="${n <= estrellas ? '' : 'apagada'}" style="animation-delay:${i * 0.25}s">⭐</span>`)
     .join('');
   mostrar('pantalla-resultado');
+  confeti();
   sonar(sonidoFinal);
-  decir(estrellas === 3 ? '¡Perfecto! Tres estrellas' : `¡Muy bien! Ganaste ${estrellas} ${estrellas === 1 ? 'estrella' : 'estrellas'}`);
+  const frase = estrellas === 3 ? '¡Perfecto! Tres estrellas' : `¡Muy bien! Ganaste ${estrellas} ${estrellas === 1 ? 'estrella' : 'estrellas'}`;
+  decir(opciones.frase ? `${opciones.frase}. ${frase}` : frase);
 }
 
 // ================= Modo ritmo =================
 const TOLERANCIA_MS = 350;    // qué tan antes o después se acepta una nota
 const PERFECTO_MS = 150;
-const LATENCIA_MIC_MS = 120;  // demora del micrófono en reconocer la nota
+const LATENCIA_MIC_MS = 40;   // demora del micrófono del iPad en entregar el sonido (el golpe ya se mide aparte)
 const CUENTA = 4;             // pulsos de cuenta antes de empezar
 
 function prepararRitmo() {
@@ -696,11 +890,12 @@ function correrRitmo(demo) {
   });
 }
 
-function notaEnRitmo(midi, origen) {
+function notaEnRitmo(midi, origen, instante = performance.now()) {
   const j = estado.juego;
   const r = j.ritmo;
   if (!r?.corriendo || r.demo) return;
-  const momento = performance.now() - (origen === 'mic' ? LATENCIA_MIC_MS : 0);
+  // "instante" es el momento del golpe de la tecla (no cuando terminó de reconocerse).
+  const momento = instante - (origen === 'mic' ? LATENCIA_MIC_MS : 0);
   const t = (momento - r.inicio) / r.beatMs;
 
   // La nota pendiente más cercana en el tiempo
@@ -719,6 +914,7 @@ function notaEnRitmo(midi, origen) {
     estadoBloque(mejor, e.estado);
     marcarTecla(midi, 'acierto');
     animarMascota('feliz');
+    if (e.estado === 'perfecto') chispas($(`#progreso-juego .bloque[data-i="${mejor}"]`));
     globo(e.estado === 'perfecto' ? '¡Justo a tiempo!' : azar(FRASES_ACIERTO));
   } else {
     e.estado = 'fallo';
@@ -730,32 +926,63 @@ function notaEnRitmo(midi, origen) {
   }
 }
 
-estado.detector.onNota = (midi, frecuencia, origen) => alRecibirNota(midi, frecuencia, origen);
+estado.detector.onNota = (midi, frecuencia, origen, instante) => alRecibirNota(midi, frecuencia, origen, instante);
 
-// Medidor del micrófono y texto de diagnóstico
-estado.detector.onNivel = (rms, frecuencia, claridad, midi) => {
-  $('#medidor-nivel').style.width = `${Math.min(100, rms * 600)}%`;
+// Indicador de escucha: el aro de Ranita se pone verde y crece con el sonido del piano;
+// mientras ella habla o suena algo, se pone gris (así el niño sabe que debe esperar).
+let escuchabaAntes = null;
+estado.detector.onNivel = (info) => {
+  const { rms, umbral, frecuencia, claridad, midi, cents, escuchando } = info;
+  const nivel = Math.min(1, rms / (umbral * 8));
+  $('#medidor-nivel').style.width = `${Math.round(nivel * 100)}%`;
+  const pantalla = $('#pantalla-juego');
+  pantalla.style.setProperty('--nivel', nivel.toFixed(3));
+  if (escuchando !== escuchabaAntes) {
+    escuchabaAntes = escuchando;
+    pantalla.classList.toggle('escuchando', escuchando);
+    pantalla.classList.toggle('hablando', !escuchando);
+    $('#oreja').classList.toggle('esperando', !escuchando);
+    $('#oreja-icono').textContent = escuchando ? '👂' : '💬';
+  }
   if (estado.ajustes.mostrarDetector) {
     $('#detector-texto').textContent = midi != null
-      ? `Escucho: ${nombreConOctava(midi)} · ${frecuencia.toFixed(0)} Hz · claridad ${claridad.toFixed(2)}`
-      : `volumen ${rms.toFixed(3)}`;
+      ? `Escucho: ${nombreConOctava(midi)} · ${frecuencia.toFixed(0)} Hz · ${cents >= 0 ? '+' : ''}${cents} cents · claridad ${claridad.toFixed(2)}`
+      : `volumen ${rms.toFixed(3)} · umbral ${umbral.toFixed(3)} · afinación del piano ${info.desvio >= 0 ? '+' : ''}${info.desvio} cents`;
   }
 };
 
 // ================= Botones del juego =================
 function volverAlMapa() {
   detenerRitmo();
+  estado.juego?.minijuego?.detener();
   estado.juego = null;
   if ('speechSynthesis' in window) speechSynthesis.cancel();
   dibujarMapa();
   mostrar('pantalla-mapa');
 }
 
-$('#btn-volver').addEventListener('click', volverAlMapa);
+// Un toque sin querer en 🏠 no debe borrar lo avanzado: se pregunta con dibujos grandes.
+$('#btn-volver').addEventListener('click', () => {
+  const j = estado.juego;
+  const avanzado = j && (j.indice > 0 || j.ritmo?.corriendo || j.minijuego);
+  if (!avanzado) { volverAlMapa(); return; }
+  const dlg = $('#dialogo-salir');
+  dlg.returnValue = '';
+  estado.pausa = true;   // las moscas y el caracol esperan
+  dlg.showModal();
+  dlg.addEventListener('close', () => {
+    estado.pausa = false;
+    if (dlg.returnValue === 'salir') volverAlMapa();
+  }, { once: true });
+});
 
 $('#btn-escuchar').addEventListener('click', async () => {
   const j = estado.juego;
   if (!j) return;
+  if (j.minijuego) {
+    j.minijuego.escuchar();
+    return;
+  }
   if (j.leccion.tipo === 'ritmo') {
     if (j.ritmo.corriendo) return;
     await correrRitmo(true);
@@ -781,7 +1008,38 @@ function aplicarAjustesDetector() {
   if (!estado.ajustes.mostrarDetector) $('#detector-texto').textContent = '';
 }
 
-$('#btn-ajustes').addEventListener('click', () => {
+// Puerta para padres: hay que mantener presionado ⚙️ un segundo y medio.
+// Un toque corto (un niño curioso) solo muestra un aviso.
+const PUERTA_MS = 1500;
+let temporizadorPuerta = null;
+const botonAjustes = $('#btn-ajustes');
+function soltarPuerta() {
+  clearTimeout(temporizadorPuerta);
+  temporizadorPuerta = null;
+  botonAjustes.classList.remove('cargando');
+}
+botonAjustes.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  botonAjustes.classList.add('cargando');
+  temporizadorPuerta = setTimeout(() => {
+    soltarPuerta();
+    abrirAjustes();
+  }, PUERTA_MS);
+});
+botonAjustes.addEventListener('pointerup', () => {
+  if (temporizadorPuerta) {
+    const aviso = $('#ayuda-padres');
+    aviso.classList.add('visible');
+    setTimeout(() => aviso.classList.remove('visible'), 2200);
+  }
+  soltarPuerta();
+});
+botonAjustes.addEventListener('pointerleave', soltarPuerta);
+botonAjustes.addEventListener('pointercancel', soltarPuerta);
+botonAjustes.addEventListener('contextmenu', (e) => e.preventDefault());
+botonAjustes.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') abrirAjustes(); });
+
+function abrirAjustes() {
   const a = estado.ajustes;
   $('#aj-voz').checked = a.voz;
   $('#aj-referencia').checked = a.notaReferencia;
@@ -791,7 +1049,7 @@ $('#btn-ajustes').addEventListener('click', () => {
   $('#aj-sensibilidad').value = a.sensibilidad;
   $('#aj-sens-valor').textContent = a.sensibilidad;
   $('#dialogo-ajustes').showModal();
-});
+}
 
 $('#aj-sensibilidad').addEventListener('input', (e) => {
   $('#aj-sens-valor').textContent = e.target.value;

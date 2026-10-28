@@ -19,6 +19,29 @@ El iPad escucha por el micrófono y reconoce la nota que se tocó.
 Cada lección se desbloquea al terminar la anterior. En ⚙️ el profesor puede
 **desbloquear todas** para saltar a cualquier lección.
 
+## Parque de juegos 🎪
+
+En la pestaña **Juegos** del mapa. No bloquean el viaje: cada juego se abre
+cuando se gana una estrella en la lección que tiene en `requiere`.
+
+| Juego | Qué entrena | Se abre con |
+|---|---|---|
+| 🪰 Atrapa moscas | Reconocer la nota rápido (la mosca se detiene mientras Ranita habla) | Do, Re y Mi |
+| 🦜 El eco de Ranita | Oído y memoria: Ranita toca 2 o 3 notas y el niño las repite | Do, Re y Mi |
+| 🐌 Carrera con el caracol | Fluidez: cada nota correcta es un salto | Las cinco notas |
+| 🐸 Moscas de las 5 notas | Igual que Atrapa moscas, sin ayuda | Oda a la alegría |
+| 👂 Eco solo con el oído | El eco sin colores ni nombres | A la luz de la luna |
+| 🎼 Moscas en el pentagrama | Leer la nota que lleva la mosca | Lectura en blanco y negro |
+| 🏁 Gran carrera del teclado | Las 8 teclas blancas | Todas las teclas blancas |
+
+Para agregar uno, copia un bloque de `JUEGOS` al final de `js/lecciones.js`.
+
+## Para el adulto
+
+- **⚙️ Ajustes:** hay que **mantenerlo presionado** 1,5 segundos (un toque corto de un niño solo muestra un aviso).
+- **🏠 durante una lección:** pregunta "¿Nos vamos?" para que un toque sin querer no borre lo avanzado. Mientras pregunta, las moscas y el caracol esperan.
+- **Aro de Ranita:** verde = te está escuchando (crece con el sonido del piano). Morado punteado = Ranita habla, hay que esperar.
+
 ## Estructura
 
 ```
@@ -29,6 +52,7 @@ pianito/
 │   ├── app.js            Lógica de pantallas y del juego
 │   ├── lecciones.js      ← CONTENIDO: aquí agregas niveles y canciones
 │   ├── detector.js       Escucha el micrófono y avisa cada nota nueva
+│   ├── juegos.js         Mini-juegos: atrapa moscas, eco y carrera
 │   ├── pentagrama.js     Dibuja el pentagrama, las claves y las figuras
 │   ├── tono.js           Algoritmo que calcula la frecuencia (método McLeod)
 │   ├── notas.js          Nombres, colores y frecuencias de las notas
@@ -37,7 +61,9 @@ pianito/
 ├── manifest.webmanifest  Datos para instalarla como app
 ├── sw.js                 Permite usarla sin internet
 ├── img/rana.png          Mascota
-└── icons/
+├── icons/
+└── pruebas/
+    └── prueba-detector.mjs   Prueba el reconocimiento con pianos sintéticos
 ```
 
 ## Abrir y probar en VS Code (PC)
@@ -63,6 +89,24 @@ Safari solo permite el micrófono en páginas **https**. La forma más simple es
 4. En Safari: **Compartir → Agregar a pantalla de inicio**. Queda como app y funciona sin internet.
 
 Cada vez que publiques cambios, sube el número de `VERSION` en `sw.js`.
+
+## Cómo reconoce las notas
+
+1. **Golpe de tecla:** el martillo del piano hace un "clic" agudo cortísimo. La app lo detecta y así sabe que se tocó una tecla nueva, incluso si es **la misma nota repetida** (Mi, Mi, Mi).
+2. **Tono:** calcula la frecuencia (método McLeod) sobre el sonido filtrado, sin graves de ruido ni siseo.
+3. **Estabilidad:** la nota debe quedarse quieta unos 50 ms. La voz y la TV cambian de tono todo el tiempo, por eso no se confunden con el piano.
+4. **Ruido de la casa:** mide solo el ruido de fondo y ajusta el umbral.
+5. **Afinación:** si el piano de casa está un poco desafinado, lo compensa poco a poco (se ve en "Mostrar lo que escucha el micrófono").
+6. Una nota larga que se va apagando **no se cuenta dos veces**.
+
+Para comprobarlo sin micrófono (en la terminal de VS Code):
+
+```
+node pruebas/prueba-detector.mjs
+```
+
+Toca pianos sintéticos (notas sueltas, repetidas, rápidas, desafinadas, graves, suaves con ruido,
+con voz de TV) y dice si reconoció exactamente lo que se tocó.
 
 ## Consejos para que reconozca bien las notas
 
@@ -106,13 +150,13 @@ Para canciones usa solo obras de **dominio público** (tradicionales o clásicas
 
 1. La app toca el ejemplo con clics de metrónomo ("primero escuchar").
 2. Cuenta 1, 2, 3, 4 y el niño toca. Una nota cuenta si llega hasta 0,35 s antes o después del pulso.
-3. El micrófono tarda unos 0,12 s en reconocer una nota; la app ya lo descuenta
-   (`LATENCIA_MIC_MS` en `js/app.js`). Si en tu iPad siempre marca "tarde", súbelo un poco.
+3. La app usa el momento del **golpe de la tecla**, no el momento en que terminó de reconocer la nota,
+   y descuenta la demora del micrófono (`LATENCIA_MIC_MS` en `js/app.js`, 40 ms).
+   Si en tu iPad siempre marca "tarde", súbelo un poco; si marca "antes", bájalo.
 
 ## Lo que sigue
 
-- Mini-juegos (atrapa la nota, eco, carrera).
 - Niveles 9 y 10: corcheas y puntillo; dinámica (fuerte/suave) y legato/staccato.
 - Acompañamiento musical de fondo en las canciones.
 - Voz grabada para Ranita en lugar de la voz del sistema.
-- Puerta para padres en ⚙️ y modo para mayores de 8 años.
+- Modo para mayores de 8 años.

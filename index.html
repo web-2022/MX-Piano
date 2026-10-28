@@ -37,6 +37,7 @@
 
   <!-- INICIO -->
   <section id="pantalla-inicio" class="pantalla activa">
+    <div class="notas-flotantes" aria-hidden="true"><span>♪</span><span>♫</span><span>♩</span><span>♬</span><span>♪</span><span>♫</span></div>
     <div class="inicio-contenido">
       <svg class="marca marca-inicio" role="img" aria-label="MVG"><use href="#marca-mvg"/></svg>
       <img class="mascota grande saltando" src="img/rana.png" alt="">
@@ -57,10 +58,18 @@
       <svg class="marca" role="img" aria-label="MVG"><use href="#marca-mvg"/></svg>
       <div class="barra-derecha">
         <span id="total-estrellas" class="chip">⭐ 0</span>
-        <button id="btn-ajustes" class="boton-icono" aria-label="Ajustes para padres">⚙️</button>
+        <button id="btn-ajustes" class="boton-icono boton-padres" aria-label="Ajustes para padres (mantén presionado)">
+          <span>⚙️</span><svg class="anillo-padres" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17"/></svg>
+        </button>
+        <p id="ayuda-padres" class="ayuda-padres" role="status">Adulto: mantén presionado ⚙️</p>
       </div>
     </header>
+    <nav class="pestanas" role="tablist">
+      <button class="pestana activa" data-pestana="mapa" role="tab">🗺️ <span>Mi viaje</span></button>
+      <button class="pestana" data-pestana="parque" role="tab">🎪 <span>Juegos</span></button>
+    </nav>
     <div id="mapa" class="mapa"></div>
+    <div id="parque" class="mapa parque oculto"></div>
   </section>
 
   <!-- JUEGO -->
@@ -72,8 +81,8 @@
       </div>
       <svg class="marca" role="img" aria-label="MVG"><use href="#marca-mvg"/></svg>
       <div class="barra-derecha">
-        <div class="oreja" title="Micrófono">
-          <span>👂</span>
+        <div id="oreja" class="oreja" title="Micrófono">
+          <span id="oreja-icono">👂</span>
           <div class="medidor"><div id="medidor-nivel"></div></div>
         </div>
       </div>
@@ -81,7 +90,9 @@
 
     <div class="juego-cuerpo">
       <div class="zona-mascota">
-        <img id="mascota-juego" class="mascota" src="img/rana.png" alt="">
+        <div id="aro-escucha" class="aro-escucha">
+          <img id="mascota-juego" class="mascota" src="img/rana.png" alt="">
+        </div>
         <div id="globo" class="globo">¡Hola!</div>
       </div>
 
@@ -92,6 +103,7 @@
           <span id="nota-nombre">Do</span>
           <span id="nota-dedo" class="nota-dedo"></span>
         </div>
+        <div id="escenario" class="escenario oculto"></div>
         <button id="btn-escuchar" class="boton-escuchar">🔊 Escuchar</button>
       </div>
 
@@ -104,6 +116,7 @@
 
   <!-- RESULTADO -->
   <section id="pantalla-resultado" class="pantalla">
+    <div id="confeti" class="confeti" aria-hidden="true"></div>
     <div class="resultado-contenido">
       <img class="mascota grande saltando" src="img/rana.png" alt="">
       <h2 id="resultado-titulo">¡Lo lograste!</h2>
@@ -131,6 +144,18 @@
       </label>
       <button type="button" id="btn-borrar-progreso" class="boton-peligro">Borrar progreso</button>
       <button value="cerrar" class="boton-grande">Listo</button>
+    </form>
+  </dialog>
+
+  <!-- ¿Salir de la lección? (para que un toque sin querer no borre lo avanzado) -->
+  <dialog id="dialogo-salir" class="dialogo dialogo-nino">
+    <form method="dialog">
+      <img class="mascota" src="img/rana.png" alt="">
+      <p class="pregunta-nino">¿Nos vamos?</p>
+      <div class="botones-nino">
+        <button value="seguir" class="boton-grande">🎹 Seguir tocando</button>
+        <button value="salir" class="boton-secundario">🏠 Salir</button>
+      </div>
     </form>
   </dialog>
 
