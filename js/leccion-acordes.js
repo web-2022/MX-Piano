@@ -58,6 +58,11 @@ export function leccionAcordes(leccion, api) {
     puntos.forEach((p, i) => { if (i === indice) p.className = 'actual'; });
     api.iluminarObjetivo(null);
     if (leccion.ayudaVisual !== false) midis.forEach((m) => api.marcarTecla(m, 'objetivo', 1e9));
+    // Con pedal, la app vigila el acorde pedido en vez de depender de oír el golpe.
+    if (api.conPedal?.()) {
+      const i = indice;
+      api.vigilar(midis, () => { if (vivo && indice === i) acierto(); }, { cualquierOctava: !dosManos });
+    }
     if (!conservarGlobo) {
       const izq = midis.filter((m) => m < 60).map(nombreNota).join(' y ');
       const der = midis.filter((m) => m >= 60).map(nombreNota).join(' y ');
@@ -99,14 +104,24 @@ export function leccionAcordes(leccion, api) {
     if (fallos >= 2 && leccion.ayudaVisual === false) lista[indice].midis.forEach((m) => api.marcarTecla(m, 'objetivo', 1e9));
   }
 
+  function pista(resultado) {
+    const texto = textoAcorde(resultado);
+    if (texto) api.globo(texto);
+    api.sacudir(cajaNotas);
+  }
+
   // ── Micrófono ──
   async function comprobarMicrofono(instante) {
     if (ocupado || indice >= lista.length) return;
     ocupado = true;
+    const antes = api.antesDelGolpe?.();
     const i = indice;
     const objetivo = lista[i];
-    await api.esperar(Math.max(0, instante + ESPERA_MS - performance.now()));
-    const opciones = { cualquierOctava: !dosManos };
+    // Con pedal se espera más: si la vigilancia ya oyó el acorde, la lección habrá avanzado.
+    const espera = api.conPedal?.() ? ESPERA_MS + 250 : ESPERA_MS;
+    await api.esperar(Math.max(0, instante + espera - performance.now()));
+    if (indice !== i) { ocupado = false; return; }
+    const opciones = { cualquierOctava: !dosManos, antes };
     let r = vivo && api.escuchando() ? api.verificarAcorde(objetivo.midis, opciones) : null;
     if (r && !r.ok) {
       await api.esperar(SEGUNDA_MS);
@@ -115,6 +130,7 @@ export function leccionAcordes(leccion, api) {
     ocupado = false;
     if (!r || !vivo || indice !== i) return;
     if (r.ok) acierto();
+    else if (api.conPedal?.()) pista(r);   // con pedal: pista sin castigo (puede ser lo que sigue sonando)
     else error(r);
   }
 
@@ -150,6 +166,7 @@ export function leccionAcordes(leccion, api) {
     },
     detener() {
       vivo = false;
+      api.dejarDeVigilar?.();
       limpiarTeclas();
     },
   };

@@ -18,8 +18,9 @@
 //   dedos: [..]                         (dedo de cada nota en canciones, si no es la posición de Do)
 //   posicion: 'Sol4'                    (posición de cinco dedos: el pulgar en esa nota; da los dedos solo)
 //   bemoles: true                       (las teclas negras se llaman Si♭, Mi♭... en vez de La♯, Re♯...)
-//   armadura: 'sol' | 'fa' | 're'       (pentagrama: Fa♯, Si♭ o Fa♯ y Do♯ al inicio)
-//   tonalidad: 'sol' | 'fa'             (acompañamiento con los acordes de esa tonalidad)
+//   armadura: 'sol' | 'fa' | 're' | 'sib'  (pentagrama: Fa♯, Si♭, Fa♯ y Do♯, o Si♭ y Mi♭ al inicio)
+//   tonalidad: 'sol' | 'fa' | 're' | 'sib' | 'lam' | 'rem'  (acompañamiento en esa tonalidad; 'lam' = La menor)
+//   pedal: true                         (lección que se toca con pedal: se juzga lo que acaba de sonar)
 //   sinAcompanamiento: true             (escuchar la canción sin acordes, por ejemplo si está en menor)
 //   pulso: 1.5                          (ritmo: cada cuántas negras suena el clic; 1,5 en 6/8 y 3/8)
 //   tiempos: [..]                       (canciones: duración de cada nota, para "Escuchar la canción"
@@ -1000,6 +1001,290 @@ export const MUNDOS = [
                   ['La3', 'Do5'], ['Re5'], ['Do5'], ['Si4'], ['La4'], ['Sol3', 'Si4'], ['Do5'], ['Si4'], ['La4'], ['Sol4'],
                   ['Re3', 'Fa#4'], ['Sol4'], ['La4'], ['Si4'], ['Sol4'], ['Re3', 'La4']],
         consejo: '¡El gran final de la Etapa 2! El minueto con un bajo sencillo en la izquierda al comienzo de cada compás. Bravo por llegar hasta aquí.',
+      },
+    ],
+  },
+
+  // ═════════════════════════ ETAPA 3 · PIANISTA ═════════════════════════
+
+  // ───────────────────────── NIVEL 21 ─────────────────────────
+  {
+    id: 'mundo21',
+    etapa: '🎹 Etapa 3 · Pianista',
+    emoji: '🔄',
+    titulo: 'Rueda de las Inversiones',
+    nivel: 21,
+    color: '#fbcfe8',
+    lecciones: [
+      {
+        id: 'n21-1', titulo: 'El acorde de Do da la vuelta', emoji: '🔄', ayudaVisual: true,
+        tipo: 'acordes', teclado: [60, 79],
+        acordes: [
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'Do · estado fundamental' },
+          { notas: ['Mi4', 'Sol4', 'Do5'], nombre: 'Do · 1.ª inversión' },
+          { notas: ['Sol4', 'Do5', 'Mi5'], nombre: 'Do · 2.ª inversión' },
+          { notas: ['Mi4', 'Sol4', 'Do5'], nombre: 'Do · 1.ª inversión' },
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'Do · estado fundamental' },
+          { notas: ['Sol4', 'Do5', 'Mi5'], nombre: 'Do · 2.ª inversión' },
+        ],
+        consejo: 'Invertir un acorde es pasar la nota de abajo arriba: Do-Mi-Sol, Mi-Sol-Do, Sol-Do-Mi. Son las mismas tres notas, así que sigue siendo el acorde de Do.',
+      },
+      {
+        id: 'n21-2', titulo: 'Inversiones de Fa y Sol', emoji: '🎡', ayudaVisual: true,
+        tipo: 'acordes', cantidad: 10, teclado: [55, 79],
+        acordes: [
+          { notas: ['Fa4', 'La4', 'Do5'], nombre: 'Fa · fundamental' },
+          { notas: ['La4', 'Do5', 'Fa5'], nombre: 'Fa · 1.ª inversión' },
+          { notas: ['Do4', 'Fa4', 'La4'], nombre: 'Fa · 2.ª inversión' },
+          { notas: ['Sol4', 'Si4', 'Re5'], nombre: 'Sol · fundamental' },
+          { notas: ['Si3', 'Re4', 'Sol4'], nombre: 'Sol · 1.ª inversión' },
+          { notas: ['Re4', 'Sol4', 'Si4'], nombre: 'Sol · 2.ª inversión' },
+        ],
+        consejo: 'Los acordes de Fa y Sol también dan la vuelta. Que diga el nombre de las tres notas antes de tocarlas.',
+      },
+      {
+        id: 'n21-3', titulo: 'Acordes menores', emoji: '🌧️', ayudaVisual: true,
+        tipo: 'acordes', cantidad: 9, teclado: [55, 76],
+        acordes: [
+          { notas: ['La3', 'Do4', 'Mi4'], nombre: 'La menor' },
+          { notas: ['Re4', 'Fa4', 'La4'], nombre: 'Re menor' },
+          { notas: ['Mi4', 'Sol4', 'Si4'], nombre: 'Mi menor' },
+        ],
+        consejo: 'Los acordes menores suenan más tristes o misteriosos. Toquen Do mayor y luego La menor: ¿cuál suena alegre y cuál triste?',
+      },
+      {
+        id: 'n21-4', titulo: 'La progresión mágica', emoji: '✨', ayudaVisual: true,
+        tipo: 'acordes', teclado: [55, 72],
+        acordes: [
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'Do' }, { notas: ['Si3', 'Re4', 'Sol4'], nombre: 'Sol' },
+          { notas: ['Do4', 'Mi4', 'La4'], nombre: 'La menor' }, { notas: ['Do4', 'Fa4', 'La4'], nombre: 'Fa' },
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'Do' }, { notas: ['Si3', 'Re4', 'Sol4'], nombre: 'Sol' },
+          { notas: ['Do4', 'Mi4', 'La4'], nombre: 'La menor' }, { notas: ['Do4', 'Fa4', 'La4'], nombre: 'Fa' },
+        ],
+        consejo: 'Do – Sol – La menor – Fa: con estos cuatro acordes se acompañan miles de canciones. Gracias a las inversiones, la mano casi no se mueve.',
+      },
+      {
+        id: 'n21-5', titulo: 'Los acordes del Canon de Pachelbel', emoji: '🏆', premio: true, mano: 'ambas',
+        tipo: 'acordes', teclado: [41, 72],
+        // Canon en Re de Johann Pachelbel (c. 1680), dominio público. Sus acordes, llevados a Do.
+        acordes: [
+          { notas: ['Do3', 'Mi4', 'Sol4'], nombre: 'Do' }, { notas: ['Si2', 'Re4', 'Sol4'], nombre: 'Sol' },
+          { notas: ['La2', 'Do4', 'Mi4'], nombre: 'La menor' }, { notas: ['Sol2', 'Si3', 'Mi4'], nombre: 'Mi menor' },
+          { notas: ['Fa2', 'La3', 'Do4'], nombre: 'Fa' }, { notas: ['Do3', 'Mi4', 'Sol4'], nombre: 'Do' },
+          { notas: ['La2', 'Do4', 'Fa4'], nombre: 'Fa' }, { notas: ['Si2', 'Re4', 'Sol4'], nombre: 'Sol' },
+          { notas: ['Do3', 'Mi4', 'Sol4'], nombre: 'Do' },
+        ],
+        consejo: 'La izquierda toca el bajo, que baja como una escalera, y la derecha los acordes. Es la progresión del famoso Canon, que suena en casi todas las bodas.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 22 ─────────────────────────
+  {
+    id: 'mundo22',
+    emoji: '🌙',
+    titulo: 'Noche de las Menores',
+    nivel: 22,
+    color: '#c4b5fd',
+    lecciones: [
+      {
+        id: 'n22-1', titulo: 'La posición de La', emoji: '🖐️',
+        tipo: 'aleatorio', notas: ['La4', 'Si4', 'Do5', 'Re5', 'Mi5'], cantidad: 12, ayudaVisual: false,
+        posicion: 'La4', teclado: [60, 79],
+        consejo: 'El pulgar va a La. La = 1, Si = 2, Do = 3, Re = 4, Mi = 5. Es la casa de la tonalidad de La menor.',
+      },
+      {
+        id: 'n22-2', titulo: '¿Alegre o triste?', emoji: '🎭', bemoles: true, ayudaVisual: true,
+        tipo: 'acordes', cantidad: 10, teclado: [57, 76],
+        acordes: [
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'Do mayor 😊' },
+          { notas: ['Do4', 'Mib4', 'Sol4'], nombre: 'Do menor 😢' },
+          { notas: ['La3', 'Do4', 'Mi4'], nombre: 'La menor 😢' },
+          { notas: ['Fa4', 'La4', 'Do5'], nombre: 'Fa mayor 😊' },
+        ],
+        consejo: 'Mayor y menor se diferencian en una sola nota, la del medio: Do-Mi-Sol es alegre y Do-Mi♭-Sol es triste. Que escuche la diferencia con "Escuchar".',
+      },
+      {
+        id: 'n22-3', titulo: 'Escala de La menor', emoji: '🌙',
+        tipo: 'cancion', ayudaVisual: true, teclado: [57, 81], tonalidad: 'lam',
+        notas: ['La4', 'Si4', 'Do5', 'Re5', 'Mi5', 'Fa5', 'Sol5', 'La5', 'Sol5', 'Fa5', 'Mi5', 'Re5', 'Do5', 'Si4', 'La4'],
+        dedos: [1, 2, 3, 1, 2, 3, 4, 5, 4, 3, 2, 1, 3, 2, 1],
+        consejo: 'La menor usa las mismas teclas blancas que Do mayor, pero empieza en La. Por eso se llaman "relativas": son familia.',
+      },
+      {
+        id: 'n22-4', titulo: 'La menor armónica', emoji: '🐫',
+        tipo: 'cancion', ayudaVisual: true, teclado: [57, 81], tonalidad: 'lam',
+        notas: ['La4', 'Si4', 'Do5', 'Re5', 'Mi5', 'Fa5', 'Sol#5', 'La5', 'Sol#5', 'Fa5', 'Mi5', 'Re5', 'Do5', 'Si4', 'La4'],
+        dedos: [1, 2, 3, 1, 2, 3, 4, 5, 4, 3, 2, 1, 3, 2, 1],
+        consejo: 'Ahora el Sol sube a Sol♯. Ese salto entre Fa y Sol♯ le da un sonido de desierto, como de caravana.',
+      },
+      {
+        id: 'n22-5', titulo: 'Greensleeves', emoji: '🏆', premio: true,
+        tipo: 'cancion', ayudaVisual: false, teclado: [60, 79], tonalidad: 'lam', tempo: 120,
+        // "Greensleeves", canción tradicional inglesa (siglo XVI), dominio público.
+        notas: ['La4', 'Do5', 'Re5', 'Mi5', 'Fa5', 'Mi5', 'Re5', 'Si4', 'Sol4', 'La4', 'Si4',
+                'Do5', 'La4', 'La4', 'Sol#4', 'La4', 'Si4', 'Sol#4', 'Mi4',
+                'La4', 'Do5', 'Re5', 'Mi5', 'Fa5', 'Mi5', 'Re5', 'Si4', 'Sol4', 'La4', 'Si4',
+                'Do5', 'Si4', 'La4', 'Sol#4', 'Fa#4', 'Sol#4', 'La4', 'La4'],
+        tiempos: [0.5, 1, 0.5, 0.75, 0.25, 0.5, 1, 0.5, 0.75, 0.25, 0.5,
+                  1, 0.5, 0.75, 0.25, 0.5, 1, 0.5, 1,
+                  0.5, 1, 0.5, 0.75, 0.25, 0.5, 1, 0.5, 0.75, 0.25, 0.5,
+                  0.75, 0.25, 0.5, 0.75, 0.25, 0.5, 1.5, 1.5],
+        consejo: 'Una melodía de hace más de 400 años, en La menor. Tiene Sol♯ y un Fa♯ al final: que los busque antes de empezar.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 23 ─────────────────────────
+  {
+    id: 'mundo23',
+    emoji: '💃',
+    titulo: 'Salón de los Acompañamientos',
+    nivel: 23,
+    color: '#fed7aa',
+    lecciones: [
+      {
+        id: 'n23-1', titulo: 'Vals con la izquierda', emoji: '💃', ayudaVisual: true,
+        tipo: 'acordes', teclado: [41, 67],
+        acordes: [['Do3'], ['Mi3', 'Sol3'], ['Mi3', 'Sol3'], ['Sol2'], ['Si2', 'Fa3'], ['Si2', 'Fa3'],
+                  ['Fa2'], ['La2', 'Do3'], ['La2', 'Do3'], ['Do3'], ['Mi3', 'Sol3'], ['Mi3', 'Sol3']],
+        consejo: 'El vals va en 3: "bajo – acorde – acorde", "UM-pa-pa". El bajo con el meñique y el acorde con los dedos 3 y 1.',
+      },
+      {
+        id: 'n23-2', titulo: 'Arpegio roto', emoji: '🌊', ayudaVisual: true, mano: 'izquierda', registro: true,
+        tipo: 'cancion', teclado: [36, 60], tempo: 110,
+        notas: ['Do3', 'Sol3', 'Do4', 'Sol3', 'La2', 'Mi3', 'La3', 'Mi3', 'Fa2', 'Do3', 'Fa3', 'Do3', 'Sol2', 'Re3', 'Sol3', 'Re3', 'Do3'],
+        tiempos: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2],
+        dedos: [5, 2, 1, 2, 5, 2, 1, 2, 5, 2, 1, 2, 5, 2, 1, 2, 5],
+        consejo: 'Bajo, quinta, octava, quinta: la izquierda dibuja olas. Es el acompañamiento de muchas baladas.',
+      },
+      {
+        id: 'n23-3', titulo: 'El vals de Ranita', emoji: '🐸', mano: 'ambas',
+        tipo: 'acordes', teclado: [41, 72],
+        acordes: [['Do3', 'Mi4'], ['Mi3', 'Sol3'], ['Mi3', 'Sol3'], ['Do3', 'Sol4'], ['Mi3', 'Sol3'], ['Mi3', 'Sol3'],
+                  ['Sol2', 'Fa4'], ['Si2', 'Fa3'], ['Si2', 'Fa3'], ['Do3', 'Mi4'], ['Mi3', 'Sol3'], ['Mi3', 'Sol3'],
+                  ['Fa2', 'La4'], ['La2', 'Do3'], ['La2', 'Do3'], ['Do3', 'Sol4'], ['Mi3', 'Sol3'], ['Mi3', 'Sol3'],
+                  ['Sol2', 'Re4'], ['Si2', 'Fa3'], ['Si2', 'Fa3'], ['Do3', 'Do4']],
+        consejo: 'La derecha toca una nota larga por compás y la mantiene mientras la izquierda hace "UM-pa-pa".',
+      },
+      {
+        id: 'n23-4', titulo: 'Alberti con melodía', emoji: '🎠', mano: 'ambas',
+        tipo: 'acordes', teclado: [48, 72],
+        acordes: [['Do3', 'Mi4'], ['Sol3'], ['Mi3'], ['Sol3'], ['Do3', 'Sol4'], ['Sol3'], ['Mi3'], ['Sol3'],
+                  ['Re3', 'Fa4'], ['Sol3'], ['Fa3'], ['Sol3'], ['Do3', 'Mi4'], ['Sol3'], ['Mi3'], ['Sol3']],
+        consejo: 'El bajo Alberti que ya conoce, ahora con una melodía encima. La derecha baja junto con el primer Do de cada grupo.',
+      },
+      {
+        id: 'n23-5', titulo: 'Sonata fácil de Mozart', emoji: '🏆', premio: true, mano: 'ambas',
+        tipo: 'acordes', teclado: [48, 79],
+        // Sonata en Do mayor K. 545 de W. A. Mozart (1788), dominio público. Primeros dos compases.
+        acordes: [['Do3', 'Do5'], ['Sol3'], ['Mi3'], ['Sol3'], ['Do3', 'Mi5'], ['Sol3'], ['Mi3', 'Sol5'], ['Sol3'],
+                  ['Re3', 'Si4'], ['Sol3'], ['Fa3'], ['Sol3', 'Do5'], ['Re5'], ['Do3', 'Do5'], ['Sol3'], ['Mi3'], ['Sol3']],
+        consejo: 'El comienzo de una de las sonatas más famosas de Mozart. La izquierda no para con su Alberti mientras la derecha canta encima. Primero cada mano por separado.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 24 ─────────────────────────
+  {
+    id: 'mundo24',
+    emoji: '🦶',
+    titulo: 'Taller del Pedal',
+    nivel: 24,
+    color: '#bbf7d0',
+    lecciones: [
+      {
+        id: 'n24-1', titulo: 'Pisar y levantar', emoji: '🦶', pedal: true, ayudaVisual: true,
+        tipo: 'acordes', teclado: [55, 72],
+        acordes: [
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'Do' }, { notas: ['Do4', 'Fa4', 'La4'], nombre: 'Fa' },
+          { notas: ['Si3', 'Re4', 'Sol4'], nombre: 'Sol' }, { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'Do' },
+          { notas: ['Do4', 'Mi4', 'La4'], nombre: 'La menor' }, { notas: ['Do4', 'Fa4', 'La4'], nombre: 'Fa' },
+          { notas: ['Si3', 'Re4', 'Sol4'], nombre: 'Sol' }, { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'Do' },
+        ],
+        consejo: 'El pedal de la derecha hace que las notas sigan sonando. Truco: tocar el acorde, y RECIÉN después levantar y volver a pisar el pedal ("tocar – levantar – pisar"). Así no se mezclan los acordes.',
+      },
+      {
+        id: 'n24-2', titulo: 'Arpegios amplios con pedal', emoji: '🌅', pedal: true, ayudaVisual: true,
+        tipo: 'cancion', teclado: [41, 67], tempo: 120,
+        notas: ['Do3', 'Sol3', 'Do4', 'Mi4', 'Sol4', 'Mi4', 'Do4', 'Sol3',
+                'La2', 'Mi3', 'La3', 'Do4', 'Mi4', 'Do4', 'La3', 'Mi3',
+                'Fa2', 'Do3', 'Fa3', 'La3', 'Do4', 'La3', 'Fa3', 'Do3',
+                'Sol2', 'Re3', 'Sol3', 'Si3', 'Re4', 'Si3', 'Sol3', 'Re3', 'Do3'],
+        tiempos: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+                  0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2],
+        consejo: 'Con pedal, el arpegio suena como un arpa. Se cambia el pedal en la primera nota de cada grupo (la más grave).',
+      },
+      {
+        id: 'n24-3', titulo: 'Canción de cuna de Brahms', emoji: '🌛', pedal: true,
+        tipo: 'cancion', ayudaVisual: false, teclado: [60, 76], tempo: 96,
+        // "Wiegenlied", Johannes Brahms (1868), dominio público.
+        notas: ['Mi4', 'Mi4', 'Sol4', 'Mi4', 'Mi4', 'Sol4',
+                'Mi4', 'Sol4', 'Do5', 'Si4', 'La4', 'La4', 'Sol4',
+                'Re4', 'Mi4', 'Fa4', 'Re4', 'Re4', 'Mi4', 'Fa4',
+                'Re4', 'Fa4', 'Si4', 'La4', 'Sol4', 'Si4', 'Do5'],
+        tiempos: [0.5, 0.5, 2, 0.5, 0.5, 2,
+                  0.5, 0.5, 1, 1.5, 0.5, 1, 1,
+                  0.5, 0.5, 1, 1, 0.5, 0.5, 2,
+                  0.5, 0.5, 0.5, 0.5, 1, 1, 3],
+        consejo: 'Suave y "cantando". El pedal ayuda a que las notas largas se unan. Que imagine que arrulla a un bebé.',
+      },
+      {
+        id: 'n24-4', titulo: 'Preludio en Do de Bach', emoji: '🏆', premio: true, pedal: true,
+        tipo: 'cancion', ayudaVisual: false, teclado: [59, 79], tempo: 60,
+        // Preludio en Do mayor BWV 846, J. S. Bach (1722), dominio público. Primeros cuatro compases.
+        notas: ['Do4', 'Mi4', 'Sol4', 'Do5', 'Mi5', 'Sol4', 'Do5', 'Mi5',
+                'Do4', 'Re4', 'La4', 'Re5', 'Fa5', 'La4', 'Re5', 'Fa5',
+                'Si3', 'Re4', 'Sol4', 'Re5', 'Fa5', 'Sol4', 'Re5', 'Fa5',
+                'Do4', 'Mi4', 'Sol4', 'Do5', 'Mi5', 'Sol4', 'Do5', 'Mi5'],
+        tiempos: Array(31).fill(0.25).concat([1]),
+        consejo: 'Cada compás es un acorde tocado nota por nota. Con pedal, cada compás suena como un arpa. Se cambia el pedal al comenzar cada compás.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 25 ─────────────────────────
+  {
+    id: 'mundo25',
+    emoji: '🗝️',
+    titulo: 'Puerta de las Tonalidades',
+    nivel: 25,
+    color: '#fde68a',
+    lecciones: [
+      {
+        id: 'n25-1', titulo: 'La posición de Re', emoji: '🖐️',
+        tipo: 'aleatorio', notas: ['Re4', 'Mi4', 'Fa#4', 'Sol4', 'La4'], cantidad: 12, ayudaVisual: true,
+        posicion: 'Re4', teclado: [60, 76],
+        consejo: 'El pulgar va a Re. Ojo: el dedo 3 cae en Fa♯, la tecla negra.',
+      },
+      {
+        id: 'n25-2', titulo: 'Escala de Re mayor', emoji: '🪜',
+        tipo: 'cancion', ayudaVisual: true, teclado: [60, 76], tonalidad: 're',
+        notas: ['Re4', 'Mi4', 'Fa#4', 'Sol4', 'La4', 'Si4', 'Do#5', 'Re5', 'Do#5', 'Si4', 'La4', 'Sol4', 'Fa#4', 'Mi4', 'Re4'],
+        dedos: [1, 2, 3, 1, 2, 3, 4, 5, 4, 3, 2, 1, 3, 2, 1],
+        consejo: 'Re mayor tiene dos teclas negras: Fa♯ y Do♯. Los dedos son los mismos que en la escala de Do.',
+      },
+      {
+        id: 'n25-3', titulo: 'Leer en Re mayor', emoji: '🎼',
+        tipo: 'aleatorio', vista: 'pentagrama', clave: 'sol', armadura: 're', colores: false, mostrarNombre: false,
+        notas: ['Re4', 'Mi4', 'Fa#4', 'Sol4', 'La4', 'Si4', 'Do#5', 'Re5'], cantidad: 12, ayudaVisual: false, teclado: [60, 76],
+        consejo: 'Dos sostenidos en la armadura: Fa♯ y Do♯. Todos los Fa y todos los Do se tocan en la tecla negra.',
+      },
+      {
+        id: 'n25-4', titulo: 'Escala de Si♭ mayor', emoji: '🍂', bemoles: true,
+        tipo: 'cancion', ayudaVisual: true, teclado: [57, 72], tonalidad: 'sib',
+        notas: ['Sib3', 'Do4', 'Re4', 'Mib4', 'Fa4', 'Sol4', 'La4', 'Sib4', 'La4', 'Sol4', 'Fa4', 'Mib4', 'Re4', 'Do4', 'Sib3'],
+        dedos: [2, 1, 2, 3, 1, 2, 3, 4, 3, 2, 1, 3, 2, 1, 2],
+        consejo: 'Si♭ mayor tiene dos bemoles: Si♭ y Mi♭. El pulgar siempre cae en Do y en Fa, las teclas blancas.',
+      },
+      {
+        id: 'n25-5', titulo: 'Canon de Pachelbel (melodía)', emoji: '🏆', premio: true,
+        tipo: 'cancion', ayudaVisual: false, teclado: [60, 79], tonalidad: 're', tempo: 60,
+        // Canon en Re de Johann Pachelbel (c. 1680), dominio público. La melodía del comienzo.
+        notas: ['Fa#5', 'Mi5', 'Re5', 'Do#5', 'Si4', 'La4', 'Si4', 'Do#5',
+                'Re5', 'Do#5', 'Si4', 'La4', 'Sol4', 'Fa#4', 'Sol4', 'Mi4', 'Fa#4'],
+        tiempos: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        consejo: 'La melodía del Canon en su tonalidad original, Re mayor. Es la misma progresión de acordes que tocó en la Rueda de las Inversiones.',
       },
     ],
   },

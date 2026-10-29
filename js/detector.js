@@ -308,18 +308,60 @@ export class Detector {
     requestAnimationFrame(tick);
   }
 
+  // ── Vigilancia (modo pedal) ──
+  // Con mucho pedal, algunos golpes se pierden entre lo que sigue sonando. Entonces se vigila
+  // directamente la nota (o acorde) que se espera: unas 20 veces por segundo se compara el
+  // sonido de ahora con el de hace un cuarto de segundo y, si esas notas acaban de aparecer,
+  // se avisa. "alOir" recibe el instante aproximado del golpe.
+  vigilar(esperadas, alOir, { cualquierOctava = false } = {}) {
+    this.vigilancia = { esperadas, alOir, cualquierOctava, guardados: [] };
+  }
+
+  dejarDeVigilar() {
+    this.vigilancia = null;
+  }
+
+  _vigilar(ahora) {
+    const v = this.vigilancia;
+    if (!v || !this.analizadorAcorde) return;
+    if (ahora < this.silenciadoHasta) { v.guardados = []; return; }
+    this.cuadroVigilancia = (this.cuadroVigilancia || 0) + 1;
+    if (this.cuadroVigilancia % 3) return;
+    const b = new Float32Array(this.analizadorAcorde.fftSize);
+    this.analizadorAcorde.getFloatTimeDomainData(b);
+    v.guardados.push({ t: ahora, b });
+    while (v.guardados.length && v.guardados[0].t < ahora - 600) v.guardados.shift();
+    // "Antes": un sonido de hace 250 a 400 ms (que todavía no tenga el golpe nuevo).
+    const antes = [...v.guardados].reverse().find((g) => g.t <= ahora - 250 && g.t >= ahora - 420);
+    if (!antes) return;
+    const opciones = { desvio: this.nucleo.desvio, pedal: true, antes: antes.b, minimo: this.minimoNota() };
+    const desplazamientos = v.cualquierOctava ? [0, -12, 12] : [0];
+    for (const d of desplazamientos) {
+      const r = verificarNotas(b, this.ctx.sampleRate, v.esperadas.map((m) => m + d), opciones);
+      if (r.ok) {
+        const alOir = v.alOir;
+        this.vigilancia = null;
+        alOir(ahora - 200, r);
+        return;
+      }
+    }
+  }
+
   _procesar() {
     this.analizadorTono.getFloatTimeDomainData(this.bufTono);
     this.analizadorCrudo.getFloatTimeDomainData(this.bufCrudo);
     const ahora = performance.now();
     const info = this.nucleo.procesar(this.bufTono, this.bufCrudo, this.ctx.sampleRate, ahora, ahora < this.silenciadoHasta);
     this.onNivel?.(info);
+    this._vigilar(ahora);
     // Primero el fin de la nota anterior y después la nueva (importa en el ligado).
     if (info.ataque != null && info.escuchando) {
       // Sonido justo antes del golpe (para el modo pedal: saber qué es nuevo).
-      if (this.analizadorAcorde) {
-        this.bufAntes = this.bufAntes || new Float32Array(this.analizadorAcorde.fftSize);
+      // Cada golpe guarda su propia copia; un segundo aviso del mismo golpe (< 150 ms) no la pisa.
+      if (this.analizadorAcorde && !(ahora - (this.tAntes || -1e9) < 150)) {
+        this.bufAntes = new Float32Array(this.analizadorAcorde.fftSize);
         this.analizadorAcorde.getFloatTimeDomainData(this.bufAntes);
+        this.tAntes = ahora;
       }
       this.onAtaque?.(info.ataque);
     }
@@ -330,10 +372,17 @@ export class Detector {
   // ¿Están sonando estas notas ahora? (para acordes). Prueba también una octava
   // arriba y abajo si se permite, porque el niño puede tocar el acorde en otro Do.
   // pedal: no busca teclas de más y exige que cada nota "acabe de sonar" (comparando con antes del golpe).
-  verificarAcorde(esperadas, { cualquierOctava = false, pedal = false } = {}) {
+  // antes: la copia del sonido previo a ESE golpe (por defecto, la del último golpe).
+  // Piso de energía para una nota: una senoide de amplitud A da ~A²/16; se pide la mitad del umbral.
+  minimoNota() {
+    const u = this.nucleo.umbralEfectivo();
+    return (u * u) / 32;
+  }
+
+  verificarAcorde(esperadas, { cualquierOctava = false, pedal = false, antes = this.bufAntes } = {}) {
     if (!this.analizadorAcorde) return { ok: false, faltan: esperadas, sobran: [], detalle: {} };
     this.analizadorAcorde.getFloatTimeDomainData(this.bufAcorde);
-    const opciones = { desvio: this.nucleo.desvio, pedal: pedal && !!this.bufAntes, antes: this.bufAntes };
+    const opciones = { desvio: this.nucleo.desvio, pedal: pedal && !!antes, antes, minimo: this.minimoNota() };
     const base = verificarNotas(this.bufAcorde, this.ctx.sampleRate, esperadas, opciones);
     if (base.ok || !cualquierOctava) return base;
     for (const d of [-12, 12]) {

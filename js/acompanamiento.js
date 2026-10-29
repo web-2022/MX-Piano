@@ -3,19 +3,28 @@
 import { claseNota, notaAMidi } from './notas.js';
 import { programarNota } from './sonido.js';
 
-const ACORDES = {
+const MAYOR = {
   I: [0, 4, 7],        // Do mayor: Do Mi Sol
   IV: [5, 9, 0],       // Fa mayor: Fa La Do
   V: [7, 11, 2, 5],    // Sol 7: Sol Si Re Fa
 };
+// Tonalidad menor (desde la tónica): i menor, iv menor y V7 con la sensible (La m: La Do Mi, Re Fa La, Mi Sol♯ Si Re)
+const MENOR = {
+  I: [0, 3, 7],
+  IV: [5, 8, 0],
+  V: [7, 11, 2, 5],
+};
+let ACORDES = MAYOR;
 
 // Elige un acorde para cada nota: mantiene el anterior si la nota cabe en él,
 // deja pasar las notas cortas de tiempo débil (notas de paso) sin cambiar de acorde,
 // y empieza y termina en Do (la "casa" de la canción).
 // eventos: [{ midi, tiempos }]
 // Tonalidad de la lección: los acordes se trasladan (en Sol: Sol, Do y Re; en Fa: Fa, Si♭ y Do).
-const TONICAS = { do: 0, sol: 7, fa: 5, re: 2 };
+// Mayores: do, sol, fa, re, sib. Menores: lam (La menor), rem (Re menor).
+const TONICAS = { do: 0, sol: 7, fa: 5, re: 2, sib: 10, lam: 9, rem: 2 };
 export const tonicaDe = (leccion) => TONICAS[leccion?.tonalidad] ?? 0;
+const esMenor = (leccion) => /m$/.test(leccion?.tonalidad || '');
 
 export function armonizar(eventos, tonica = 0) {
   let anterior = null;
@@ -71,6 +80,7 @@ export function programarCancion(ctx, leccion, nodos, { acompanar = true, tempo 
   const beat = 60 / bpm;
   const inicio = ctx.currentTime + 0.15;
   const tonica = tonicaDe(leccion);
+  ACORDES = esMenor(leccion) ? MENOR : MAYOR;
   const acordes = armonizar(eventos, tonica);
   const midis = eventos.filter((e) => e.midi != null).map((e) => e.midi);
   const grave = Math.min(...midis) < 60;
@@ -125,6 +135,7 @@ export function programarCancion(ctx, leccion, nodos, { acompanar = true, tempo 
 export function acordeEnVivo(ctx, leccion, indice, nodos) {
   const eventos = melodiaDe(leccion);
   const tonica = tonicaDe(leccion);
+  ACORDES = esMenor(leccion) ? MENOR : MAYOR;
   const acordes = armonizar(eventos, tonica);
   const nombre = acordes[indice];
   if (!nombre) return;

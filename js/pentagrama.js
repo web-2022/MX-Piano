@@ -26,6 +26,7 @@ const ARMADURAS = {
   sol: { clases: [6], signo: 'sostenido', notas: { sol: 77, fa: 53 } },   // Fa♯ (5.ª línea / 4.ª línea)
   re: { clases: [6, 1], signo: 'sostenido', notas: { sol: 77, fa: 53 }, segunda: { sol: 72, fa: 48 } },
   fa: { clases: [10], signo: 'bemol', notas: { sol: 71, fa: 47 } },      // Si♭ (3.ª línea / 2.ª línea)
+  sib: { clases: [10, 3], signo: 'bemol', notas: { sol: 71, fa: 47 }, segunda: { sol: 76, fa: 52 } }, // Si♭ y Mi♭
 };
 
 const BEMOL = (x, y) => `<text x="${x}" y="${y + 9}" font-size="34" font-family="'Noto Music', 'Bravura Text', serif" fill="#1e1b4b">♭</text>`;
@@ -45,7 +46,7 @@ function posicionDiatonica(midi, clave) {
   return (Math.floor(midi / 12) - 1) * 7 + paso - base;
 }
 
-// armadura: 'sol' (Fa♯), 're' (Fa♯ y Do♯) o 'fa' (Si♭). Las notas de la armadura no repiten la alteración.
+// armadura: 'sol' (Fa♯), 're' (Fa♯ y Do♯), 'fa' (Si♭) o 'sib' (Si♭ y Mi♭). Las notas de la armadura no repiten la alteración.
 export function pentagramaSVG(midi, { clave = 'sol', colores = true, mostrarNombre = false, armadura = null } = {}) {
   const lineas = [0, 2, 4, 6, 8]
     .map((p) => `<line x1="10" x2="${ANCHO - 10}" y1="${yDe(p)}" y2="${yDe(p)}" stroke="#1e1b4b" stroke-width="2"/>`)

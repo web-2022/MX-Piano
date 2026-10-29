@@ -652,6 +652,7 @@ async function empezarLeccion(id) {
   detenerRitmo();
   estado.juego?.minijuego?.detener();
   const leccion = buscarLeccion(id);
+  estado.detector.dejarDeVigilar();
   usarBemoles(leccion.bemoles); // Si♭ en vez de La♯ en las lecciones con bemoles
   estado.juego = {
     leccion,
@@ -744,7 +745,11 @@ function apiJuego(j) {
     sacudir,
     memoria: estado.memoria,
     esPantalla: () => !!estado.ajustes.tecladoPantalla,
-    verificarAcorde: (esperadas, opciones) => estado.detector.verificarAcorde(esperadas, { ...opciones, pedal: !!estado.ajustes.pedal }),
+    verificarAcorde: (esperadas, opciones) => estado.detector.verificarAcorde(esperadas, { ...opciones, pedal: conPedal(j) }),
+    conPedal: () => conPedal(j) && estado.micListo && !estado.ajustes.tecladoPantalla,
+    vigilar: (esperadas, alOir, opciones) => { if (activo()) estado.detector.vigilar(esperadas, alOir, opciones); },
+    dejarDeVigilar: () => estado.detector.dejarDeVigilar(),
+    antesDelGolpe: () => estado.detector.bufAntes,
     esAcierto: (tocada, objetivo) => esAcierto(j.leccion, tocada, objetivo),
     contarError: () => { j.errores++; },
     chispas,
@@ -817,7 +822,21 @@ async function presentarObjetivo() {
     globo(vistaDe(l) === 'pentagrama' ? '¡Lee la canción!' : '¡Sigue la canción!');
   }
 
-  if (estado.juego === j) j.esperando = true;
+  if (estado.juego === j) {
+    j.esperando = true;
+    vigilarConPedal(j);
+  }
+}
+
+// Modo pedal: la app vigila la nota pedida (no depende de oír el golpe).
+function vigilarConPedal(j) {
+  if (!usaPedal(j, 'mic') || !estado.micListo) return;
+  const indice = j.indice;
+  const objetivo = j.objetivos[indice];
+  const l = j.leccion;
+  estado.detector.vigilar([objetivo], (instante) => {
+    if (estado.juego === j && j.esperando && j.indice === indice) alRecibirNota(objetivo, 0, 'mic', instante);
+  }, { cualquierOctava: !l.registro && !l.octavaEstricta });
 }
 
 function objetivoVisible() {
@@ -1167,7 +1186,9 @@ function notaEnRitmo(midi, origen, instante = performance.now()) {
 // Modo pedal en canciones y notas sueltas: el detector de una nota se confunde con lo que sigue
 // sonando, así que se usa la comprobación por golpe (la nota pedida acaba de sonar).
 const TIPOS_PEDAL = ['cancion', 'aleatorio', 'buscar'];
-const usaPedal = (j, origen) => estado.ajustes.pedal && origen === 'mic' && !j?.minijuego && TIPOS_PEDAL.includes(j?.leccion.tipo);
+// pedal: el ajuste de ⚙️, o una lección que se toca con pedal (opción "pedal: true").
+const conPedal = (j) => !!(estado.ajustes.pedal || j?.leccion?.pedal);
+const usaPedal = (j, origen) => conPedal(j) && origen === 'mic' && !j?.minijuego && TIPOS_PEDAL.includes(j?.leccion.tipo);
 
 estado.detector.onNota = (midi, frecuencia, origen, instante, fuerza) => {
   if (usaPedal(estado.juego, origen)) return;
@@ -1178,26 +1199,27 @@ let comprobandoPedal = false;
 async function ataqueConPedal(j, instante) {
   if (comprobandoPedal || !j.esperando) return;
   comprobandoPedal = true;
+  const antes = estado.detector.bufAntes; // la copia de antes de ESTE golpe
   const indice = j.indice;
   const objetivo = j.objetivos[indice];
-  await esperar(Math.max(0, instante + 220 - performance.now()));
+  // Se espera un poco más: si la vigilancia oye la nota, ya habrá avanzado.
+  await esperar(Math.max(0, instante + 450 - performance.now()));
   const l = j.leccion;
   const r = estado.juego === j && j.esperando && j.indice === indice && estado.detector.escuchando
-    ? estado.detector.verificarAcorde([objetivo], { cualquierOctava: !l.registro && !l.octavaEstricta, pedal: true })
+    ? estado.detector.verificarAcorde([objetivo], { cualquierOctava: !l.registro && !l.octavaEstricta, pedal: true, antes })
     : null;
   comprobandoPedal = false;
   if (!r) return;
   if (r.ok) {
-    alRecibirNota(objetivo, 0, 'mic', instante);
+    if (j.esperando && j.indice === indice) alRecibirNota(objetivo, 0, 'mic', instante);
     return;
   }
-  // No se sabe qué tecla fue, solo que no fue la pedida.
-  j.errores++;
+  // Con pedal no se puede saber con seguridad qué tecla fue: se da una pista, sin contar error.
   j.erroresNota++;
-  animarMascota('animo');
   sacudir(objetivoVisible());
-  globo(`¡Casi! Busca ${nombreNota(objetivo)}`);
+  globo(`Busca ${nombreNota(objetivo)}`);
   if (j.erroresNota >= 3) iluminarObjetivo(objetivo);
+  if (!estado.detector.vigilancia) vigilarConPedal(j);
 }
 
 // Ataque (empezó a sonar algo): lo usan las lecciones de acordes para comprobar las notas juntas.
@@ -1259,6 +1281,7 @@ estado.detector.onNivel = (info) => {
 
 // ================= Botones del juego =================
 function volverAlMapa() {
+  estado.detector.dejarDeVigilar();
   usarBemoles(false);
   detenerRitmo();
   pararCancion();

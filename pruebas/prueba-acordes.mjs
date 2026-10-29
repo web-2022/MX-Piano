@@ -95,5 +95,30 @@ conPedal('Error con pedal: pide Mi, toca Fa', ['Do4', 'Re4', 'Fa4'], 'Mi4', fals
 conPedal('Error con pedal: pide Re, no vuelve a tocar (sigue sonando)', ['Re4', 'Sol4'], 'Re4', false);
 conPedal('Error con pedal: acorde incompleto', ['Do3', ['Do4', 'Sol4']], ['Do4', 'Mi4', 'Sol4'], false);
 
+// ───── Piso de ruido ─────
+console.log('— Ruido sin notas (con piso de energía) —');
+for (const [nombre, pedal] of [['Solo ruido, modo normal', false], ['Solo ruido, modo pedal', true]]) {
+  let aceptadas = 0;
+  for (let k = 0; k < 20; k++) {
+    const s = nuevaSenal(1); ruido(s, 0.004);
+    const f = filtrar(s);
+    const r = verificarNotas(f.subarray(f.length - N), SR, [notaAMidi('Do4')],
+      { pedal, antes: f.subarray(0, N), minimo: (0.012 * 0.012) / 32 });
+    if (r.ok) aceptadas++;
+  }
+  const bien = aceptadas === 0;
+  if (!bien) fallos++;
+  console.log(`${bien ? '✅' : '❌'} ${nombre}: ${aceptadas} de 20 intentos aceptaron una nota que no sonó`);
+}
+{
+  const s = nuevaSenal(1.2); ruido(s, 0.004);
+  piano(s, 'Do4', 0.3, { vol: 0.05, dur: 0.8 });
+  const f = filtrar(s);
+  const fin = Math.floor(0.52 * SR);
+  const r = verificarNotas(f.subarray(fin - N, fin), SR, [notaAMidi('Do4')], { minimo: (0.012 * 0.012) / 32 });
+  if (!r.ok) fallos++;
+  console.log(`${r.ok ? '✅' : '❌'} Nota suave sobre el piso: ${r.ok ? 'correcto' : textoAcorde(r)}`);
+}
+
 console.log(fallos ? `\n${fallos} caso(s) con fallas` : '\nTodo bien');
 process.exit(fallos ? 1 : 0);

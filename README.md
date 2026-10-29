@@ -29,6 +29,12 @@ El iPad escucha por el micrófono y reconoce la nota que se tocó.
 | 18 | Barca del Seis por Ocho | Compás de 6/8, "Rema, rema tu barquito" |
 | 19 | Ola del Crescendo | Crescendo, diminuendo y matices |
 | 20 | Gran Teatro | Minueto en Sol (Petzold), Para Elisa (Beethoven), Minueto a dos manos |
+| | **Etapa 3 · Pianista** | |
+| 21 | Rueda de las Inversiones | Inversiones, acordes menores, progresión Do–Sol–La m–Fa, acordes del Canon de Pachelbel |
+| 22 | Noche de las Menores | Mayor y menor, escala de La menor (natural y armónica), Greensleeves |
+| 23 | Salón de los Acompañamientos | Vals, arpegio roto, melodía con vals, Alberti con melodía, Sonata fácil de Mozart (K. 545) |
+| 24 | Taller del Pedal | Cambio de pedal, arpegios amplios, Canción de cuna de Brahms, Preludio en Do de Bach |
+| 25 | Puerta de las Tonalidades | Re mayor (posición, escala, lectura), escala de Si♭ mayor, Canon de Pachelbel |
 
 Cada lección se desbloquea al terminar la anterior. En ⚙️ el profesor puede
 **desbloquear todas** para saltar a cualquier lección.
@@ -47,10 +53,11 @@ Cada lección se desbloquea al terminar la anterior. En ⚙️ el profesor puede
 
 - **Velocidad:** en las lecciones con metrónomo hay tres botones: 🐢 Lento (50 %), 🚶 Medio (75 %) y 🏃 Normal.
   Sirve para aprender piezas difíciles de a poco.
-- **Practico con pedal** (en ⚙️): con pedal siguen sonando las notas anteriores y el micrófono podría
-  creer que hay teclas de más. En este modo la app no mira lo que *sigue sonando*, sino lo que *acaba
-  de sonar*: cada nota pedida tiene que aparecer con el golpe (sus armónicos agudos suben), y lo nuevo
-  no puede venir de una tecla vecina. Funciona en canciones, notas sueltas, acordes y dos manos.
+- **Practico con pedal** (en ⚙️, y siempre en las lecciones con `pedal: true`): con pedal siguen sonando
+  las notas anteriores. En este modo la app **vigila la nota pedida** unas 20 veces por segundo y la da
+  por tocada cuando *acaba de sonar* (sus armónicos propios suben frente a un cuarto de segundo antes, por
+  encima del ruido, y lo nuevo no viene de una tecla vecina). Si un golpe no coincide, da una pista sin
+  contar error: con pedal no se puede saber con seguridad qué tecla fue.
 - Probado con pianos sintéticos con pedal (`node pruebas/prueba-acordes.mjs`, sección "Con pedal").
 
 ## Partituras (MusicXML) 📄

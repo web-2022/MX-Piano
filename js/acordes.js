@@ -59,7 +59,8 @@ function energiaNota(buf, w, sampleRate, midi, desvio, excluir = null, agudos = 
 //   pedal + antes: modo pedal. "antes" es el sonido justo antes del golpe. Con pedal siguen
 //   sonando las notas anteriores, así que no se buscan teclas de más: se comprueba que cada
 //   nota pedida "acaba de sonar" (su energía subió con el golpe) o que destaca sobre sus vecinas.
-export function verificarNotas(buf, sampleRate, esperadas, { desvio = 0, pedal = false, antes = null } = {}) {
+//   minimo: energía mínima de cada nota (piso de ruido). Sin esto, el puro ruido podría "parecer" una nota.
+export function verificarNotas(buf, sampleRate, esperadas, { desvio = 0, pedal = false, antes = null, minimo = 0 } = {}) {
   const w = hann(buf.length);
   const cache = new Map();
   const E = (m) => {
@@ -78,6 +79,7 @@ export function verificarNotas(buf, sampleRate, esperadas, { desvio = 0, pedal =
     const contraste = e / Math.max(1e-12, ...vecinas);
     const relativa = e / Math.max(1e-12, maximo);
     detalle[m] = { contraste: +contraste.toFixed(1), relativa: +relativa.toFixed(3) };
+    if (e < minimo) { faltan.push(m); detalle[m].debil = true; continue; }
     if (pedal && antes) {
       // Energía nueva (lo que apareció con el golpe) de la nota y de sus vecinas.
       // Solo armónicos propios: los que comparte con otra nota pedida (una quinta, una octava)
