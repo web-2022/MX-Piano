@@ -28,6 +28,10 @@
 //   articulacion -> cómo se toca: 'corta' (picado, salta), 'larga' (mantener) o 'ligada'
 //                   (la siguiente nota empieza antes de soltar esta). "notas" + "cantidad" + "modo"
 //                   ('corta' | 'larga' | 'mezcla'), o "secuencia": [['Do4', 'ligada'], ...]
+//   acordes      -> varias notas al mismo tiempo (una mano o las dos). "acordes" es la lista:
+//                   [['Do4', 'Mi4'], { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'Do mayor' }, ...]
+//                   Con "cantidad", se eligen al azar de la lista; sin ella, van en orden.
+//                   Una mano: vale en cualquier octava. Con mano: 'ambas', cada nota en su lugar.
 //
 // Notas: 'Do4' = Do central. Sostenido: 'Fa#4'. En ritmo, null = silencio.
 // Duración en ritmo: 1 = negra, 2 = blanca, 4 = redonda.
@@ -516,6 +520,57 @@ export const MUNDOS = [
                     ['Do4', 'corta'], ['Do4', 'corta'], ['Re4', 'corta'], ['Mi4', 'corta'],
                     ['Mi4', 'ligada'], ['Re4', 'ligada'], ['Re4', 'larga']],
         consejo: 'La Oda a la alegría con picado y ligado. Arcos = ligado, puntitos = picado. ¡El gran final del Charco Saltarín!',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 11 ─────────────────────────
+  {
+    id: 'mundo11',
+    emoji: '🗼',
+    titulo: 'Torre de los Acordes',
+    nivel: 11,
+    color: '#e9d5ff',
+    lecciones: [
+      {
+        id: 'n11-1', titulo: 'Dos notas juntas', emoji: '🤝',
+        tipo: 'acordes', acordes: [['Do4', 'Mi4'], ['Do4', 'Mi4'], ['Re4', 'Fa4'], ['Re4', 'Fa4'], ['Mi4', 'Sol4'], ['Mi4', 'Sol4']],
+        consejo: 'Dos dedos bajan al mismo tiempo, como si saltaran juntos. Do y Mi: dedos 1 y 3. Re y Fa: dedos 2 y 4. Mi y Sol: dedos 3 y 5.',
+      },
+      {
+        id: 'n11-2', titulo: 'Terceras y quintas', emoji: '🪜',
+        tipo: 'acordes', cantidad: 8,
+        acordes: [['Do4', 'Mi4'], ['Re4', 'Fa4'], ['Mi4', 'Sol4'], ['Do4', 'Sol4']],
+        consejo: 'Una tercera salta una tecla (Do-Mi). Una quinta abre toda la mano, del pulgar al meñique (Do-Sol).',
+      },
+      {
+        id: 'n11-3', titulo: 'El acorde de Do', emoji: '🏠',
+        tipo: 'acordes', acordes: Array(6).fill({ notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'Do mayor' }),
+        consejo: 'Tres notas juntas forman un acorde. Dedos 1, 3 y 5 bajan a la vez. Que los dedos estén curvos, como sosteniendo una pelotita.',
+      },
+      {
+        id: 'n11-4', titulo: 'Los acordes Do, Fa y Sol', emoji: '🎢', ayudaVisual: true, teclado: [55, 72],
+        tipo: 'acordes', cantidad: 9,
+        acordes: [
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'Do mayor' },
+          { notas: ['Do4', 'Fa4', 'La4'], nombre: 'Fa mayor' },
+          { notas: ['Si3', 'Re4', 'Sol4'], nombre: 'Sol mayor' },
+        ],
+        consejo: 'Con estos tres acordes se acompañan cientos de canciones. Para Fa, el pulgar se queda en Do y los otros dedos suben. Para Sol, el pulgar baja a Si.',
+      },
+      {
+        id: 'n11-5', mano: 'ambas', titulo: 'Las dos manos juntas', emoji: '🤲', teclado: [48, 72],
+        tipo: 'acordes',
+        acordes: [['Do3', 'Do4'], ['Do3', 'Mi4'], ['Do3', 'Sol4'], ['Sol3', 'Sol4'], ['Sol3', 'Re4'], ['Do3', 'Do4']],
+        consejo: 'La mano izquierda toca su nota y la derecha la suya, al mismo tiempo. Pueden contar "una, dos, ¡ya!" para bajar juntas.',
+      },
+      {
+        id: 'n11-6', mano: 'ambas', titulo: 'Estrellita con bajo', emoji: '🌟', premio: true, teclado: [48, 72],
+        tipo: 'acordes',
+        // "Ah, vous dirai-je, maman", canción tradicional (dominio público). La izquierda pone el bajo.
+        acordes: [['Do3', 'Do4'], ['Do4'], ['Sol4'], ['Sol4'], ['Fa3', 'La4'], ['La4'], ['Do3', 'Sol4'],
+                  ['Fa3', 'Fa4'], ['Fa4'], ['Do3', 'Mi4'], ['Mi4'], ['Sol3', 'Re4'], ['Re4'], ['Do3', 'Do4']],
+        consejo: 'La derecha toca la melodía y, en algunas notas, la izquierda toca a la vez un bajo. ¡Suena como una orquesta!',
       },
     ],
   },

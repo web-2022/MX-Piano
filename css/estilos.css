@@ -1070,3 +1070,39 @@ body.grandes .notas-flotantes { opacity: .5; }
 /* Ritmo: círculo más chico para que el carril de figuras no choque con el teclado */
 .pantalla[data-modo="ritmo"] .nota-objetivo { width: min(22vh, 30vw, 170px); font-size: clamp(2rem, 5.5vh, 3.2rem); }
 .pantalla[data-modo="ritmo"] .zona-objetivo { gap: 8px; }
+
+/* =====================================================================
+   ACORDES Y DOS MANOS
+   ===================================================================== */
+.acorde { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.acorde-nombre { font-weight: 900; font-size: clamp(1.3rem, 3vw, 1.8rem); color: var(--primario); min-height: 1.2em; }
+.acorde-notas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 22px;
+  background: #fff;
+  border-radius: 30px;
+  box-shadow: var(--sombra);
+}
+.acorde-notas.aparece { animation: aparecer .35s ease; }
+.acorde-nota {
+  position: relative;
+  min-width: clamp(110px, 18vh, 150px);
+  height: clamp(50px, 8vh, 64px);
+  padding: 0 14px;
+  border-radius: 32px;
+  background: var(--color);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 900;
+  font-size: clamp(1.5rem, 4vh, 2.1rem);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, .2);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, .16);
+}
+.acorde-nota small { font-size: .5em; background: rgba(255, 255, 255, .3); padding: .1em .6em; border-radius: 999px; }
+.acorde-nota.falta { outline: 5px dashed #fb7185; outline-offset: 3px; animation: latido .8s ease-in-out 2; }

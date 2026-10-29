@@ -507,7 +507,7 @@ function mostrarObjetivo(midi, indice) {
 
 // ================= Juego =================
 // Tipos que dibuja su propio módulo (js/juegos.js y js/expresion.js) dentro de #escenario.
-const TIPOS_JUEGO = ['atrapa', 'eco', 'carrera', 'dinamica', 'articulacion'];
+const TIPOS_JUEGO = ['atrapa', 'eco', 'carrera', 'dinamica', 'articulacion', 'acordes'];
 const esMiniJuego = (l) => TIPOS_JUEGO.includes(l.tipo);
 
 function generarObjetivos(leccion) {
@@ -618,6 +618,7 @@ function apiJuego(j) {
     sacudir,
     memoria: estado.memoria,
     esPantalla: () => !!estado.ajustes.tecladoPantalla,
+    verificarAcorde: (esperadas, opciones) => estado.detector.verificarAcorde(esperadas, opciones),
     esAcierto: (tocada, objetivo) => esAcierto(j.leccion, tocada, objetivo),
     contarError: () => { j.errores++; },
     chispas,
@@ -785,6 +786,7 @@ function totalNotas(j) {
   if (l.tipo === 'eco') return l.rondas.reduce((a, b) => a + b, 0);
   if (l.tipo === 'carrera') return l.meta;
   if (l.tipo === 'dinamica' || l.tipo === 'articulacion') return l.secuencia?.length || l.cantidad;
+  if (l.tipo === 'acordes') return l.cantidad || l.acordes.length;
   return j.objetivos.length;
 }
 
@@ -1027,6 +1029,13 @@ function notaEnRitmo(midi, origen, instante = performance.now()) {
 }
 
 estado.detector.onNota = (midi, frecuencia, origen, instante, fuerza) => alRecibirNota(midi, frecuencia, origen, instante, fuerza);
+
+// Ataque (empezó a sonar algo): lo usan las lecciones de acordes para comprobar las notas juntas.
+estado.detector.onAtaque = (instante) => {
+  const j = estado.juego;
+  if (!j || estado.pausa || !$('#pantalla-juego').classList.contains('activa')) return;
+  j.minijuego?.ataque?.(instante);
+};
 
 // Fin de una nota (al soltar la tecla): lo usan las lecciones de picado, largo y ligado.
 estado.detector.onFin = (midi, duracion, origen, instante, ligada) => {

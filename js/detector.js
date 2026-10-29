@@ -15,6 +15,7 @@
 // La lógica está en NucleoDetector (sin Web Audio) para poder probarla con señales sintéticas.
 import { detectarTono } from './tono.js';
 import { frecuenciaAMidi, claseNota } from './notas.js';
+import { verificarNotas } from './acordes.js';
 
 const FREC_MIN = 60;    // un poco más grave que Do2
 const FREC_MAX = 2100;  // Do7
@@ -94,6 +95,7 @@ export class NucleoDetector {
       escuchando: !silenciado,
       nota: null,
       fin: null,   // { midi, duracion, instante } cuando se suelta una nota
+      ataque: null, // instante en que empezó a sonar algo nuevo (para verificar acordes)
     };
 
     // --- Ruido de fondo: solo se mide cuando no hay nota ni golpe ---
@@ -107,6 +109,9 @@ export class NucleoDetector {
       this.reiniciar();
       return info;
     }
+
+    // Ataque: golpe de tecla, o sonido que aparece desde el silencio (piano muy suave).
+    if (golpe || (rms > umbral && this.rmsAnterior < umbral * 0.8)) info.ataque = ahora;
 
     if (golpe) {
       this.ultimoGolpe = ahora;
@@ -224,6 +229,7 @@ export class Detector {
     // Callbacks
     this.onNota = null;   // (midi, frecuencia, origen, instante, fuerza) => {}
     this.onFin = null;    // (midi, duracion, origen, instante, ligada) => {}
+    this.onAtaque = null; // (instante) => {}   algo empezó a sonar (acordes)
     this.onNivel = null;  // (info) => {}
   }
 
@@ -247,6 +253,11 @@ export class Detector {
     this.analizadorTono = ctx.createAnalyser();
     this.analizadorTono.fftSize = 2048;
     fuente.connect(pasaAltos).connect(pasaBajos).connect(this.analizadorTono);
+    // Ventana larga (~170 ms) para distinguir las notas de un acorde.
+    this.analizadorAcorde = ctx.createAnalyser();
+    this.analizadorAcorde.fftSize = 8192;
+    pasaBajos.connect(this.analizadorAcorde);
+    this.bufAcorde = new Float32Array(this.analizadorAcorde.fftSize);
 
     // Rama sin filtro para oír el golpe del martillo.
     this.analizadorCrudo = ctx.createAnalyser();
@@ -298,8 +309,24 @@ export class Detector {
     const info = this.nucleo.procesar(this.bufTono, this.bufCrudo, this.ctx.sampleRate, ahora, ahora < this.silenciadoHasta);
     this.onNivel?.(info);
     // Primero el fin de la nota anterior y después la nueva (importa en el ligado).
+    if (info.ataque != null && info.escuchando) this.onAtaque?.(info.ataque);
     if (info.fin) this.onFin?.(info.fin.midi, info.fin.duracion, 'mic', info.fin.instante, !!info.fin.ligada);
     if (info.nota) this.onNota?.(info.nota.midi, info.nota.frecuencia, 'mic', info.nota.instante, info.nota.fuerza);
+  }
+
+  // ¿Están sonando estas notas ahora? (para acordes). Prueba también una octava
+  // arriba y abajo si se permite, porque el niño puede tocar el acorde en otro Do.
+  verificarAcorde(esperadas, { cualquierOctava = false } = {}) {
+    if (!this.analizadorAcorde) return { ok: false, faltan: esperadas, sobran: [], detalle: {} };
+    this.analizadorAcorde.getFloatTimeDomainData(this.bufAcorde);
+    const opciones = { desvio: this.nucleo.desvio };
+    const base = verificarNotas(this.bufAcorde, this.ctx.sampleRate, esperadas, opciones);
+    if (base.ok || !cualquierOctava) return base;
+    for (const d of [-12, 12]) {
+      const r = verificarNotas(this.bufAcorde, this.ctx.sampleRate, esperadas.map((m) => m + d), opciones);
+      if (r.ok) return { ...r, faltan: [], sobran: [] };
+    }
+    return base;
   }
 
   // Simula una nota (teclado de la pantalla, para probar sin piano).

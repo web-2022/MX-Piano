@@ -4,6 +4,7 @@
 import { nombreNota, colorNota, notaAMidi, claseNota } from './notas.js';
 import { pentagramaSVG } from './pentagrama.js';
 import { dinamica, articulacion } from './expresion.js';
+import { leccionAcordes } from './leccion-acordes.js';
 
 const azar = (lista) => lista[Math.floor(Math.random() * lista.length)];
 
@@ -34,6 +35,7 @@ export function crearJuego(leccion, api) {
   if (leccion.tipo === 'carrera') return carrera(leccion, api);
   if (leccion.tipo === 'dinamica') return dinamica(leccion, api);
   if (leccion.tipo === 'articulacion') return articulacion(leccion, api);
+  if (leccion.tipo === 'acordes') return leccionAcordes(leccion, api);
   throw new Error('Juego desconocido: ' + leccion.tipo);
 }
 

@@ -18,6 +18,7 @@ El iPad escucha por el micrófono y reconoce la nota que se tocó.
 | 8 | Selva de las Corcheas | Corcheas ("ti-ti"), negra y blanca con puntillo, compás de 3 |
 | 9 | Castillo del Fuerte y Suave | Dinámica: fuerte (f) y suave (p) |
 | 10 | Charco Saltarín | Articulación: picado (corta), larga y ligado |
+| 11 | Torre de los Acordes | Dos notas juntas, terceras y quintas, acordes de Do, Fa y Sol, las dos manos juntas |
 
 Cada lección se desbloquea al terminar la anterior. En ⚙️ el profesor puede
 **desbloquear todas** para saltar a cualquier lección.
@@ -31,6 +32,18 @@ Cada lección se desbloquea al terminar la anterior. En ⚙️ el profesor puede
   **Ligado:** la nota siguiente debe empezar antes de soltar la anterior (o casi al mismo tiempo).
 - Los límites están al inicio de `js/expresion.js` (`CORTA_MS`, `LARGA_MS`).
 - Con el teclado de la pantalla: tocar **abajo** en la tecla = fuerte, **arriba** = suave.
+
+## Acordes y dos manos 🗼
+
+El detector normal escucha una nota a la vez. Para los acordes, la app usa otro método: como sabe
+qué notas pidió, mide la energía de cada una (y de sus armónicos) y la compara con las teclas de al lado.
+Así sabe si están todas y si se apoyó una tecla de más, y le dice al niño "Falta Mi" o "Sobra Re".
+
+- Mira unos 170 ms de sonido, 220 ms después del golpe (para que pase el ruido del martillo).
+- Con una mano, el acorde vale en cualquier octava. Con `mano: 'ambas'`, cada nota en su lugar.
+- Con el teclado de la pantalla, se pueden tocar las notas una por una.
+- Prueba sin micrófono: `node pruebas/prueba-acordes.mjs` (acordes bien tocados, desparejos, desafinados,
+  con voz de fondo, y los errores típicos: tecla vecina, tecla de más, falta una mano…).
 
 ## Acompañamiento 🎻
 
@@ -90,6 +103,8 @@ pianito/
 │   ├── expresion.js      Fuerte y suave · picado, largo y ligado
 │   ├── acompanamiento.js Armonía automática y canción con orquesta
 │   ├── voz.js            Voz grabada de Ranita
+│   ├── acordes.js        Verificación de acordes (qué notas suenan juntas)
+│   ├── leccion-acordes.js Lecciones de acordes y dos manos
 │   ├── pentagrama.js     Dibuja el pentagrama, las claves y las figuras
 │   ├── tono.js           Algoritmo que calcula la frecuencia (método McLeod)
 │   ├── notas.js          Nombres, colores y frecuencias de las notas
@@ -100,7 +115,9 @@ pianito/
 ├── img/rana.png          Mascota
 ├── icons/
 └── pruebas/
-    └── prueba-detector.mjs   Prueba el reconocimiento con pianos sintéticos
+    ├── sintetizador.mjs      Pianos sintéticos para las pruebas
+    ├── prueba-detector.mjs   Prueba el reconocimiento de notas
+    └── prueba-acordes.mjs    Prueba la verificación de acordes
 ```
 
 ## Abrir y probar en VS Code (PC)
@@ -194,6 +211,9 @@ Para canciones usa solo obras de **dominio público** (tradicionales o clásicas
 
 ## Lo que sigue
 
-- Ajustar en el iPad real los límites de fuerte/suave y de picado/ligado.
+- Ajustar en el iPad real los límites de fuerte/suave, picado/ligado y acordes.
+- Etapa 2 (niveles 12 a 20): posiciones de Sol y Fa, escalas con sostenidos y bemoles, acordes arpegiados,
+  melodía con acompañamiento, semicorcheas, tresillos y 6/8.
+- Lector de partituras MusicXML para agregar piezas sin programar.
 - Varios perfiles de niños en el mismo iPad.
 - Más canciones en el Valle de las Canciones.

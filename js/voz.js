@@ -68,6 +68,10 @@ export const GRUPOS = [
     ],
   },
   {
+    titulo: '🗼 Acordes y dos manos',
+    frases: ['Toca las notas juntas, todas al mismo tiempo.', '¡Vamos!'],
+  },
+  {
     titulo: '🏀 Picado, largo y ligado',
     frases: [
       'Mira las marcas de cada nota.',
