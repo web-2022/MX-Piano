@@ -18,7 +18,17 @@ El iPad escucha por el micrófono y reconoce la nota que se tocó.
 | 8 | Selva de las Corcheas | Corcheas ("ti-ti"), negra y blanca con puntillo, compás de 3 |
 | 9 | Castillo del Fuerte y Suave | Dinámica: fuerte (f) y suave (p) |
 | 10 | Charco Saltarín | Articulación: picado (corta), larga y ligado |
+| | **Etapa 2 · Explorador** | |
 | 11 | Torre de los Acordes | Dos notas juntas, terceras y quintas, acordes de Do, Fa y Sol, las dos manos juntas |
+| 12 | Valle del Sol | Posición de Sol, Fa♯ y la armadura de Sol mayor, Oda en Sol |
+| 13 | Bosque del Bemol | Posición de Fa, Si♭, armadura de Fa mayor, acordes Fa–Si♭–Do, Estrellita en Fa |
+| 14 | Escalera de las Escalas | Escala de Do con la izquierda, escalas de Sol y Fa mayor con digitación, escala en corcheas |
+| 15 | Cascada de Arpegios | Arpegios de Do, Fa y Sol, bajo Alberti, acordes con la izquierda |
+| 16 | Puente de las Dos Manos | Melodía con bajo: Martinillo con bordón, Mary, Oda y Jingle Bells a dos manos |
+| 17 | Colmena de Semicorcheas | Semicorcheas, tresillos, corchea con puntillo, ritmo de Para Elisa |
+| 18 | Barca del Seis por Ocho | Compás de 6/8, "Rema, rema tu barquito" |
+| 19 | Ola del Crescendo | Crescendo, diminuendo y matices |
+| 20 | Gran Teatro | Minueto en Sol (Petzold), Para Elisa (Beethoven), Minueto a dos manos |
 
 Cada lección se desbloquea al terminar la anterior. En ⚙️ el profesor puede
 **desbloquear todas** para saltar a cualquier lección.
@@ -32,6 +42,18 @@ Cada lección se desbloquea al terminar la anterior. En ⚙️ el profesor puede
   **Ligado:** la nota siguiente debe empezar antes de soltar la anterior (o casi al mismo tiempo).
 - Los límites están al inicio de `js/expresion.js` (`CORTA_MS`, `LARGA_MS`).
 - Con el teclado de la pantalla: tocar **abajo** en la tecla = fuerte, **arriba** = suave.
+
+## Partituras (MusicXML) 📄
+
+Pestaña **Partituras** del mapa → **➕ Agregar partitura**. Acepta `.musicxml`, `.xml` y `.mxl`
+(lo que exporta **MuseScore**, gratis, o lo que se descarga de sitios de partituras de dominio público).
+
+- Se elige la mano (derecha, izquierda o las dos) y si se toca *a su ritmo* o *con metrónomo*.
+- La pieza se divide en partes de pocos compases; cada parte es una lección con estrellas.
+- Una mano con melodía → canción o ritmo. Acordes o dos manos → lección de acordes.
+- Respeta ligaduras de prolongación, acordes, silencios, armadura (Sol, Re, Fa) y anacrusa.
+- Se guarda solo en ese iPad. Ejemplos para probar: `pruebas/partituras/`.
+- Funcionan mejor las piezas sencillas (como las de un método de piano inicial).
 
 ## Acordes y dos manos 🗼
 
@@ -105,6 +127,7 @@ pianito/
 │   ├── voz.js            Voz grabada de Ranita
 │   ├── acordes.js        Verificación de acordes (qué notas suenan juntas)
 │   ├── leccion-acordes.js Lecciones de acordes y dos manos
+│   ├── partituras.js     Lector de partituras MusicXML
 │   ├── pentagrama.js     Dibuja el pentagrama, las claves y las figuras
 │   ├── tono.js           Algoritmo que calcula la frecuencia (método McLeod)
 │   ├── notas.js          Nombres, colores y frecuencias de las notas
@@ -117,7 +140,8 @@ pianito/
 └── pruebas/
     ├── sintetizador.mjs      Pianos sintéticos para las pruebas
     ├── prueba-detector.mjs   Prueba el reconocimiento de notas
-    └── prueba-acordes.mjs    Prueba la verificación de acordes
+    ├── prueba-acordes.mjs    Prueba la verificación de acordes
+    └── partituras/           Partituras MusicXML de ejemplo
 ```
 
 ## Abrir y probar en VS Code (PC)
@@ -212,8 +236,7 @@ Para canciones usa solo obras de **dominio público** (tradicionales o clásicas
 ## Lo que sigue
 
 - Ajustar en el iPad real los límites de fuerte/suave, picado/ligado y acordes.
-- Etapa 2 (niveles 12 a 20): posiciones de Sol y Fa, escalas con sostenidos y bemoles, acordes arpegiados,
-  melodía con acompañamiento, semicorcheas, tresillos y 6/8.
-- Lector de partituras MusicXML para agregar piezas sin programar.
+- Etapa 3 (niveles 21 a 30): acordes invertidos, escalas menores, piezas clásicas completas, lectura a primera vista.
+- Mostrar la partitura completa (varias notas en el pentagrama) en las lecciones importadas.
 - Varios perfiles de niños en el mismo iPad.
 - Más canciones en el Valle de las Canciones.

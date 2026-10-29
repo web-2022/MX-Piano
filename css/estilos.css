@@ -1106,3 +1106,33 @@ body.grandes .notas-flotantes { opacity: .5; }
 }
 .acorde-nota small { font-size: .5em; background: rgba(255, 255, 255, .3); padding: .1em .6em; border-radius: 999px; }
 .acorde-nota.falta { outline: 5px dashed #fb7185; outline-offset: 3px; animation: latido .8s ease-in-out 2; }
+
+.exp-circulo.crece { box-shadow: 0 8px 0 rgba(0,0,0,.18), 0 0 0 8px rgba(251, 146, 60, .35); }
+.exp-circulo.decrece { box-shadow: 0 8px 0 rgba(0,0,0,.18), 0 0 0 8px rgba(125, 211, 252, .45); }
+
+/* Letrero de cada etapa en el mapa */
+.letrero-etapa {
+  flex: none;
+  margin: 10px 0 -8px;
+  align-self: center;
+  background: var(--tinta);
+  color: #fff;
+  font-size: clamp(1.1rem, 2.6vw, 1.4rem);
+  padding: .45em 1.2em;
+  border-radius: 999px;
+  box-shadow: var(--sombra);
+}
+
+/* ---------- Partituras ---------- */
+.partituras-cabecera { flex: none; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.partituras-cabecera .parque-intro { max-width: 640px; }
+.partituras-mensaje { margin: 0; font-weight: 800; background: #fff; padding: .5em 1em; border-radius: 14px; box-shadow: var(--sombra); }
+.partituras-vacio { flex: none; text-align: center; font-weight: 800; font-size: 1.2rem; color: var(--tinta-suave); }
+.borrar-partitura { width: 48px; height: 48px; font-size: 1.3rem; flex: none; }
+.campo { font: inherit; font-size: 1.1rem; padding: .5em .7em; border-radius: 12px; border: 2px solid #ddd6fe; margin-top: 4px; }
+.fila-modo label.desactivado { opacity: .4; }
+
+/* Ritmo con muchas figuras: Ranita y las figuras más compactas para no chocar con el teclado */
+.pantalla[data-modo="ritmo"] .zona-mascota .mascota { width: clamp(90px, 18vh, 150px); height: clamp(90px, 18vh, 150px); }
+.pantalla[data-modo="ritmo"] .bloque .figura { width: 26px; height: 38px; }
+.pantalla[data-modo="ritmo"] .progreso-juego { padding-bottom: 14px; }

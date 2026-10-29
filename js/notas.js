@@ -2,6 +2,13 @@
 // MIDI: Do central (Do4) = 60, La4 = 69 = 440 Hz.
 
 export const NOMBRES = ['Do', 'Do♯', 'Re', 'Re♯', 'Mi', 'Fa', 'Fa♯', 'Sol', 'Sol♯', 'La', 'La♯', 'Si'];
+export const NOMBRES_BEMOL = ['Do', 'Re♭', 'Re', 'Mi♭', 'Mi', 'Fa', 'Sol♭', 'Sol', 'La♭', 'La', 'Si♭', 'Si'];
+
+// Las teclas negras se llaman con sostenido (Fa♯) o con bemol (Si♭) según la tonalidad
+// de la lección. La app lo cambia al empezar cada lección (opción "bemoles: true").
+let conBemoles = false;
+export function usarBemoles(si) { conBemoles = !!si; }
+export function hayBemoles() { return conBemoles; }
 
 // Un color por nota natural (como las pegatinas en las teclas).
 export const COLORES = {
@@ -25,15 +32,18 @@ export function claseNota(midi) {
 }
 
 export function nombreNota(midi) {
-  return NOMBRES[claseNota(midi)];
+  return (conBemoles ? NOMBRES_BEMOL : NOMBRES)[claseNota(midi)];
 }
 
 export function nombreConOctava(midi) {
   return nombreNota(midi) + (Math.floor(midi / 12) - 1);
 }
 
+// Las teclas negras toman el color de su vecina: Fa♯ el de Fa, Si♭ el de Si.
 export function colorNota(midi) {
-  return COLORES[claseNota(midi)] || '#334155';
+  const c = claseNota(midi);
+  if (COLORES[c]) return COLORES[c];
+  return COLORES[conBemoles ? (c + 1) % 12 : c - 1] || '#334155';
 }
 
 export function esTeclaNegra(midi) {
@@ -54,4 +64,11 @@ export function notaAMidi(texto) {
   if (!m) throw new Error('Nota no válida: ' + texto);
   const alteracion = m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0;
   return (Number(m[3]) + 1) * 12 + BASE[m[1]] + alteracion;
+}
+
+// Paso diatónico absoluto (Do4 = 28, Re4 = 29...), respetando si la lección usa bemoles.
+const PASOS = [0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6];
+const PASOS_B = [0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 6, 6];
+export function pasoDiatonico(midi) {
+  return (Math.floor(midi / 12) - 1) * 7 + (conBemoles ? PASOS_B : PASOS)[claseNota(midi)];
 }

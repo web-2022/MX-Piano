@@ -1,6 +1,6 @@
 // Service worker: guarda la app para que funcione sin internet.
 // Cambia VERSION cada vez que publiques cambios, para que el iPad descargue lo nuevo.
-const VERSION = 'pianito-v7';
+const VERSION = 'pianito-v8';
 const ARCHIVOS = [
   './',
   './index.html',
@@ -15,6 +15,7 @@ const ARCHIVOS = [
   './js/voz.js',
   './js/acordes.js',
   './js/leccion-acordes.js',
+  './js/partituras.js',
   './js/lecciones.js',
   './js/notas.js',
   './js/pentagrama.js',

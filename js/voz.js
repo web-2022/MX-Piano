@@ -65,6 +65,8 @@ export const GRUPOS = [
       '¡Listo! Ahora mira la letra: f es fuerte y p es suave.',
       '¡Bien la nota! Pero más fuerte, como un león',
       '¡Bien la nota! Pero más suave, como un ratón',
+      '¡Un poquito más fuerte que la anterior!',
+      '¡Un poquito más suave que la anterior!',
     ],
   },
   {

@@ -1,6 +1,6 @@
 import {
   nombreNota, nombreConOctava, colorNota, claseNota, esTeclaNegra,
-  notaAMidi, DEDO_POSICION_DO, DEDO_IZQUIERDA_POSICION_DO,
+  notaAMidi, DEDO_POSICION_DO, DEDO_IZQUIERDA_POSICION_DO, usarBemoles, pasoDiatonico,
 } from './notas.js';
 import { Detector } from './detector.js';
 import {
@@ -10,6 +10,10 @@ import { MUNDOS, JUEGOS, buscarLeccion } from './lecciones.js';
 import { crearJuego } from './juegos.js';
 import { programarCancion, acordeEnVivo, tieneMelodia } from './acompanamiento.js';
 import * as voz from './voz.js';
+import {
+  leerArchivo, analizar, manosDisponibles, crearLecciones, cargarPartituras, guardarPartituras,
+} from './partituras.js';
+import { registrarPartituras } from './lecciones.js';
 import { pentagramaSVG, figuraSVG } from './pentagrama.js';
 import { cargarAjustes, guardarAjustes, cargarProgreso, guardarProgreso } from './almacen.js';
 
@@ -75,7 +79,7 @@ function decir(texto, { menor = false } = {}) {
   }
   if (!('speechSynthesis' in window)) return Promise.resolve();
   return new Promise((resolver) => {
-    const u = new SpeechSynthesisUtterance(texto);
+    const u = new SpeechSynthesisUtterance(texto.replace(/♭/g, ' bemol').replace(/♯/g, ' sostenido'));
     u.lang = vozElegida?.lang || 'es-MX';
     if (vozElegida) u.voice = vozElegida;
     u.rate = 0.95;
@@ -205,6 +209,12 @@ function dibujarMapa() {
     const abiertoEste = mundoAbierto;
     const conEstrellas = mundo.lecciones.filter((l) => estrellasDe(l.id) > 0).length;
     mundoAbierto = conEstrellas >= Math.min(3, mundo.lecciones.length);
+    if (mundo.etapa) {
+      const letrero = document.createElement('h2');
+      letrero.className = 'letrero-etapa';
+      letrero.textContent = mundo.etapa;
+      mapa.appendChild(letrero);
+    }
     const seccion = document.createElement('section');
     seccion.className = 'mundo';
     seccion.style.setProperty('--color-mundo', mundo.color);
@@ -301,10 +311,116 @@ document.querySelectorAll('.pestana').forEach((p) => {
   p.addEventListener('click', () => {
     document.querySelectorAll('.pestana').forEach((x) => x.classList.toggle('activa', x === p));
     const ver = p.dataset.pestana;
-    $('#mapa').classList.toggle('oculto', ver !== 'mapa');
-    $('#parque').classList.toggle('oculto', ver !== 'parque');
+    for (const id of ['mapa', 'parque', 'partituras']) $('#' + id).classList.toggle('oculto', ver !== id);
     if (ver === 'mapa') dibujarMapa();
+    if (ver === 'partituras') dibujarPartituras();
   });
+});
+
+// ================= Partituras (MusicXML) =================
+estado.partituras = cargarPartituras();
+registrarPartituras(estado.partituras);
+
+function dibujarPartituras(mensaje = '') {
+  const cont = $('#partituras');
+  cont.innerHTML = `
+    <div class="partituras-cabecera">
+      <button id="btn-agregar-partitura" class="boton-grande">➕ Agregar partitura</button>
+      <p class="parque-intro">Partituras en formato <b>MusicXML</b> (.musicxml o .mxl), por ejemplo exportadas desde
+        MuseScore, que es gratis. Cada pocos compases se crea una lección. Funcionan mejor las piezas sencillas.</p>
+      ${mensaje ? `<p class="partituras-mensaje">${mensaje}</p>` : ''}
+    </div>`;
+  cont.querySelector('#btn-agregar-partitura').addEventListener('click', () => $('#archivo-partitura').click());
+  if (!estado.partituras.length) {
+    const vacio = document.createElement('p');
+    vacio.className = 'partituras-vacio';
+    vacio.textContent = '🐸 Todavía no hay partituras. ¡Agrega la primera!';
+    cont.appendChild(vacio);
+  }
+  for (const partitura of estado.partituras) {
+    const seccion = document.createElement('section');
+    seccion.className = 'mundo';
+    seccion.style.setProperty('--color-mundo', '#ede9fe');
+    const ganadas = partitura.lecciones.reduce((s, l) => s + estrellasDe(l.id), 0);
+    seccion.innerHTML = `
+      <header class="mundo-cabecera">
+        <span class="mundo-emoji">📄</span>
+        <h2>${escaparHtml(partitura.titulo)}<small>${escaparHtml([partitura.compositor, partitura.detalle].filter(Boolean).join(' · '))}</small></h2>
+        <span class="mundo-estrellas">★ ${ganadas}/${partitura.lecciones.length * 3}</span>
+        <button class="boton-icono borrar-partitura" aria-label="Borrar partitura">🗑</button>
+      </header>`;
+    const camino = document.createElement('div');
+    camino.className = 'camino';
+    partitura.lecciones.forEach((l) => {
+      const boton = botonParada(l, { bloqueada: false, siguiente: false, est: estrellasDe(l.id) });
+      boton.addEventListener('click', () => empezarLeccion(l.id));
+      camino.appendChild(boton);
+    });
+    seccion.appendChild(camino);
+    seccion.querySelector('.borrar-partitura').addEventListener('click', () => {
+      if (!confirm(`¿Borrar "${partitura.titulo}" y sus lecciones?`)) return;
+      estado.partituras = estado.partituras.filter((p) => p !== partitura);
+      guardarPartituras(estado.partituras);
+      registrarPartituras(estado.partituras);
+      dibujarPartituras();
+    });
+    cont.appendChild(seccion);
+  }
+}
+
+function escaparHtml(t) {
+  return String(t || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+$('#archivo-partitura').addEventListener('change', async (e) => {
+  const archivo = e.target.files[0];
+  e.target.value = '';
+  if (!archivo) return;
+  let analisis;
+  try {
+    analisis = analizar(await leerArchivo(archivo));
+    if (!analisis.notas.length) throw new Error('La partitura no tiene notas.');
+  } catch (error) {
+    dibujarPartituras(`⚠️ ${escaparHtml(error.message || 'No pude leer ese archivo.')}`);
+    return;
+  }
+  const manos = manosDisponibles(analisis);
+  const dlg = $('#dialogo-partitura');
+  $('#pt-titulo').value = analisis.titulo;
+  $('#pt-resumen').textContent = `${analisis.compases.length} compases · ${analisis.notas.length} notas · compás ${analisis.compas.pulsos}/${analisis.compas.unidad}`
+    + (analisis.compositor ? ` · ${analisis.compositor}` : '');
+  const radios = [...document.querySelectorAll('[name="pt-mano"]')];
+  radios.forEach((r) => {
+    const posible = r.value === 'ambas' ? manos.derecha && manos.izquierda : manos[r.value];
+    r.disabled = !posible;
+    r.parentElement.classList.toggle('desactivado', !posible);
+  });
+  (radios.find((r) => r.value === 'derecha' && !r.disabled) || radios.find((r) => !r.disabled)).checked = true;
+  const actualizarModos = () => {
+    const ambas = document.querySelector('[name="pt-mano"]:checked')?.value === 'ambas';
+    document.querySelectorAll('[name="pt-modo"]').forEach((r) => { r.disabled = ambas; });
+  };
+  radios.forEach((r) => { r.onchange = actualizarModos; });
+  actualizarModos();
+  dlg.returnValue = '';
+  dlg.showModal();
+  dlg.addEventListener('close', () => {
+    if (dlg.returnValue !== 'crear') return;
+    try {
+      const partitura = crearLecciones(analisis, {
+        titulo: $('#pt-titulo').value.trim() || analisis.titulo,
+        mano: document.querySelector('[name="pt-mano"]:checked').value,
+        modo: document.querySelector('[name="pt-modo"]:checked').value,
+      });
+      estado.partituras.push(partitura);
+      if (!guardarPartituras(estado.partituras)) throw new Error('No hay espacio para guardar la partitura en este iPad.');
+      registrarPartituras(estado.partituras);
+      const n = partitura.lecciones.length;
+      dibujarPartituras(`✅ Listo: ${n} ${n === 1 ? 'lección creada' : 'lecciones creadas'}.`);
+    } catch (error) {
+      dibujarPartituras(`⚠️ ${escaparHtml(error.message)}`);
+    }
+  }, { once: true });
 });
 
 // ================= Efectos =================
@@ -445,6 +561,12 @@ function manoDe(leccion, midi) {
 
 function dedoDe(leccion, midi, indice) {
   if (leccion.dedos) return leccion.dedos[indice];
+  // Otra posición de cinco dedos (por ejemplo, posición de Sol: pulgar en Sol4).
+  if (leccion.posicion) {
+    const paso = pasoDiatonico(midi) - pasoDiatonico(notaAMidi(leccion.posicion));
+    if (paso < 0 || paso > 4) return null;
+    return manoDe(leccion, midi) === 'izquierda' ? 5 - paso : paso + 1;
+  }
   const tabla = manoDe(leccion, midi) === 'izquierda' ? DEDO_IZQUIERDA_POSICION_DO : DEDO_POSICION_DO;
   return tabla[claseNota(midi)];
 }
@@ -477,7 +599,7 @@ function mostrarObjetivo(midi, indice) {
 
   if (midi == null) {
     // Silencio (modo ritmo)
-    if (enPentagrama) $('#pentagrama').innerHTML = pentagramaSVG(null, { clave: l.clave });
+    if (enPentagrama) $('#pentagrama').innerHTML = pentagramaSVG(null, { clave: l.clave, armadura: l.armadura });
     else {
       $('#nota-objetivo').style.setProperty('--color', '#cbd5e1');
       $('#nota-nombre').textContent = '🤫';
@@ -489,6 +611,7 @@ function mostrarObjetivo(midi, indice) {
   if (enPentagrama) {
     const pent = $('#pentagrama');
     pent.innerHTML = pentagramaSVG(midi, {
+      armadura: l.armadura,
       clave: l.clave, colores: coloresDe(l), mostrarNombre: mostrarNombreDe(l),
     });
     pent.classList.remove('aparece');
@@ -529,6 +652,7 @@ async function empezarLeccion(id) {
   detenerRitmo();
   estado.juego?.minijuego?.detener();
   const leccion = buscarLeccion(id);
+  usarBemoles(leccion.bemoles); // Si♭ en vez de La♯ en las lecciones con bemoles
   estado.juego = {
     leccion,
     objetivos: generarObjetivos(leccion),
@@ -857,7 +981,8 @@ function dibujarCarril() {
     b.style.setProperty('--color', color);
     b.innerHTML = `${figuraSVG(e.tiempos, { color, silencio: e.midi == null })}
       <span>${e.midi == null || !mostrarNombreDe(l) ? '&nbsp;' : nombreNota(e.midi)}</span>`;
-    if (e.inicio % (l.compas || 4) === 0 && e.inicio > 0) b.classList.add('compas');
+    const enCompas = e.inicio / (l.compas || 4);
+    if (e.inicio > 0 && Math.abs(enCompas - Math.round(enCompas)) < 1e-6) b.classList.add('compas');
     pista.appendChild(b);
   });
   const cursor = document.createElement('div');
@@ -890,10 +1015,14 @@ function correrRitmo(demo) {
   if (!ctx) return Promise.resolve();
   detenerTodo(r.nodos);
 
-  const beatMs = 60000 / (j.leccion.tempo * (esGrande() ? 1.15 : 1));
+  // Las duraciones se miden en negras. "pulso" es cada cuántas negras suena un clic
+  // (1 normalmente; 1,5 en 6/8, donde el pulso es la negra con puntillo). "tempo" = clics por minuto.
+  const pulso = j.leccion.pulso || 1;
+  const beatMs = 60000 / (j.leccion.tempo * (esGrande() ? 1.15 : 1)) / pulso; // ms por negra
   r.beatMs = beatMs;
   r.tolerancia = Math.min(TOLERANCIA_MS, beatMs * r.minimo * 0.45);
-  const compas = j.leccion.compas || 4;
+  const compas = j.leccion.compas || 4;  // negras por compás (6/8 = 3)
+  const luces = Math.max(1, Math.round(compas / pulso));
   r.demo = demo;
   r.corriendo = true;
   r.actual = -1;
@@ -903,18 +1032,22 @@ function correrRitmo(demo) {
   // Programar clics y (en el ejemplo) las notas con el reloj de audio, que es preciso.
   const margen = 0.25;
   const ctxInicio = ctx.currentTime + margen;
-  r.inicio = performance.now() + margen * 1000 + CUENTA * beatMs; // momento del primer pulso del ritmo
-  const pulsosTotales = CUENTA + r.total;
+  const msPulso = pulso * beatMs;
+  r.inicio = performance.now() + margen * 1000 + CUENTA * msPulso; // momento del primer pulso del ritmo
+  const pulsosTotales = CUENTA + Math.ceil(r.total / pulso);
+  // Subdivisión: "ti-ti" (2 por pulso) o, en 6/8, "ti-ti-ti" (3 por pulso)
+  const partes = pulso === 1.5 ? 3 : 2;
   for (let k = 0; k < pulsosTotales; k++) {
-    const acento = k < CUENTA ? k === 0 : (k - CUENTA) % compas === 0;
-    programarClic(ctx, ctxInicio + (k * beatMs) / 1000, acento, r.nodos);
-    // "ti-ti": un clic suave en la mitad de cada pulso (solo mientras suena el ritmo)
-    if (j.leccion.subdividir && k >= CUENTA) programarClic(ctx, ctxInicio + ((k + 0.5) * beatMs) / 1000, false, r.nodos, 0.25);
+    const acento = k < CUENTA ? k === 0 : ((k - CUENTA) * pulso) % compas === 0;
+    programarClic(ctx, ctxInicio + (k * msPulso) / 1000, acento, r.nodos);
+    if ((j.leccion.subdividir || pulso === 1.5) && k >= CUENTA) {
+      for (let p = 1; p < partes; p++) programarClic(ctx, ctxInicio + ((k + p / partes) * msPulso) / 1000, false, r.nodos, 0.25);
+    }
   }
   if (demo) {
     for (const e of r.eventos) {
       if (e.midi == null) continue;
-      const cuando = ctxInicio + ((CUENTA + e.inicio) * beatMs) / 1000;
+      const cuando = ctxInicio + (CUENTA * msPulso + e.inicio * beatMs) / 1000;
       programarNota(ctx, e.midi, cuando, (e.tiempos * beatMs) / 1000 * 0.9, r.nodos);
     }
     estado.detector.silenciarHasta(r.inicio + r.total * beatMs + 600);
@@ -931,14 +1064,14 @@ function correrRitmo(demo) {
       const t = (ahora - r.inicio) / beatMs; // pulsos desde el inicio (negativo = cuenta)
 
       // Luces del pulso
-      const pulso = Math.floor(t + CUENTA);
-      if (pulso !== ultimoPulso && pulso >= 0) {
-        ultimoPulso = pulso;
-        const luz = pulso < CUENTA ? pulso % 4 : (pulso - CUENTA) % compas;
+      const numPulso = Math.floor(t / pulso + CUENTA);
+      if (numPulso !== ultimoPulso && numPulso >= 0) {
+        ultimoPulso = numPulso;
+        const luz = numPulso < CUENTA ? numPulso % 4 : (numPulso - CUENTA) % luces;
         pulsos.forEach((p, i) => p.classList.toggle('activo', i === luz));
-        if (t < 0) globo(String(pulso + 1));
-        else if (pulso === CUENTA) globo(demo ? '♪ ♪ ♪' : '¡Ya!');
-        $('#mascota-juego').classList.toggle('pulso-salto', pulso % 2 === 0);
+        if (t < 0) globo(String(numPulso + 1));
+        else if (numPulso === CUENTA) globo(demo ? '♪ ♪ ♪' : '¡Ya!');
+        $('#mascota-juego').classList.toggle('pulso-salto', numPulso % 2 === 0);
       }
 
       // Cursor
@@ -1069,6 +1202,7 @@ estado.detector.onNivel = (info) => {
 
 // ================= Botones del juego =================
 function volverAlMapa() {
+  usarBemoles(false);
   detenerRitmo();
   pararCancion();
   estado.juego?.minijuego?.detener();
@@ -1133,7 +1267,7 @@ function escucharCancion(boton, leccion) {
   if (!estado.ctx) return;
   if (cancion.boton === boton) { pararCancion(); return; }
   pararCancion();
-  const { ms, marcas } = programarCancion(estado.ctx, leccion, cancion.nodos, { acompanar: true });
+  const { ms, marcas } = programarCancion(estado.ctx, leccion, cancion.nodos, { acompanar: !leccion.sinAcompanamiento });
   estado.detector.silenciarHasta(performance.now() + ms + 250);
   boton.dataset.texto = boton.dataset.texto || boton.textContent;
   boton.textContent = '⏹ Parar';
@@ -1378,6 +1512,9 @@ $('#btn-voz-borrar').addEventListener('click', async () => {
   dibujarListaVoz();
   actualizarBotonVoz();
 });
+
+// Para pruebas automáticas: abrir con ?depurar deja el estado a la vista (no afecta el uso normal).
+if (new URLSearchParams(location.search).has('depurar')) window.pianito = { estado };
 
 // ================= PWA =================
 if ('serviceWorker' in navigator) {

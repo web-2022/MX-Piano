@@ -16,6 +16,12 @@
 //   registro: true                      (exige la octava: grave = mano izquierda, agudo = derecha)
 //   teclado: [desde, hasta]             (rango del teclado en pantalla, en números MIDI; 60 = Do central)
 //   dedos: [..]                         (dedo de cada nota en canciones, si no es la posición de Do)
+//   posicion: 'Sol4'                    (posición de cinco dedos: el pulgar en esa nota; da los dedos solo)
+//   bemoles: true                       (las teclas negras se llaman Si♭, Mi♭... en vez de La♯, Re♯...)
+//   armadura: 'sol' | 'fa' | 're'       (pentagrama: Fa♯, Si♭ o Fa♯ y Do♯ al inicio)
+//   tonalidad: 'sol' | 'fa'             (acompañamiento con los acordes de esa tonalidad)
+//   sinAcompanamiento: true             (escuchar la canción sin acordes, por ejemplo si está en menor)
+//   pulso: 1.5                          (ritmo: cada cuántas negras suena el clic; 1,5 en 6/8 y 3/8)
 //   tiempos: [..]                       (canciones: duración de cada nota, para "Escuchar la canción"
 //                                        con acompañamiento. Si falta, todas duran 1 y la última 2)
 //   tempo: 90                           (canciones: velocidad al escucharlas; ritmo: pulsos por minuto)
@@ -44,6 +50,7 @@ export const MUNDOS = [
   // ───────────────────────── NIVEL 0 ─────────────────────────
   {
     id: 'mundo0',
+    etapa: '🐣 Etapa 1 · Pianito',
     emoji: '🏝️',
     titulo: 'Isla del Do',
     nivel: 0,
@@ -527,6 +534,7 @@ export const MUNDOS = [
   // ───────────────────────── NIVEL 11 ─────────────────────────
   {
     id: 'mundo11',
+    etapa: '🚀 Etapa 2 · Explorador',
     emoji: '🗼',
     titulo: 'Torre de los Acordes',
     nivel: 11,
@@ -571,6 +579,427 @@ export const MUNDOS = [
         acordes: [['Do3', 'Do4'], ['Do4'], ['Sol4'], ['Sol4'], ['Fa3', 'La4'], ['La4'], ['Do3', 'Sol4'],
                   ['Fa3', 'Fa4'], ['Fa4'], ['Do3', 'Mi4'], ['Mi4'], ['Sol3', 'Re4'], ['Re4'], ['Do3', 'Do4']],
         consejo: 'La derecha toca la melodía y, en algunas notas, la izquierda toca a la vez un bajo. ¡Suena como una orquesta!',
+      },
+    ],
+  },
+
+  // ═════════════════════════ ETAPA 2 · EXPLORADOR ═════════════════════════
+
+  // ───────────────────────── NIVEL 12 ─────────────────────────
+  {
+    id: 'mundo12',
+    emoji: '🌄',
+    titulo: 'Valle del Sol',
+    nivel: 12,
+    color: '#fef08a',
+    lecciones: [
+      {
+        id: 'n12-1', titulo: 'La posición de Sol', emoji: '🖐️',
+        tipo: 'aleatorio', notas: ['Sol4', 'La4', 'Si4', 'Do5', 'Re5'], cantidad: 10, ayudaVisual: true,
+        posicion: 'Sol4', teclado: [60, 76],
+        consejo: 'La mano se muda: el pulgar va a Sol y cada dedo tiene su tecla hasta Re. Las notas son nuevas para los dedos, aunque los nombres ya los conoce.',
+      },
+      {
+        id: 'n12-2', titulo: 'Sol a Re sin ayuda', emoji: '👀',
+        tipo: 'aleatorio', notas: ['Sol4', 'La4', 'Si4', 'Do5', 'Re5'], cantidad: 12, ayudaVisual: false,
+        posicion: 'Sol4', teclado: [60, 76],
+        consejo: 'Sin ayuda en la pantalla. Si duda, que piense en el número del dedo: Sol = 1, La = 2, Si = 3, Do = 4, Re = 5.',
+      },
+      {
+        id: 'n12-3', titulo: 'Fa sostenido', emoji: '♯',
+        tipo: 'aleatorio', notas: ['Fa#4', 'Sol4', 'La4', 'Mi4'], cantidad: 10, ayudaVisual: true, teclado: [60, 76],
+        consejo: 'Fa♯ es la tecla negra justo a la derecha de Fa. En la tonalidad de Sol todos los Fa son Fa♯, por eso se escribe una sola vez al inicio del pentagrama: es la armadura.',
+      },
+      {
+        id: 'n12-4', titulo: 'Leer en Sol mayor', emoji: '🎼',
+        tipo: 'aleatorio', vista: 'pentagrama', clave: 'sol', armadura: 'sol', colores: true, mostrarNombre: false,
+        notas: ['Fa#4', 'Sol4', 'La4', 'Si4', 'Do5', 'Re5'], cantidad: 12, ayudaVisual: false, teclado: [60, 76],
+        consejo: 'El ♯ al inicio, sobre la línea de Fa, avisa que todos los Fa se tocan Fa♯ aunque la nota no lo diga.',
+      },
+      {
+        id: 'n12-5', titulo: 'Oda a la alegría en Sol', emoji: '🏆', premio: true,
+        tipo: 'cancion', ayudaVisual: false, posicion: 'Sol4', teclado: [60, 76], tonalidad: 'sol',
+        notas: ['Si4', 'Si4', 'Do5', 'Re5', 'Re5', 'Do5', 'Si4', 'La4', 'Sol4', 'Sol4', 'La4', 'Si4', 'Si4', 'La4', 'La4'],
+        tiempos: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5, 0.5, 2],
+        consejo: 'La misma canción, ahora en la posición de Sol: suena más aguda, pero los dedos se mueven igual que en Do.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 13 ─────────────────────────
+  {
+    id: 'mundo13',
+    emoji: '🍂',
+    titulo: 'Bosque del Bemol',
+    nivel: 13,
+    color: '#fdba74',
+    lecciones: [
+      {
+        id: 'n13-1', titulo: 'La posición de Fa', emoji: '🖐️', bemoles: true,
+        tipo: 'aleatorio', notas: ['Fa4', 'Sol4', 'La4', 'Do5'], cantidad: 10, ayudaVisual: true,
+        posicion: 'Fa4', teclado: [60, 76],
+        consejo: 'El pulgar va a Fa. Fa = 1, Sol = 2, La = 3, el dedo 4 espera y Do = 5.',
+      },
+      {
+        id: 'n13-2', titulo: 'Si bemol', emoji: '♭', bemoles: true,
+        tipo: 'aleatorio', notas: ['La4', 'Sib4', 'Do5', 'Sol4'], cantidad: 10, ayudaVisual: true,
+        posicion: 'Fa4', teclado: [60, 76],
+        consejo: 'Si♭ es la tecla negra justo a la izquierda de Si. El bemol (♭) baja la nota medio tono. En la posición de Fa la toca el dedo 4.',
+      },
+      {
+        id: 'n13-3', titulo: 'Leer en Fa mayor', emoji: '🎼', bemoles: true,
+        tipo: 'aleatorio', vista: 'pentagrama', clave: 'sol', armadura: 'fa', colores: true, mostrarNombre: false,
+        notas: ['Fa4', 'Sol4', 'La4', 'Sib4', 'Do5'], cantidad: 12, ayudaVisual: false, posicion: 'Fa4', teclado: [60, 76],
+        consejo: 'El ♭ al inicio, en la línea del medio, avisa que todos los Si se tocan Si♭.',
+      },
+      {
+        id: 'n13-4', titulo: 'Acordes de Fa, Si♭ y Do', emoji: '🎹', bemoles: true, ayudaVisual: true,
+        tipo: 'acordes', cantidad: 9, teclado: [60, 76],
+        acordes: [
+          { notas: ['Fa4', 'La4', 'Do5'], nombre: 'Fa mayor' },
+          { notas: ['Fa4', 'Sib4', 'Re5'], nombre: 'Si♭ mayor' },
+          { notas: ['Mi4', 'Sol4', 'Do5'], nombre: 'Do mayor' },
+        ],
+        consejo: 'Los tres acordes de la tonalidad de Fa, con la mano casi quieta: el pulgar se queda en Fa para los dos primeros y baja a Mi para el de Do.',
+      },
+      {
+        id: 'n13-5', titulo: 'Estrellita en Fa', emoji: '🌟', premio: true, bemoles: true,
+        tipo: 'cancion', ayudaVisual: false, teclado: [60, 76], tonalidad: 'fa',
+        notas: ['Fa4', 'Fa4', 'Do5', 'Do5', 'Re5', 'Re5', 'Do5',
+                'Sib4', 'Sib4', 'La4', 'La4', 'Sol4', 'Sol4', 'Fa4',
+                'Do5', 'Do5', 'Sib4', 'Sib4', 'La4', 'La4', 'Sol4',
+                'Do5', 'Do5', 'Sib4', 'Sib4', 'La4', 'La4', 'Sol4',
+                'Fa4', 'Fa4', 'Do5', 'Do5', 'Re5', 'Re5', 'Do5',
+                'Sib4', 'Sib4', 'La4', 'La4', 'Sol4', 'Sol4', 'Fa4'],
+        tiempos: [1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2,
+                  1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2],
+        consejo: 'Estrellita empezando en Fa. Hay un Si♭ en cada frase: que lo busque antes de empezar.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 14 ─────────────────────────
+  {
+    id: 'mundo14',
+    emoji: '🪜',
+    titulo: 'Escalera de las Escalas',
+    nivel: 14,
+    color: '#c7d2fe',
+    lecciones: [
+      {
+        id: 'n14-1', titulo: 'Escala de Do con la izquierda', emoji: '👈',
+        tipo: 'cancion', ayudaVisual: true, mano: 'izquierda', registro: true, teclado: [48, 72],
+        notas: ['Do3', 'Re3', 'Mi3', 'Fa3', 'Sol3', 'La3', 'Si3', 'Do4', 'Si3', 'La3', 'Sol3', 'Fa3', 'Mi3', 'Re3', 'Do3'],
+        dedos: [5, 4, 3, 2, 1, 3, 2, 1, 2, 3, 1, 2, 3, 4, 5],
+        consejo: 'Con la izquierda, al subir el dedo 3 cruza por encima del pulgar después de Sol. Al bajar, el pulgar pasa por debajo después de La.',
+      },
+      {
+        id: 'n14-2', titulo: 'Escala de Sol mayor', emoji: '🌄',
+        tipo: 'cancion', ayudaVisual: true, teclado: [60, 79], tonalidad: 'sol',
+        notas: ['Sol4', 'La4', 'Si4', 'Do5', 'Re5', 'Mi5', 'Fa#5', 'Sol5', 'Fa#5', 'Mi5', 'Re5', 'Do5', 'Si4', 'La4', 'Sol4'],
+        dedos: [1, 2, 3, 1, 2, 3, 4, 5, 4, 3, 2, 1, 3, 2, 1],
+        consejo: 'Los mismos dedos que la escala de Do, empezando en Sol. Ojo: la séptima nota es Fa♯, la tecla negra.',
+      },
+      {
+        id: 'n14-3', titulo: 'Escala de Fa mayor', emoji: '🍂', bemoles: true,
+        tipo: 'cancion', ayudaVisual: true, teclado: [60, 77], tonalidad: 'fa',
+        notas: ['Fa4', 'Sol4', 'La4', 'Sib4', 'Do5', 'Re5', 'Mi5', 'Fa5', 'Mi5', 'Re5', 'Do5', 'Sib4', 'La4', 'Sol4', 'Fa4'],
+        dedos: [1, 2, 3, 4, 1, 2, 3, 4, 3, 2, 1, 4, 3, 2, 1],
+        consejo: 'La escala de Fa tiene su propia digitación: 1-2-3-4 y el pulgar pasa a Do. Así el dedo 4 queda siempre sobre Si♭.',
+      },
+      {
+        id: 'n14-4', titulo: 'Escala de Do con ritmo', emoji: '🏃',
+        tipo: 'ritmo', tempo: 66, subdividir: true,
+        figuras: [['Do4', 0.5], ['Re4', 0.5], ['Mi4', 0.5], ['Fa4', 0.5], ['Sol4', 0.5], ['La4', 0.5], ['Si4', 0.5], ['Do5', 0.5],
+                  ['Si4', 0.5], ['La4', 0.5], ['Sol4', 0.5], ['Fa4', 0.5], ['Mi4', 0.5], ['Re4', 0.5], ['Do4', 1]],
+        consejo: 'La escala en corcheas: dos notas por cada clic, parejas como un tren. Primero lento y parejo; la velocidad llega sola.',
+      },
+      {
+        id: 'n14-5', titulo: 'Leer la escala de Sol', emoji: '🏆', premio: true,
+        tipo: 'cancion', vista: 'pentagrama', clave: 'sol', armadura: 'sol', colores: false, mostrarNombre: false,
+        ayudaVisual: false, teclado: [60, 79], tonalidad: 'sol',
+        notas: ['Sol4', 'La4', 'Si4', 'Do5', 'Re5', 'Mi5', 'Fa#5', 'Sol5', 'Re5', 'Si4', 'Sol4'],
+        dedos: [1, 2, 3, 1, 2, 3, 4, 5, 3, 2, 1],
+        consejo: 'En partitura de verdad, en blanco y negro. El Fa no lleva ♯ escrito: lo dice la armadura.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 15 ─────────────────────────
+  {
+    id: 'mundo15',
+    emoji: '🌈',
+    titulo: 'Cascada de Arpegios',
+    nivel: 15,
+    color: '#a7f3d0',
+    lecciones: [
+      {
+        id: 'n15-1', titulo: 'Arpegio de Do', emoji: '🌈',
+        tipo: 'cancion', ayudaVisual: true, teclado: [60, 72],
+        notas: ['Do4', 'Mi4', 'Sol4', 'Do5', 'Sol4', 'Mi4', 'Do4', 'Mi4', 'Sol4', 'Do5', 'Sol4', 'Mi4', 'Do4'],
+        dedos: [1, 2, 3, 5, 3, 2, 1, 2, 3, 5, 3, 2, 1],
+        consejo: 'Un arpegio es un acorde tocado nota por nota, como una cascada. La mano se abre un poco para llegar al Do de arriba con el meñique.',
+      },
+      {
+        id: 'n15-2', titulo: 'Arpegios de Do, Fa y Sol', emoji: '💧',
+        tipo: 'cancion', ayudaVisual: true, teclado: [55, 72],
+        notas: ['Do4', 'Mi4', 'Sol4', 'Mi4', 'Do4', 'Fa4', 'La4', 'Fa4', 'Si3', 'Re4', 'Sol4', 'Re4', 'Do4', 'Mi4', 'Sol4', 'Do5'],
+        tiempos: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1, 2],
+        consejo: 'Los tres acordes que ya conoce, ahora en cascada. Fíjense que el pulgar casi no se mueve.',
+      },
+      {
+        id: 'n15-3', titulo: 'Bajo Alberti', emoji: '🎠',
+        tipo: 'cancion', ayudaVisual: true, mano: 'izquierda', registro: true, teclado: [48, 72], tempo: 120,
+        notas: ['Do3', 'Sol3', 'Mi3', 'Sol3', 'Do3', 'Sol3', 'Mi3', 'Sol3',
+                'Re3', 'Sol3', 'Fa3', 'Sol3', 'Re3', 'Sol3', 'Fa3', 'Sol3',
+                'Do3', 'Sol3', 'Mi3', 'Sol3', 'Do3'],
+        tiempos: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 2],
+        dedos: [5, 1, 3, 1, 5, 1, 3, 1, 4, 1, 2, 1, 4, 1, 2, 1, 5, 1, 3, 1, 5],
+        consejo: 'Abajo, arriba, medio, arriba: el famoso acompañamiento de Mozart. La izquierda dibuja el acorde mientras la derecha cantaría la melodía.',
+      },
+      {
+        id: 'n15-4', titulo: 'Acordes con la izquierda', emoji: '✋', ayudaVisual: true,
+        tipo: 'acordes', cantidad: 9, teclado: [43, 67],
+        acordes: [
+          { notas: ['Do3', 'Mi3', 'Sol3'], nombre: 'Do mayor' },
+          { notas: ['Do3', 'Fa3', 'La3'], nombre: 'Fa mayor' },
+          { notas: ['Si2', 'Re3', 'Sol3'], nombre: 'Sol mayor' },
+        ],
+        consejo: 'Los acordes de Do, Fa y Sol con la mano izquierda: meñique, dedo 3 y pulgar. Es la base para acompañar canciones.',
+      },
+      {
+        id: 'n15-5', titulo: 'Arpegios con ritmo', emoji: '🏆', premio: true,
+        tipo: 'ritmo', tempo: 60, subdividir: true, teclado: [55, 72],
+        figuras: [['Do4', 0.5], ['Mi4', 0.5], ['Sol4', 0.5], ['Mi4', 0.5],
+                  ['Do4', 0.5], ['Fa4', 0.5], ['La4', 0.5], ['Fa4', 0.5],
+                  ['Si3', 0.5], ['Re4', 0.5], ['Sol4', 0.5], ['Re4', 0.5],
+                  ['Do4', 0.5], ['Mi4', 0.5], ['Sol4', 1]],
+        consejo: 'Los arpegios en corcheas, parejitos con el "ti-ti" del metrónomo.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 16 ─────────────────────────
+  {
+    id: 'mundo16',
+    emoji: '🎻',
+    titulo: 'Puente de las Dos Manos',
+    nivel: 16,
+    color: '#fecdd3',
+    lecciones: [
+      {
+        id: 'n16-1', titulo: 'Martinillo con bordón', emoji: '🔔', mano: 'ambas',
+        tipo: 'acordes', teclado: [48, 72],
+        acordes: [['Do3', 'Sol3', 'Do4'], ['Re4'], ['Mi4'], ['Do4'], ['Do3', 'Sol3', 'Do4'], ['Re4'], ['Mi4'], ['Do4'],
+                  ['Do3', 'Sol3', 'Mi4'], ['Fa4'], ['Sol4'], ['Do3', 'Sol3', 'Mi4'], ['Fa4'], ['Sol4']],
+        consejo: 'El bordón es una quinta (Do-Sol) que la izquierda toca al comienzo de cada frase, como una gaita. La derecha sigue con la melodía.',
+      },
+      {
+        id: 'n16-2', titulo: 'Mary con bajo', emoji: '🐑', mano: 'ambas',
+        tipo: 'acordes', teclado: [48, 72],
+        acordes: [['Do3', 'Mi4'], ['Re4'], ['Do4'], ['Re4'], ['Do3', 'Mi4'], ['Mi4'], ['Mi4'],
+                  ['Sol3', 'Re4'], ['Re4'], ['Re4'], ['Do3', 'Mi4'], ['Sol4'], ['Sol4'],
+                  ['Do3', 'Mi4'], ['Re4'], ['Do4'], ['Re4'], ['Do3', 'Mi4'], ['Mi4'], ['Mi4'], ['Mi4'],
+                  ['Sol3', 'Re4'], ['Re4'], ['Mi4'], ['Re4'], ['Do3', 'Do4']],
+        consejo: 'La izquierda toca un bajo al comienzo de cada compás: Do cuando la canción "está en casa" y Sol cuando "se va de paseo".',
+      },
+      {
+        id: 'n16-3', titulo: 'Oda con bajo', emoji: '🎶', mano: 'ambas',
+        tipo: 'acordes', teclado: [48, 72],
+        acordes: [['Do3', 'Mi4'], ['Mi4'], ['Fa4'], ['Sol4'], ['Re3', 'Sol4'], ['Fa4'], ['Mi4'], ['Re4'],
+                  ['Mi3', 'Do4'], ['Do4'], ['Re4'], ['Mi4'], ['Do3', 'Mi4'], ['Sol3', 'Re4'], ['Re4']],
+        consejo: 'Cada bajo cae junto con la primera nota del compás. Si cuesta, primero que toque solo la izquierda mientras el adulto canta la melodía.',
+      },
+      {
+        id: 'n16-4', titulo: 'Jingle Bells a dos manos', emoji: '🏆', premio: true, mano: 'ambas',
+        tipo: 'acordes', teclado: [48, 72],
+        acordes: [['Do3', 'Mi4'], ['Mi4'], ['Mi4'], ['Do3', 'Mi4'], ['Mi4'], ['Mi4'],
+                  ['Do3', 'Mi4'], ['Sol4'], ['Do4'], ['Re4'], ['Do3', 'Mi4'],
+                  ['La3', 'Fa4'], ['Fa4'], ['Fa4'], ['Fa4'], ['Fa4'], ['Do3', 'Mi4'], ['Mi4'], ['Mi4'],
+                  ['Mi4'], ['Sol3', 'Re4'], ['Re4'], ['Mi4'], ['Sol3', 'Re4'], ['Sol4']],
+        consejo: '¡La canción completa con bajo! Cuando la izquierda baja a La, la derecha está en Fa.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 17 ─────────────────────────
+  {
+    id: 'mundo17',
+    emoji: '🐝',
+    titulo: 'Colmena de Semicorcheas',
+    nivel: 17,
+    color: '#fde047',
+    lecciones: [
+      {
+        id: 'n17-1', titulo: 'Semicorcheas: ti-ri-ti-ri', emoji: '🐝',
+        tipo: 'ritmo', tempo: 50, subdividir: true,
+        figuras: [['Do4', 1], ['Do4', 1], ['Do4', 0.25], ['Do4', 0.25], ['Do4', 0.25], ['Do4', 0.25], ['Do4', 1],
+                  ['Re4', 0.25], ['Re4', 0.25], ['Re4', 0.25], ['Re4', 0.25], ['Re4', 1],
+                  ['Mi4', 0.25], ['Mi4', 0.25], ['Mi4', 0.25], ['Mi4', 0.25], ['Mi4', 1]],
+        consejo: 'Cuatro semicorcheas caben en un pulso: "ti-ri-ti-ri". Para repetir la misma nota rápido, conviene alternar dedos: 3-2-3-2.',
+      },
+      {
+        id: 'n17-2', titulo: 'Corcheas y semicorcheas', emoji: '🍯',
+        tipo: 'ritmo', tempo: 52, subdividir: true,
+        figuras: [['Do4', 0.5], ['Re4', 0.5], ['Mi4', 0.25], ['Re4', 0.25], ['Do4', 0.25], ['Re4', 0.25], ['Mi4', 0.5], ['Mi4', 0.5], ['Re4', 1],
+                  ['Mi4', 0.25], ['Fa4', 0.25], ['Sol4', 0.25], ['Fa4', 0.25], ['Mi4', 0.5], ['Re4', 0.5], ['Do4', 2]],
+        consejo: 'Se mezclan "ti-ti" y "ti-ri-ti-ri". Que diga las sílabas en voz alta antes de tocar.',
+      },
+      {
+        id: 'n17-3', titulo: 'Tresillos: tri-o-la', emoji: '🍀',
+        tipo: 'ritmo', tempo: 54,
+        figuras: [['Do4', 1], ['Do4', 1 / 3], ['Re4', 1 / 3], ['Mi4', 1 / 3], ['Fa4', 1], ['Mi4', 1 / 3], ['Re4', 1 / 3], ['Do4', 1 / 3],
+                  ['Re4', 1 / 3], ['Mi4', 1 / 3], ['Fa4', 1 / 3], ['Sol4', 1 / 3], ['Fa4', 1 / 3], ['Mi4', 1 / 3], ['Do4', 2]],
+        consejo: 'Un tresillo son tres notas iguales en un pulso: "tri-o-la". El 3 encima de las notas lo avisa.',
+      },
+      {
+        id: 'n17-4', titulo: 'Corchea con puntillo', emoji: '🐎',
+        tipo: 'ritmo', tempo: 56, subdividir: true,
+        figuras: [['Do4', 0.75], ['Re4', 0.25], ['Mi4', 0.75], ['Fa4', 0.25], ['Sol4', 2],
+                  ['Sol4', 0.75], ['Fa4', 0.25], ['Mi4', 0.75], ['Re4', 0.25], ['Do4', 2]],
+        consejo: 'Larga-cortita, como un caballito al galope: "taaa-ri, taaa-ri".',
+      },
+      {
+        id: 'n17-5', titulo: 'Ritmo: Para Elisa', emoji: '🏆', premio: true,
+        tipo: 'ritmo', tempo: 36, pulso: 1.5, compas: 1.5, teclado: [60, 77],
+        // "Para Elisa", Ludwig van Beethoven (1810), dominio público. Comienzo del tema, en 3/8.
+        figuras: [[null, 1], ['Mi5', 0.25], ['Re#5', 0.25],
+                  ['Mi5', 0.25], ['Re#5', 0.25], ['Mi5', 0.25], ['Si4', 0.25], ['Re5', 0.25], ['Do5', 0.25],
+                  ['La4', 0.5], [null, 0.25], ['Do4', 0.25], ['Mi4', 0.25], ['La4', 0.25],
+                  ['Si4', 0.5], [null, 0.25], ['Mi4', 0.25], ['Sol#4', 0.25], ['Si4', 0.25],
+                  ['Do5', 0.5], [null, 1]],
+        consejo: 'El comienzo de una de las piezas más famosas del mundo, con su ritmo de verdad. Primero que la aprenda en el Gran Teatro sin metrónomo.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 18 ─────────────────────────
+  {
+    id: 'mundo18',
+    emoji: '🛶',
+    titulo: 'Barca del Seis por Ocho',
+    nivel: 18,
+    color: '#bae6fd',
+    lecciones: [
+      {
+        id: 'n18-1', titulo: 'Seis por ocho: el balanceo', emoji: '🌊',
+        tipo: 'ritmo', tempo: 46, pulso: 1.5, compas: 3,
+        figuras: [['Do4', 1.5], ['Mi4', 1.5], ['Sol4', 1.5], ['Mi4', 1.5],
+                  ['Do4', 0.5], ['Re4', 0.5], ['Mi4', 0.5], ['Fa4', 0.5], ['Mi4', 0.5], ['Re4', 0.5], ['Do4', 3]],
+        consejo: 'En 6/8 se cuentan dos pulsos que se balancean, como una barca: "UNO-dos-tres, DOS-dos-tres". Cada pulso tiene tres corcheas.',
+      },
+      {
+        id: 'n18-2', titulo: 'Larga-corta en 6/8', emoji: '🐬',
+        tipo: 'ritmo', tempo: 48, pulso: 1.5, compas: 3,
+        figuras: [['Do4', 1], ['Re4', 0.5], ['Mi4', 1], ['Fa4', 0.5], ['Sol4', 1], ['Mi4', 0.5], ['Do4', 1.5],
+                  ['Re4', 1], ['Mi4', 0.5], ['Fa4', 1], ['Re4', 0.5], ['Do4', 3]],
+        consejo: 'Negra y corchea: "taa-ti, taa-ti", como un columpio.',
+      },
+      {
+        id: 'n18-3', titulo: 'Rema, rema tu barquito', emoji: '🏆', premio: true,
+        tipo: 'ritmo', tempo: 44, pulso: 1.5, compas: 3,
+        // "Row, Row, Row Your Boat", canción tradicional (dominio público).
+        figuras: [['Do4', 1.5], ['Do4', 1.5], ['Do4', 1], ['Re4', 0.5], ['Mi4', 1.5],
+                  ['Mi4', 1], ['Re4', 0.5], ['Mi4', 1], ['Fa4', 0.5], ['Sol4', 3],
+                  ['Do5', 0.5], ['Do5', 0.5], ['Do5', 0.5], ['Sol4', 0.5], ['Sol4', 0.5], ['Sol4', 0.5],
+                  ['Mi4', 0.5], ['Mi4', 0.5], ['Mi4', 0.5], ['Do4', 0.5], ['Do4', 0.5], ['Do4', 0.5],
+                  ['Sol4', 1], ['Fa4', 0.5], ['Mi4', 1], ['Re4', 0.5], ['Do4', 3]],
+        consejo: 'Una canción entera en 6/8. En la parte de "do-do-do, sol-sol-sol" van tres corcheas por pulso: que levante el dedo entre cada una.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 19 ─────────────────────────
+  {
+    id: 'mundo19',
+    emoji: '🌊',
+    titulo: 'Ola del Crescendo',
+    nivel: 19,
+    color: '#bfdbfe',
+    lecciones: [
+      {
+        id: 'n19-1', titulo: 'Crescendo: cada vez más fuerte', emoji: '📈',
+        tipo: 'dinamica',
+        secuencia: [['Do4', 'p'], ['Re4', '<'], ['Mi4', '<'], ['Fa4', '<'], ['Sol4', '<'],
+                    ['Do4', 'p'], ['Re4', '<'], ['Mi4', '<'], ['Fa4', '<'], ['Sol4', '<']],
+        consejo: 'Crescendo (<) es crecer poco a poco: cada nota un poquito más fuerte que la anterior, como alguien que se acerca.',
+      },
+      {
+        id: 'n19-2', titulo: 'Diminuendo: cada vez más suave', emoji: '📉',
+        tipo: 'dinamica',
+        secuencia: [['Sol4', 'f'], ['Fa4', '>'], ['Mi4', '>'], ['Re4', '>'], ['Do4', '>'],
+                    ['Sol4', 'f'], ['Fa4', '>'], ['Mi4', '>'], ['Re4', '>'], ['Do4', '>']],
+        consejo: 'Diminuendo (>) es al revés: cada nota más suave, como alguien que se aleja.',
+      },
+      {
+        id: 'n19-3', titulo: 'La ola', emoji: '🌊',
+        tipo: 'dinamica',
+        secuencia: [['Do4', 'p'], ['Re4', '<'], ['Mi4', '<'], ['Fa4', '<'], ['Sol4', '<'],
+                    ['Fa4', '>'], ['Mi4', '>'], ['Re4', '>'], ['Do4', '>']],
+        consejo: 'Sube y crece, baja y se apaga, como una ola que llega a la playa.',
+      },
+      {
+        id: 'n19-4', titulo: 'Oda con matices', emoji: '🏆', premio: true,
+        tipo: 'dinamica',
+        secuencia: [['Mi4', 'p'], ['Mi4', '<'], ['Fa4', '<'], ['Sol4', '<'], ['Sol4', 'f'], ['Fa4', '>'], ['Mi4', '>'], ['Re4', '>'],
+                    ['Do4', 'p'], ['Do4', '<'], ['Re4', '<'], ['Mi4', '<'], ['Mi4', 'f'], ['Re4', '>'], ['Re4', '>']],
+        consejo: 'Los matices son lo que hace que la música "hable". La primera mitad crece y llega a forte; después se calma.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 20 ─────────────────────────
+  {
+    id: 'mundo20',
+    emoji: '🎭',
+    titulo: 'Gran Teatro',
+    nivel: 20,
+    color: '#f5d0fe',
+    lecciones: [
+      {
+        id: 'n20-1', titulo: 'Minueto en Sol', emoji: '💃',
+        tipo: 'cancion', ayudaVisual: false, teclado: [60, 79], tempo: 104, tonalidad: 'sol',
+        // Minueto en Sol mayor, atribuido a Christian Petzold (c. 1725), del Cuaderno de Ana Magdalena Bach.
+        // Dominio público. Primera frase (8 compases), mano derecha.
+        notas: ['Re5', 'Sol4', 'La4', 'Si4', 'Do5', 'Re5', 'Sol4', 'Sol4',
+                'Mi5', 'Do5', 'Re5', 'Mi5', 'Fa#5', 'Sol5', 'Sol4', 'Sol4',
+                'Do5', 'Re5', 'Do5', 'Si4', 'La4', 'Si4', 'Do5', 'Si4', 'La4', 'Sol4',
+                'Fa#4', 'Sol4', 'La4', 'Si4', 'Sol4', 'La4'],
+        tiempos: [1, 0.5, 0.5, 0.5, 0.5, 1, 1, 1,
+                  1, 0.5, 0.5, 0.5, 0.5, 1, 1, 1,
+                  1, 0.5, 0.5, 0.5, 0.5, 1, 0.5, 0.5, 0.5, 0.5,
+                  1, 0.5, 0.5, 0.5, 0.5, 3],
+        consejo: 'Una pieza clásica de verdad, de hace 300 años. Que la escuche primero con "Escuchar la canción" y la toque despacio: la app espera cada nota.',
+      },
+      {
+        id: 'n20-2', titulo: 'Minueto con su ritmo', emoji: '🎩',
+        tipo: 'ritmo', tempo: 84, compas: 3, subdividir: true, teclado: [60, 79],
+        figuras: [['Re5', 1], ['Sol4', 0.5], ['La4', 0.5], ['Si4', 0.5], ['Do5', 0.5], ['Re5', 1], ['Sol4', 1], ['Sol4', 1],
+                  ['Mi5', 1], ['Do5', 0.5], ['Re5', 0.5], ['Mi5', 0.5], ['Fa#5', 0.5], ['Sol5', 1], ['Sol4', 1], ['Sol4', 1]],
+        consejo: 'El minueto es un baile en 3: "UN-dos-tres". Los cuatro primeros compases, con metrónomo.',
+      },
+      {
+        id: 'n20-3', titulo: 'Para Elisa', emoji: '🌹',
+        tipo: 'cancion', ayudaVisual: false, teclado: [60, 77], tempo: 60, sinAcompanamiento: true,
+        // "Para Elisa", Ludwig van Beethoven (1810), dominio público. Tema principal, mano derecha.
+        notas: ['Mi5', 'Re#5', 'Mi5', 'Re#5', 'Mi5', 'Si4', 'Re5', 'Do5', 'La4', 'Do4', 'Mi4', 'La4',
+                'Si4', 'Mi4', 'Sol#4', 'Si4', 'Do5', 'Mi4', 'Mi5', 'Re#5',
+                'Mi5', 'Re#5', 'Mi5', 'Si4', 'Re5', 'Do5', 'La4', 'Do4', 'Mi4', 'La4',
+                'Si4', 'Mi4', 'Do5', 'Si4', 'La4'],
+        tiempos: [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.75, 0.25, 0.25, 0.25,
+                  0.75, 0.25, 0.25, 0.25, 0.75, 0.25, 0.25, 0.25,
+                  0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.75, 0.25, 0.25, 0.25,
+                  0.75, 0.25, 0.25, 0.25, 1.5],
+        consejo: 'El tema completo. Mi y Re♯ se alternan con los dedos 2 y 1, la mano casi quieta. ¡Ahora sí puede tocarla con su ritmo en la Colmena!',
+      },
+      {
+        id: 'n20-4', titulo: 'Concierto: Minueto a dos manos', emoji: '🏆', premio: true, mano: 'ambas',
+        tipo: 'acordes', teclado: [48, 79],
+        acordes: [['Sol3', 'Re5'], ['Sol4'], ['La4'], ['Si4'], ['Do5'], ['Si3', 'Re5'], ['Sol4'], ['Sol4'],
+                  ['Do3', 'Mi5'], ['Do5'], ['Re5'], ['Mi5'], ['Fa#5'], ['Si3', 'Sol5'], ['Sol4'], ['Sol4'],
+                  ['La3', 'Do5'], ['Re5'], ['Do5'], ['Si4'], ['La4'], ['Sol3', 'Si4'], ['Do5'], ['Si4'], ['La4'], ['Sol4'],
+                  ['Re3', 'Fa#4'], ['Sol4'], ['La4'], ['Si4'], ['Sol4'], ['Re3', 'La4']],
+        consejo: '¡El gran final de la Etapa 2! El minueto con un bajo sencillo en la izquierda al comienzo de cada compás. Bravo por llegar hasta aquí.',
       },
     ],
   },
@@ -630,6 +1059,14 @@ export const JUEGOS = [
 // Todas las lecciones en orden, para saber cuál se desbloquea después de cuál.
 export const LECCIONES = MUNDOS.flatMap((m) => m.lecciones);
 
+// Lecciones creadas desde partituras (MusicXML) que el adulto agregó en el iPad.
+const LECCIONES_PARTITURAS = [];
+export function registrarPartituras(partituras) {
+  LECCIONES_PARTITURAS.length = 0;
+  for (const p of partituras) LECCIONES_PARTITURAS.push(...p.lecciones);
+}
+
 export function buscarLeccion(id) {
-  return LECCIONES.find((l) => l.id === id) || JUEGOS.find((l) => l.id === id);
+  return LECCIONES.find((l) => l.id === id) || JUEGOS.find((l) => l.id === id)
+    || LECCIONES_PARTITURAS.find((l) => l.id === id);
 }

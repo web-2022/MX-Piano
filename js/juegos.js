@@ -22,6 +22,7 @@ function sorteo(notas, cantidad) {
 function etiquetaNota(midi, leccion) {
   if (leccion.vista === 'pentagrama') {
     return `<div class="mini-pentagrama">${pentagramaSVG(midi, {
+      armadura: leccion.armadura,
       clave: leccion.clave, colores: leccion.colores !== false, mostrarNombre: leccion.mostrarNombre !== false,
     })}</div>`;
   }

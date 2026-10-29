@@ -39,6 +39,7 @@ export function dinamica(leccion, api) {
   let calib = {};
   let indice = 0;
   let fallos = 0;
+  let anterior = null;   // fuerza de la última nota bien tocada (para crescendo y diminuendo)
   let ocupado = false;
   let vivo = true;
 
@@ -77,6 +78,8 @@ export function dinamica(leccion, api) {
     circulo.style.setProperty('--color', colorNota(midi));
     circulo.classList.toggle('fuerte', din === 'f');
     circulo.classList.toggle('suave', din === 'p');
+    circulo.classList.toggle('crece', din === '<');
+    circulo.classList.toggle('decrece', din === '>');
     esc.querySelector('.exp-nombre').textContent = nombreNota(midi);
     esc.querySelector('.exp-marca').textContent = din;
     esc.querySelector('.exp-etiqueta').textContent = etiqueta;
@@ -109,8 +112,9 @@ export function dinamica(leccion, api) {
     const [midi, din] = lista[indice];
     fallos = 0;
     marcarProgreso(esc, indice, 'actual');
-    dibujar(midi, din, din === 'f' ? '🦁 fuerte' : '🐭 suave');
-    api.globo(`${nombreNota(midi)} ${din === 'f' ? 'fuerte' : 'suave'}`);
+    const ETIQUETAS = { f: '🦁 fuerte', p: '🐭 suave', '<': '📈 un poco más fuerte', '>': '📉 un poco más suave' };
+    dibujar(midi, din, ETIQUETAS[din]);
+    api.globo(`${nombreNota(midi)}: ${ETIQUETAS[din].slice(3)}`);
   }
 
   async function calibrar(fuerza) {
@@ -164,8 +168,14 @@ export function dinamica(leccion, api) {
         return;
       }
       const { umbral } = memoria.fuerza[clave];
-      const fue = fuerza >= umbral ? 'f' : 'p';
-      if (fue === din) {
+      // f / p: comparado con la mitad entre fuerte y suave.
+      // < / > (crescendo / diminuendo): comparado con la nota anterior.
+      const cumple = din === 'f' ? fuerza >= umbral
+        : din === 'p' ? fuerza < umbral
+          : din === '<' ? anterior == null || fuerza > anterior * 1.12
+            : anterior == null || fuerza < anterior / 1.12;
+      if (cumple) {
+        anterior = fuerza;
         api.marcarTecla(midi, 'acierto');
         api.animarMascota('feliz');
         api.chispas(circulo);
@@ -183,7 +193,9 @@ export function dinamica(leccion, api) {
       api.marcarTecla(midi, 'error');
       api.animarMascota('animo');
       api.sacudir(circulo);
-      const texto = din === 'f' ? '¡Bien la nota! Pero más fuerte, como un león' : '¡Bien la nota! Pero más suave, como un ratón';
+      const texto = din === 'f' ? '¡Bien la nota! Pero más fuerte, como un león'
+        : din === 'p' ? '¡Bien la nota! Pero más suave, como un ratón'
+          : din === '<' ? '¡Un poquito más fuerte que la anterior!' : '¡Un poquito más suave que la anterior!';
       api.globo(texto);
       if (fallos >= 3) {
         // Para no frustrar: después de tres intentos se sigue adelante.

@@ -74,9 +74,12 @@
     <nav class="pestanas" role="tablist">
       <button class="pestana activa" data-pestana="mapa" role="tab">🗺️ <span>Mi viaje</span></button>
       <button class="pestana" data-pestana="parque" role="tab">🎪 <span>Juegos</span></button>
+      <button class="pestana" data-pestana="partituras" role="tab">📄 <span>Partituras</span></button>
     </nav>
     <div id="mapa" class="mapa"></div>
     <div id="parque" class="mapa parque oculto"></div>
+    <div id="partituras" class="mapa parque oculto"></div>
+    <input type="file" id="archivo-partitura" accept=".musicxml,.xml,.mxl,application/vnd.recordare.musicxml+xml,application/vnd.recordare.musicxml" hidden>
   </section>
 
   <!-- JUEGO -->
@@ -176,6 +179,30 @@
       <div id="voz-lista" class="voz-lista"></div>
       <button type="button" id="btn-voz-borrar" class="boton-peligro">Borrar todas las grabaciones</button>
       <button value="cerrar" class="boton-grande">Listo</button>
+    </form>
+  </dialog>
+
+  <!-- Agregar una partitura (MusicXML) -->
+  <dialog id="dialogo-partitura" class="dialogo">
+    <form method="dialog">
+      <h2>📄 Nueva partitura</h2>
+      <label class="fila columna">Nombre
+        <input type="text" id="pt-titulo" class="campo" maxlength="60">
+      </label>
+      <p id="pt-resumen" class="voz-ayuda"></p>
+      <div class="fila fila-modo" id="pt-manos">
+        <span>Mano:</span>
+        <label><input type="radio" name="pt-mano" value="derecha"> Derecha</label>
+        <label><input type="radio" name="pt-mano" value="izquierda"> Izquierda</label>
+        <label><input type="radio" name="pt-mano" value="ambas"> Las dos</label>
+      </div>
+      <div class="fila fila-modo" id="pt-modos">
+        <span>Tocar:</span>
+        <label><input type="radio" name="pt-modo" value="cancion" checked> A su ritmo</label>
+        <label><input type="radio" name="pt-modo" value="ritmo"> Con metrónomo</label>
+      </div>
+      <button value="crear" class="boton-grande">Crear lecciones</button>
+      <button value="cancelar" class="boton-peligro">Cancelar</button>
     </form>
   </dialog>
 
