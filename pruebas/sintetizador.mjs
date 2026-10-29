@@ -11,7 +11,8 @@ export function nuevaSenal(segundos) { return new Float32Array(Math.ceil(segundo
 
 // Nota de piano: armónicos ligeramente desafinados (inarmonicidad), caída exponencial,
 // y el "clic" del martillo al inicio.
-export function piano(s, nota, t0, { vol = 0.25, dur = 1.5, cents = 0 } = {}) {
+// corte: la nota se corta en seco al terminar "dur" (la cuerda vuelve a ser golpeada).
+export function piano(s, nota, t0, { vol = 0.25, dur = 1.5, cents = 0, corte = false } = {}) {
   const midi = typeof nota === 'number' ? nota : notaAMidi(nota);
   const f = midiAFrecuencia(midi) * Math.pow(2, cents / 1200);
   const i0 = Math.floor(t0 * SR);
@@ -26,7 +27,7 @@ export function piano(s, nota, t0, { vol = 0.25, dur = 1.5, cents = 0 } = {}) {
     for (let i = 0; i < largo && i0 + i < s.length; i++) {
       const t = i / SR;
       let env = Math.min(1, t / 0.003) * Math.exp(-t / tau);
-      if (t > dur) env *= Math.exp(-(t - dur) / 0.08); // soltar la tecla (apagador)
+      if (t > dur) env *= corte ? 0 : Math.exp(-(t - dur) / 0.08); // soltar la tecla (apagador)
       s[i0 + i] += a * env * Math.sin(2 * Math.PI * fk * t + fase);
     }
   }

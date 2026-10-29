@@ -43,6 +43,16 @@ Cada lección se desbloquea al terminar la anterior. En ⚙️ el profesor puede
 - Los límites están al inicio de `js/expresion.js` (`CORTA_MS`, `LARGA_MS`).
 - Con el teclado de la pantalla: tocar **abajo** en la tecla = fuerte, **arriba** = suave.
 
+## Velocidad y pedal 🐢🦶
+
+- **Velocidad:** en las lecciones con metrónomo hay tres botones: 🐢 Lento (50 %), 🚶 Medio (75 %) y 🏃 Normal.
+  Sirve para aprender piezas difíciles de a poco.
+- **Practico con pedal** (en ⚙️): con pedal siguen sonando las notas anteriores y el micrófono podría
+  creer que hay teclas de más. En este modo la app no mira lo que *sigue sonando*, sino lo que *acaba
+  de sonar*: cada nota pedida tiene que aparecer con el golpe (sus armónicos agudos suben), y lo nuevo
+  no puede venir de una tecla vecina. Funciona en canciones, notas sueltas, acordes y dos manos.
+- Probado con pianos sintéticos con pedal (`node pruebas/prueba-acordes.mjs`, sección "Con pedal").
+
 ## Partituras (MusicXML) 📄
 
 Pestaña **Partituras** del mapa → **➕ Agregar partitura**. Acepta `.musicxml`, `.xml` y `.mxl`

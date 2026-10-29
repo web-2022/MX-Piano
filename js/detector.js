@@ -69,7 +69,9 @@ export class NucleoDetector {
 
     // --- Golpe de tecla: energía aguda de la parte más reciente de la ventana ---
     const n = crudo.length;
-    const desde = Math.max(1, n - 512);
+    // Toda la ventana (~21 ms): más que el tiempo entre cuadros (~16 ms), así ningún golpe
+    // cae en un hueco entre una mirada y la siguiente.
+    const desde = 1;
     let agudo = 0;
     for (let i = desde; i < n; i++) {
       const d = crudo[i] - crudo[i - 1];
@@ -99,10 +101,14 @@ export class NucleoDetector {
     };
 
     // --- Ruido de fondo: solo se mide cuando no hay nota ni golpe ---
+    // Sube muy lento y baja rápido: así el sonido sostenido (pedal, notas largas)
+    // no se confunde con ruido de la casa y los golpes nuevos se siguen notando.
     if (midi === null && !golpe) {
-      const a = this.ruido === 0 ? 0.3 : 0.03;
-      this.ruido += (rms - this.ruido) * a;
-      this.ruidoAgudo += (agudo - this.ruidoAgudo) * a;
+      const inicial = this.ruido === 0;
+      const aR = inicial ? 0.3 : rms > this.ruido ? 0.004 : 0.08;
+      const aA = inicial ? 0.3 : agudo > this.ruidoAgudo ? 0.004 : 0.08;
+      this.ruido += (rms - this.ruido) * aR;
+      this.ruidoAgudo += (agudo - this.ruidoAgudo) * aA;
     }
 
     if (silenciado || calentando) {
@@ -309,17 +315,25 @@ export class Detector {
     const info = this.nucleo.procesar(this.bufTono, this.bufCrudo, this.ctx.sampleRate, ahora, ahora < this.silenciadoHasta);
     this.onNivel?.(info);
     // Primero el fin de la nota anterior y después la nueva (importa en el ligado).
-    if (info.ataque != null && info.escuchando) this.onAtaque?.(info.ataque);
+    if (info.ataque != null && info.escuchando) {
+      // Sonido justo antes del golpe (para el modo pedal: saber qué es nuevo).
+      if (this.analizadorAcorde) {
+        this.bufAntes = this.bufAntes || new Float32Array(this.analizadorAcorde.fftSize);
+        this.analizadorAcorde.getFloatTimeDomainData(this.bufAntes);
+      }
+      this.onAtaque?.(info.ataque);
+    }
     if (info.fin) this.onFin?.(info.fin.midi, info.fin.duracion, 'mic', info.fin.instante, !!info.fin.ligada);
     if (info.nota) this.onNota?.(info.nota.midi, info.nota.frecuencia, 'mic', info.nota.instante, info.nota.fuerza);
   }
 
   // ¿Están sonando estas notas ahora? (para acordes). Prueba también una octava
   // arriba y abajo si se permite, porque el niño puede tocar el acorde en otro Do.
-  verificarAcorde(esperadas, { cualquierOctava = false } = {}) {
+  // pedal: no busca teclas de más y exige que cada nota "acabe de sonar" (comparando con antes del golpe).
+  verificarAcorde(esperadas, { cualquierOctava = false, pedal = false } = {}) {
     if (!this.analizadorAcorde) return { ok: false, faltan: esperadas, sobran: [], detalle: {} };
     this.analizadorAcorde.getFloatTimeDomainData(this.bufAcorde);
-    const opciones = { desvio: this.nucleo.desvio };
+    const opciones = { desvio: this.nucleo.desvio, pedal: pedal && !!this.bufAntes, antes: this.bufAntes };
     const base = verificarNotas(this.bufAcorde, this.ctx.sampleRate, esperadas, opciones);
     if (base.ok || !cualquierOctava) return base;
     for (const d of [-12, 12]) {

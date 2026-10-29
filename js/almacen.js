@@ -22,6 +22,8 @@ const AJUSTES_DEFECTO = {
   voz: true,
   notaReferencia: true,
   acompanarVivo: false,
+  pedal: false,           // modo pedal: se juzga lo que acaba de sonar, no lo que sigue sonando
+  velocidadRitmo: 1,      // 0.5 / 0.75 / 1 en las lecciones con metrónomo
   vozAguda: true,
   tecladoPantalla: false,
   mostrarDetector: false,

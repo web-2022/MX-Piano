@@ -34,17 +34,18 @@ function potencia(buf, w, sampleRate, f) {
 // Energía de una nota: suma de sus armónicos que quedan bien separados de las notas vecinas.
 // (En los graves los armónicos 2 a 4 se distinguen mejor que el fundamental.)
 // excluir: frecuencias que ya ocupan las notas pedidas (sus armónicos); se saltan.
-function energiaNota(buf, w, sampleRate, midi, desvio, excluir = null) {
+// agudos: usa los armónicos 2 a 6 con igual peso (se apagan rápido, así que delatan un golpe nuevo).
+function energiaNota(buf, w, sampleRate, midi, desvio, excluir = null, agudos = false) {
   const f0 = midiAFrecuencia(midi + desvio);
   const separacionMin = (2.6 * sampleRate) / buf.length; // ancho del lóbulo de la ventana
   let total = 0;
   let pesos = 0;
-  for (let h = 1; h <= 4; h++) {
+  for (let h = agudos ? 2 : 1; h <= (agudos ? 6 : 4); h++) {
     const fh = f0 * h * Math.sqrt(1 + 0.0003 * h * h);  // inarmonicidad del piano
     if (fh > 2300) break;
     if (fh * 0.0595 < separacionMin) continue;          // vecinas demasiado cerca: no sirve
     if (excluir?.some((fx) => Math.abs(1200 * Math.log2(fh / fx)) < 45)) continue;
-    const peso = 1 / h;
+    const peso = agudos ? 1 : 1 / h;
     total += peso * potencia(buf, w, sampleRate, fh);
     pesos += peso;
   }
@@ -55,7 +56,10 @@ function energiaNota(buf, w, sampleRate, midi, desvio, excluir = null) {
 //   buf: muestras recientes (ideal ~170 ms, por ejemplo 8192 a 48 kHz), sin el golpe del martillo.
 //   esperadas: números MIDI.  desvio: desafinación del piano en semitonos (del detector).
 // Devuelve { ok, faltan: [midi], sobran: [midi], detalle }.
-export function verificarNotas(buf, sampleRate, esperadas, { desvio = 0 } = {}) {
+//   pedal + antes: modo pedal. "antes" es el sonido justo antes del golpe. Con pedal siguen
+//   sonando las notas anteriores, así que no se buscan teclas de más: se comprueba que cada
+//   nota pedida "acaba de sonar" (su energía subió con el golpe) o que destaca sobre sus vecinas.
+export function verificarNotas(buf, sampleRate, esperadas, { desvio = 0, pedal = false, antes = null } = {}) {
   const w = hann(buf.length);
   const cache = new Map();
   const E = (m) => {
@@ -74,8 +78,31 @@ export function verificarNotas(buf, sampleRate, esperadas, { desvio = 0 } = {}) 
     const contraste = e / Math.max(1e-12, ...vecinas);
     const relativa = e / Math.max(1e-12, maximo);
     detalle[m] = { contraste: +contraste.toFixed(1), relativa: +relativa.toFixed(3) };
+    if (pedal && antes) {
+      // Energía nueva (lo que apareció con el golpe) de la nota y de sus vecinas.
+      // Solo armónicos propios: los que comparte con otra nota pedida (una quinta, una octava)
+      // se mezclan con ella y no sirven para saber si esta nota se volvió a tocar.
+      const otras = [];
+      for (const o of esperadas) {
+        if (o === m) continue;
+        for (let k = 1; k <= 10; k++) otras.push(midiAFrecuencia(o + desvio) * k * Math.sqrt(1 + 0.0003 * k * k));
+      }
+      const propios = energiaNota(buf, w, sampleRate, m, desvio, otras, true) > 0 ? otras : null;
+      const ahoraA = (x) => energiaNota(buf, w, sampleRate, x, desvio, x === m ? propios : null, true);
+      const nueva = (x) => Math.max(0, ahoraA(x) - energiaNota(antes, w, sampleRate, x, desvio, x === m ? propios : null, true));
+      const inc = nueva(m);
+      const eA = ahoraA(m);
+      const incVecinas = Math.max(1e-12, ...[m - 1, m + 1].filter((v) => !conjunto.has(v)).map(nueva));
+      detalle[m].nueva = +(inc / Math.max(1e-12, eA)).toFixed(2);
+      detalle[m].frenteVecinas = +(inc / incVecinas).toFixed(1);
+      // Al menos 30 % de su energía es nueva (volver a tocar una nota que aún suena la sube
+      // ~1,5 veces; una nota que solo sigue sonando no sube) y lo nuevo no viene de una vecina.
+      if (relativa < 0.04 || inc < 0.3 * eA || inc < 2 * incVecinas) faltan.push(m);
+      continue;
+    }
     if (contraste < 2.5 || relativa < 0.04) faltan.push(m);
   }
+  if (pedal) return { ok: !faltan.length, faltan, sobran: [], detalle };
 
   // Teclas de más: el error típico es apoyar también la tecla de al lado.
   // Se miran las teclas a uno y dos semitonos de cada nota pedida, usando solo los

@@ -670,6 +670,8 @@ async function empezarLeccion(id) {
   $('#juego-titulo').textContent = `${leccion.emoji} ${leccion.titulo}`;
   $('#btn-escuchar').textContent = esRitmo ? '🔊 Escuchar el ritmo' : leccion.tipo === 'eco' ? '🔊 Otra vez' : '🔊 Escuchar';
   $('#pulso').classList.toggle('oculto', !esRitmo);
+  $('#velocidad').classList.toggle('oculto', !esRitmo);
+  marcarVelocidad();
   $('#escenario').classList.toggle('oculto', !esJuego);
   $('#btn-cancion').classList.toggle('oculto', leccion.tipo !== 'cancion');
   pararCancion();
@@ -742,7 +744,7 @@ function apiJuego(j) {
     sacudir,
     memoria: estado.memoria,
     esPantalla: () => !!estado.ajustes.tecladoPantalla,
-    verificarAcorde: (esperadas, opciones) => estado.detector.verificarAcorde(esperadas, opciones),
+    verificarAcorde: (esperadas, opciones) => estado.detector.verificarAcorde(esperadas, { ...opciones, pedal: !!estado.ajustes.pedal }),
     esAcierto: (tocada, objetivo) => esAcierto(j.leccion, tocada, objetivo),
     contarError: () => { j.errores++; },
     chispas,
@@ -1018,7 +1020,8 @@ function correrRitmo(demo) {
   // Las duraciones se miden en negras. "pulso" es cada cuántas negras suena un clic
   // (1 normalmente; 1,5 en 6/8, donde el pulso es la negra con puntillo). "tempo" = clics por minuto.
   const pulso = j.leccion.pulso || 1;
-  const beatMs = 60000 / (j.leccion.tempo * (esGrande() ? 1.15 : 1)) / pulso; // ms por negra
+  const velocidad = estado.ajustes.velocidadRitmo || 1;
+  const beatMs = 60000 / (j.leccion.tempo * velocidad * (esGrande() ? 1.15 : 1)) / pulso; // ms por negra
   r.beatMs = beatMs;
   r.tolerancia = Math.min(TOLERANCIA_MS, beatMs * r.minimo * 0.45);
   const compas = j.leccion.compas || 4;  // negras por compás (6/8 = 3)
@@ -1161,14 +1164,68 @@ function notaEnRitmo(midi, origen, instante = performance.now()) {
   }
 }
 
-estado.detector.onNota = (midi, frecuencia, origen, instante, fuerza) => alRecibirNota(midi, frecuencia, origen, instante, fuerza);
+// Modo pedal en canciones y notas sueltas: el detector de una nota se confunde con lo que sigue
+// sonando, así que se usa la comprobación por golpe (la nota pedida acaba de sonar).
+const TIPOS_PEDAL = ['cancion', 'aleatorio', 'buscar'];
+const usaPedal = (j, origen) => estado.ajustes.pedal && origen === 'mic' && !j?.minijuego && TIPOS_PEDAL.includes(j?.leccion.tipo);
+
+estado.detector.onNota = (midi, frecuencia, origen, instante, fuerza) => {
+  if (usaPedal(estado.juego, origen)) return;
+  alRecibirNota(midi, frecuencia, origen, instante, fuerza);
+};
+
+let comprobandoPedal = false;
+async function ataqueConPedal(j, instante) {
+  if (comprobandoPedal || !j.esperando) return;
+  comprobandoPedal = true;
+  const indice = j.indice;
+  const objetivo = j.objetivos[indice];
+  await esperar(Math.max(0, instante + 220 - performance.now()));
+  const l = j.leccion;
+  const r = estado.juego === j && j.esperando && j.indice === indice && estado.detector.escuchando
+    ? estado.detector.verificarAcorde([objetivo], { cualquierOctava: !l.registro && !l.octavaEstricta, pedal: true })
+    : null;
+  comprobandoPedal = false;
+  if (!r) return;
+  if (r.ok) {
+    alRecibirNota(objetivo, 0, 'mic', instante);
+    return;
+  }
+  // No se sabe qué tecla fue, solo que no fue la pedida.
+  j.errores++;
+  j.erroresNota++;
+  animarMascota('animo');
+  sacudir(objetivoVisible());
+  globo(`¡Casi! Busca ${nombreNota(objetivo)}`);
+  if (j.erroresNota >= 3) iluminarObjetivo(objetivo);
+}
 
 // Ataque (empezó a sonar algo): lo usan las lecciones de acordes para comprobar las notas juntas.
 estado.detector.onAtaque = (instante) => {
   const j = estado.juego;
   if (!j || estado.pausa || !$('#pantalla-juego').classList.contains('activa')) return;
+  if (usaPedal(j, 'mic')) { ataqueConPedal(j, instante); return; }
   j.minijuego?.ataque?.(instante);
 };
+
+// ================= Velocidad (lecciones con metrónomo) =================
+function marcarVelocidad() {
+  const v = String(estado.ajustes.velocidadRitmo || 1);
+  document.querySelectorAll('#velocidad button').forEach((b) => b.classList.toggle('activa', b.dataset.v === v));
+}
+document.querySelectorAll('#velocidad button').forEach((b) => {
+  b.addEventListener('click', () => {
+    estado.ajustes.velocidadRitmo = Number(b.dataset.v);
+    guardarAjustes(estado.ajustes);
+    marcarVelocidad();
+    // Si estaba sonando, vuelve a empezar con la nueva velocidad.
+    const j = estado.juego;
+    if (j?.ritmo?.corriendo) {
+      detenerRitmo();
+      globo(`${b.textContent}: toca 🔊 para empezar`);
+    }
+  });
+});
 
 // Fin de una nota (al soltar la tecla): lo usan las lecciones de picado, largo y ligado.
 estado.detector.onFin = (midi, duracion, origen, instante, ligada) => {
@@ -1340,6 +1397,7 @@ function abrirAjustes() {
   $('#aj-voz').checked = a.voz;
   $('#aj-referencia').checked = a.notaReferencia;
   $('#aj-acompanar').checked = a.acompanarVivo;
+  $('#aj-pedal').checked = a.pedal;
   $('#aj-teclado').checked = a.tecladoPantalla;
   $('#aj-detector').checked = a.mostrarDetector;
   $('#aj-desbloquear').checked = a.desbloquearTodo;
@@ -1359,6 +1417,7 @@ $('#dialogo-ajustes').addEventListener('close', async () => {
   a.voz = $('#aj-voz').checked;
   a.notaReferencia = $('#aj-referencia').checked;
   a.acompanarVivo = $('#aj-acompanar').checked;
+  a.pedal = $('#aj-pedal').checked;
   a.tecladoPantalla = $('#aj-teclado').checked;
   a.mostrarDetector = $('#aj-detector').checked;
   a.desbloquearTodo = $('#aj-desbloquear').checked;

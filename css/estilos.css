@@ -1136,3 +1136,8 @@ body.grandes .notas-flotantes { opacity: .5; }
 .pantalla[data-modo="ritmo"] .zona-mascota .mascota { width: clamp(90px, 18vh, 150px); height: clamp(90px, 18vh, 150px); }
 .pantalla[data-modo="ritmo"] .bloque .figura { width: 26px; height: 38px; }
 .pantalla[data-modo="ritmo"] .progreso-juego { padding-bottom: 14px; }
+
+/* ---------- Velocidad del metrónomo ---------- */
+.velocidad { display: flex; background: #fff; border-radius: 999px; box-shadow: var(--sombra); padding: 4px; gap: 2px; }
+.velocidad button { background: transparent; font-weight: 800; font-size: 1rem; padding: .4em .8em; border-radius: 999px; }
+.velocidad button.activa { background: var(--primario); color: #fff; }

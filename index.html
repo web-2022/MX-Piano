@@ -116,6 +116,11 @@
         <div id="escenario" class="escenario oculto"></div>
         <div class="botones-escuchar">
           <button id="btn-escuchar" class="boton-escuchar">🔊 Escuchar</button>
+          <div id="velocidad" class="velocidad oculto" role="group" aria-label="Velocidad">
+            <button data-v="0.5">🐢 Lento</button>
+            <button data-v="0.75">🚶 Medio</button>
+            <button data-v="1">🏃 Normal</button>
+          </div>
           <button id="btn-cancion" class="boton-escuchar oculto">🎶 Escuchar la canción</button>
         </div>
       </div>
@@ -154,6 +159,7 @@
       <label class="fila"><input type="checkbox" id="aj-voz"> Voz de Ranita</label>
       <button type="button" id="btn-voz" class="boton-secundario boton-voz">🎙️ Grabar la voz de Ranita</button>
       <label class="fila"><input type="checkbox" id="aj-referencia"> Tocar la nota antes de pedirla</label>
+      <label class="fila"><input type="checkbox" id="aj-pedal"> Practico con pedal (no marca como error las notas que siguen sonando)</label>
       <label class="fila"><input type="checkbox" id="aj-acompanar"> Acompañar con acordes mientras toca las canciones (mejor con audífonos)</label>
       <label class="fila"><input type="checkbox" id="aj-teclado"> Usar el teclado de la pantalla (probar sin piano)</label>
       <label class="fila"><input type="checkbox" id="aj-detector"> Mostrar lo que escucha el micrófono</label>
