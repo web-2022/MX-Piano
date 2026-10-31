@@ -68,6 +68,16 @@ export function verificarNotas(buf, sampleRate, esperadas, { desvio = 0, pedal =
     return cache.get(m);
   };
 
+  // Lo que sonaba justo antes del golpe (la nota anterior que todavía no se apaga).
+  // Si se conoce, las teclas vecinas y las "de más" se juzgan por lo NUEVO, no por lo que sigue sonando.
+  const cacheAntes = new Map();
+  const previa = (m) => {
+    if (!antes) return 0;
+    if (!cacheAntes.has(m)) cacheAntes.set(m, energiaNota(antes, w, sampleRate, m, desvio));
+    return cacheAntes.get(m);
+  };
+  const nuevaE = (m) => Math.max(0, E(m) - previa(m));
+
   const conjunto = new Set(esperadas);
   const maximo = Math.max(...esperadas.map(E));
   const detalle = {};
@@ -75,8 +85,15 @@ export function verificarNotas(buf, sampleRate, esperadas, { desvio = 0, pedal =
   for (const m of esperadas) {
     const e = E(m);
     // Vecinas que no son parte del acorde
-    const vecinas = [m - 1, m + 1].filter((v) => !conjunto.has(v)).map(E);
-    const contraste = e / Math.max(1e-12, ...vecinas);
+    const vecinasIdx = [m - 1, m + 1].filter((v) => !conjunto.has(v));
+    const vecinas = vecinasIdx.map(E);
+    let contraste = e / Math.max(1e-12, ...vecinas);
+    // La vecina suena solo porque la tocó antes (ya sonaba igual antes del golpe): se compara con lo nuevo.
+    if (antes && !pedal && contraste < 2.5) {
+      // Solo vale si la nota pedida también es nueva (apareció con este golpe).
+      const nm = nuevaE(m);
+      if (nm > 0.3 * e) contraste = Math.max(contraste, nm / Math.max(1e-12, ...vecinasIdx.map(nuevaE)));
+    }
     const relativa = e / Math.max(1e-12, maximo);
     detalle[m] = { contraste: +contraste.toFixed(1), relativa: +relativa.toFixed(3) };
     if (e < minimo) { faltan.push(m); detalle[m].debil = true; continue; }
@@ -119,8 +136,10 @@ export function verificarNotas(buf, sampleRate, esperadas, { desvio = 0, pedal =
     const candidatas = new Set();
     for (const e of esperadas) for (const d of [-2, -1, 1, 2]) if (!conjunto.has(e + d)) candidatas.add(e + d);
     for (const m of candidatas) {
-      const e = energiaNota(buf, w, sampleRate, m, desvio, parciales);
+      let e = energiaNota(buf, w, sampleRate, m, desvio, parciales);
       if (!e) continue; // todos sus armónicos coinciden con los pedidos: no se puede saber
+      // Si ya sonaba antes del golpe, es la nota anterior apagándose: solo cuenta lo que aumentó.
+      if (antes) e = Math.max(0, e - energiaNota(antes, w, sampleRate, m, desvio, parciales));
       if (e > minimo * 0.3) sobran.push(m);
     }
   }

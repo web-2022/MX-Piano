@@ -209,6 +209,16 @@ node pruebas/prueba-detector.mjs
 Toca pianos sintéticos (notas sueltas, repetidas, rápidas, desafinadas, graves, suaves con ruido,
 con voz de TV) y dice si reconoció exactamente lo que se tocó.
 
+## Si una nota no se reconoce
+
+1. En ⚙️ activa **"Mostrar lo que escucha el micrófono"**. Debajo de la lección aparece lo que oye y la
+   **última nota reconocida**. Si ahí sale la nota pero la lección no avanza, el problema es la lección;
+   si no sale, es el micrófono (sube la sensibilidad).
+2. Mientras Ranita habla o toca, el micrófono no escucha (el aro de Ranita se pone morado). La voz y la
+   nota de ejemplo ahora suenan solo la primera vez que aparece cada nota.
+3. En el modo ritmo, si la nota llega fuera de tiempo la app dice "¡Un poquito antes!" o "¡Un poquito tarde!".
+   La demora del micrófono de cada iPad se ajusta sola con cada nota a tiempo.
+
 ## Consejos para que reconozca bien las notas
 
 - iPad en el atril del piano, en un lugar sin TV ni conversaciones.

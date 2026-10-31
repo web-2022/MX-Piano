@@ -93,7 +93,9 @@ function decir(texto, { menor = false } = {}) {
     };
     u.onend = fin;
     u.onerror = fin;
-    setTimeout(fin, 4000);
+    // Si el iPad no avisa que terminó de hablar, se calcula cuánto debería durar la frase
+    // (antes eran 4 s fijos: el micrófono quedaba sordo y no oía las notas).
+    setTimeout(fin, Math.min(5000, 900 + texto.length * 75));
     estado.detector.silenciarHasta(Infinity); // que el micrófono no escuche la voz
     speechSynthesis.cancel();
     speechSynthesis.speak(u);
@@ -837,14 +839,19 @@ async function presentarObjetivo() {
   dibujarProgreso();
   iluminarObjetivo(l.ayudaVisual ? midi : null);
 
-  const nueva = j.indice === 0 || j.objetivos[j.indice - 1] !== midi;
+  // Mientras Ranita habla o toca la nota de ejemplo, el micrófono no escucha (para no oírse a sí
+  // misma). Para que el niño no toque "en el vacío", eso se hace solo la primera vez que aparece
+  // cada nota en la lección; después basta con el globo y la tecla que brilla.
+  j.presentadas = j.presentadas || new Set();
+  const primeraVez = !j.presentadas.has(midi);
+  j.presentadas.add(midi);
   const nombre = mostrarNombreDe(l) ? nombreNota(midi) : null;
 
   if (l.tipo !== 'cancion') {
     globo(nombre ? `¡Toca ${nombre}!` : '¿Qué nota es?');
-    if (nueva || l.tipo === 'buscar') {
+    if (primeraVez) {
       await decir(nombre ? `Toca ${nombre}` : 'Toca esta nota', { menor: true });
-      if (estado.ajustes.notaReferencia && nueva) await esperar(sonar(tocarNota, midi));
+      if (estado.ajustes.notaReferencia) await esperar(sonar(tocarNota, midi, 0.8));
     }
   } else {
     globo(vistaDe(l) === 'pentagrama' ? '¡Lee la canción!' : '¡Sigue la canción!');
@@ -903,8 +910,9 @@ async function alRecibirNota(midi, frecuencia, origen, instante, fuerza) {
       terminarLeccion();
       return;
     }
-    if (l.tipo !== 'cancion') await esperar(sonar(sonidoExito));
-    else await esperar(150);
+    // El sonido de premio deja el micrófono sordo ~0,7 s: suena solo cada 4 aciertos.
+    if (l.tipo !== 'cancion' && j.indice % 4 === 0) await esperar(sonar(sonidoExito));
+    else await esperar(120);
     presentarObjetivo();
     return;
   }
@@ -1181,7 +1189,8 @@ function notaEnRitmo(midi, origen, instante = performance.now()) {
   const r = j.ritmo;
   if (!r?.corriendo || r.demo) return;
   // "instante" es el momento del golpe de la tecla (no cuando terminó de reconocerse).
-  const momento = instante - (origen === 'mic' ? LATENCIA_MIC_MS : 0);
+  const latencia = origen === 'mic' ? (estado.ajustes.latenciaMic ?? LATENCIA_MIC_MS) : 0;
+  const momento = instante - latencia;
   const t = (momento - r.inicio) / r.beatMs;
 
   // La nota pendiente más cercana en el tiempo
@@ -1192,7 +1201,25 @@ function notaEnRitmo(midi, origen, instante = performance.now()) {
     const d = Math.abs(t - e.inicio) * r.beatMs;
     if (d <= r.tolerancia && d < distancia) { mejor = i; distancia = d; }
   });
-  if (mejor < 0) return; // tocó fuera de tiempo: no se cuenta
+  if (mejor < 0) {
+    // Fuera de la ventana: se avisa si fue un poquito antes o tarde (antes no se decía nada
+    // y parecía que el iPad no había oído la nota).
+    let cerca = null;
+    r.eventos.forEach((e) => {
+      if (e.estado !== 'pendiente' || e.midi == null) return;
+      const d = (t - e.inicio) * r.beatMs;
+      if (Math.abs(d) <= r.tolerancia * 2.5 && (!cerca || Math.abs(d) < Math.abs(cerca))) cerca = d;
+    });
+    if (cerca != null) globo(cerca > 0 ? '¡Un poquito tarde!' : '¡Un poquito antes!');
+    return;
+  }
+  // El micrófono de cada iPad tarda distinto: la demora se ajusta sola con cada nota a tiempo.
+  if (origen === 'mic') {
+    const desfase = (t - r.eventos[mejor].inicio) * r.beatMs;
+    estado.ajustes.latenciaMic = Math.max(0, Math.min(220, latencia + desfase * 0.15));
+    clearTimeout(estado.guardarLatencia);
+    estado.guardarLatencia = setTimeout(() => guardarAjustes(estado.ajustes), 2000);
+  }
 
   const e = r.eventos[mejor];
   if (esAcierto(j.leccion, midi, e.midi)) {
@@ -1220,6 +1247,7 @@ const conPedal = (j) => !!(estado.ajustes.pedal || j?.leccion?.pedal);
 const usaPedal = (j, origen) => conPedal(j) && origen === 'mic' && !j?.minijuego && TIPOS_PEDAL.includes(j?.leccion.tipo);
 
 estado.detector.onNota = (midi, frecuencia, origen, instante, fuerza) => {
+  if (origen === 'mic') estado.ultimaNotaTexto = `${nombreConOctava(midi)}${estado.detector.escuchando ? '' : ' (no escuchaba)'}`;
   if (usaPedal(estado.juego, origen)) return;
   alRecibirNota(midi, frecuencia, origen, instante, fuerza);
 };
@@ -1258,6 +1286,22 @@ estado.detector.onAtaque = (instante) => {
   if (usaPedal(j, 'mic')) { ataqueConPedal(j, instante); return; }
   j.minijuego?.ataque?.(instante);
 };
+
+// ================= Guardián del audio =================
+// En el iPad, el sonido puede quedar "interrumpido" (una llamada, Siri, otra app, la voz del
+// sistema) y el micrófono puede cortarse. Si pasa, la app deja de oír sin avisar. Cada segundo se
+// revisa y se repara; y cualquier toque en la pantalla también reactiva el sonido.
+async function repararAudio() {
+  if (!estado.ctx || document.hidden) return;
+  if (estado.ctx.state !== 'running') {
+    try { await estado.ctx.resume(); } catch { /* se reintenta en el próximo toque */ }
+  }
+  if (estado.micListo && !estado.ajustes.tecladoPantalla && estado.detector.necesitaReiniciar()) {
+    try { await estado.detector.iniciar(estado.ctx); } catch { /* sin permiso: se reintenta */ }
+  }
+}
+setInterval(repararAudio, 1000);
+document.addEventListener('pointerdown', repararAudio, { capture: true });
 
 // ================= Velocidad (lecciones con metrónomo) =================
 function marcarVelocidad() {
@@ -1305,6 +1349,7 @@ estado.detector.onNivel = (info) => {
     $('#detector-texto').textContent = midi != null
       ? `Escucho: ${nombreConOctava(midi)} · ${frecuencia.toFixed(0)} Hz · ${cents >= 0 ? '+' : ''}${cents} cents · claridad ${claridad.toFixed(2)}`
       : `volumen ${rms.toFixed(3)} · umbral ${umbral.toFixed(3)} · afinación del piano ${info.desvio >= 0 ? '+' : ''}${info.desvio} cents`;
+    if (estado.ultimaNotaTexto) $('#detector-texto').textContent += `  ‖  última: ${estado.ultimaNotaTexto}`;
   }
 };
 

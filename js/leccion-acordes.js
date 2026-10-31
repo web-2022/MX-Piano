@@ -138,8 +138,12 @@ export function leccionAcordes(leccion, api) {
   }
 
   // ── Micrófono ──
+  let ultimoGolpe = -Infinity;
   async function comprobarMicrofono(instante) {
     if (ocupado || indice >= lista.length) return;
+    // El mismo golpe puede avisar dos veces (ataque y nota): se comprueba una sola.
+    if (Math.abs(instante - ultimoGolpe) < 250) return;
+    ultimoGolpe = instante;
     ocupado = true;
     const antes = api.antesDelGolpe?.();
     const i = indice;
@@ -194,8 +198,12 @@ export function leccionAcordes(leccion, api) {
     ataque(instante) {
       if (vivo && !api.esPantalla()) comprobarMicrofono(instante);
     },
-    nota(midi, origen) {
-      if (vivo && origen === 'pantalla' && indice < lista.length) comprobarPantalla(midi);
+    nota(midi, origen, fuerza, instante) {
+      if (!vivo || indice >= lista.length) return;
+      if (origen === 'pantalla') comprobarPantalla(midi);
+      // Con micrófono normalmente avisa el "ataque"; si el golpe fue muy suave y no se oyó,
+      // la nota reconocida también dispara la comprobación (antes se perdía).
+      else if (!api.esPantalla()) comprobarMicrofono(instante ?? performance.now());
     },
     fin() {},
     escuchar() {

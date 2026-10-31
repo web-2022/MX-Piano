@@ -95,6 +95,30 @@ conPedal('Error con pedal: pide Mi, toca Fa', ['Do4', 'Re4', 'Fa4'], 'Mi4', fals
 conPedal('Error con pedal: pide Re, no vuelve a tocar (sigue sonando)', ['Re4', 'Sol4'], 'Re4', false);
 conPedal('Error con pedal: acorde incompleto', ['Do3', ['Do4', 'Sol4']], ['Do4', 'Mi4', 'Sol4'], false);
 
+// ───── Melodía: la nota anterior todavía suena (el niño la suelta un poco tarde) ─────
+console.log('— Nota anterior todavía sonando —');
+function conAnterior(nombre, anterior, tocadas, pedidas, debeSer) {
+  const s = nuevaSenal(2); ruido(s, 0.002);
+  [].concat(anterior).forEach((n) => piano(s, n, 0.3, { vol: 0.2, dur: 0.75 }));
+  [].concat(tocadas).forEach((n) => piano(s, n, 0.8, { vol: 0.2, dur: 0.8 }));
+  const f = filtrar(s);
+  const g = Math.floor(0.8 * SR);
+  const fin = Math.floor(1.02 * SR);
+  const r = verificarNotas(f.subarray(fin - N, fin), SR, [].concat(pedidas).map(notaAMidi), { antes: f.subarray(g - N, g) });
+  const bien = r.ok === debeSer;
+  if (!bien) fallos++;
+  console.log(`${bien ? '✅' : '❌'} ${nombre}: ${r.ok ? 'correcto' : textoAcorde(r)}`);
+}
+conAnterior('Sol sonando, toca La', 'Sol4', 'La4', 'La4', true);
+conAnterior('Do sonando, toca Re', 'Do4', 'Re4', 'Re4', true);
+conAnterior('Mi sonando, toca Fa', 'Mi4', 'Fa4', 'Fa4', true);
+conAnterior('Re sonando, toca Do', 'Re4', 'Do4', 'Do4', true);
+conAnterior('Do sonando, toca Do otra vez', 'Do4', 'Do4', 'Do4', true);
+conAnterior('Bajo y melodía: Do3+Mi4 sonando, toca Sol3+Re4', ['Do3', 'Mi4'], ['Sol3', 'Re4'], ['Sol3', 'Re4'], true);
+conAnterior('Error: Do sonando, pide Re, toca Mi', 'Do4', 'Mi4', 'Re4', false);
+conAnterior('Error: Sol sonando, pide La, toca La y Si', 'Sol4', ['La4', 'Si4'], 'La4', false);
+conAnterior('Error: Do sonando, pide Re, no toca nada', 'Do4', [], 'Re4', false);
+
 // ───── Piso de ruido ─────
 console.log('— Ruido sin notas (con piso de energía) —');
 for (const [nombre, pedal] of [['Solo ruido, modo normal', false], ['Solo ruido, modo pedal', true]]) {
