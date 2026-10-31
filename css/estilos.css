@@ -1215,3 +1215,13 @@ input { -webkit-user-select: text; user-select: text; font-family: inherit; }
 .dialogo-premium a.boton-secundario { text-decoration: none; color: var(--tinta); font-size: 1.05rem; }
 .premium-botones { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .premium-botones .boton-secundario { font-size: 1.05rem; }
+
+/* Inicio con el formulario de cuenta: se puede desplazar y se compacta en pantallas bajas */
+#pantalla-inicio { overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+#pantalla-inicio .inicio-contenido { touch-action: pan-y; }
+@media (max-height: 1000px) {
+  #pantalla-inicio:has(#form-cuenta:not(.oculto)) .mascota.grande { width: 110px; height: 110px; }
+  #pantalla-inicio:has(#form-cuenta:not(.oculto)) .logo { font-size: clamp(2.4rem, 6vw, 3.4rem); }
+  #pantalla-inicio:has(#form-cuenta:not(.oculto)) .lema { margin-bottom: 4px; }
+  #pantalla-inicio:has(#form-cuenta:not(.oculto)) .inicio-contenido { gap: 8px; }
+}
