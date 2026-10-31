@@ -20,7 +20,7 @@ async function iniciar() {
 }
 
 async function entrarAlPanel(session) {
-  const { data, error } = await sb.from('perfiles').select('es_admin').eq('id', session.user.id).maybeSingle();
+  const { data, error } = await sb.from('pianito_perfiles').select('es_admin').eq('id', session.user.id).maybeSingle();
   if (error || !data?.es_admin) {
     await sb.auth.signOut();
     $('#form-login').classList.remove('oculto');
@@ -36,7 +36,7 @@ async function entrarAlPanel(session) {
 
 async function cargar() {
   aviso($('#msg-panel'), 'Cargando…', true);
-  const { data, error } = await sb.from('perfiles')
+  const { data, error } = await sb.from('pianito_perfiles')
     .select('id, correo, nombre, premium, pagado_en, nota, creado')
     .order('creado', { ascending: false });
   if (error) { aviso($('#msg-panel'), 'No se pudo cargar: ' + error.message); return; }
@@ -76,7 +76,7 @@ function dibujar() {
 
 async function cambiar(id, cambios, boton, redibujar = true) {
   boton.disabled = true;
-  const { error } = await sb.from('perfiles').update(cambios).eq('id', id);
+  const { error } = await sb.from('pianito_perfiles').update(cambios).eq('id', id);
   boton.disabled = false;
   if (error) { aviso($('#msg-panel'), 'No se pudo guardar: ' + error.message); return; }
   Object.assign(perfiles.find((p) => p.id === id), cambios);

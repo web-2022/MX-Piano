@@ -315,7 +315,7 @@ Cambia `VERSION` en `sw.js`, sube los cambios (`git push`) y espera 1–2 minuto
 ### 3. Hacerte administrador
 1. Abre la app y **regístrate** con tu correo.
 2. En Supabase → **SQL Editor**, ejecuta (con tu correo):
-   `update public.perfiles set es_admin = true where correo = 'tu-correo@gmail.com';`
+   `update public.pianito_perfiles set es_admin = true where correo = 'tu-correo@gmail.com';`
 3. Entra a **https://web-2022.github.io/MX-Piano/admin.html** con ese correo y contraseña.
 
 ### 4. Cuando una familia paga

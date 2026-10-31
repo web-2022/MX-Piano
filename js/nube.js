@@ -46,7 +46,7 @@ export async function actualizarPerfil() {
   if (!session) {
     return cuentaLocal(); // sin sesión válida (o sin internet): se queda la copia local
   }
-  const { data, error } = await sb.from('perfiles').select('correo, nombre, premium, es_admin').eq('id', session.user.id).maybeSingle();
+  const { data, error } = await sb.from('pianito_perfiles').select('correo, nombre, premium, es_admin').eq('id', session.user.id).maybeSingle();
   if (error) return cuentaLocal();
   const c = {
     id: session.user.id,
@@ -77,7 +77,7 @@ export async function registrar(correo, clave, nombre) {
   const sb = await obtenerCliente();
   const { data, error } = await sb.auth.signUp({
     email: correo, password: clave,
-    options: { data: { nombre }, emailRedirectTo: location.origin + location.pathname },
+    options: { data: { nombre, app: 'pianito' }, emailRedirectTo: location.origin + location.pathname },
   });
   if (error) throw new Error(traducir(error));
   if (!data.session) return { confirmar: true }; // el proyecto pide confirmar el correo
