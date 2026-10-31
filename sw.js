@@ -1,6 +1,6 @@
 // Service worker: guarda la app para que funcione sin internet.
 // Cambia VERSION cada vez que publiques cambios, para que el iPad descargue lo nuevo.
-const VERSION = 'pianito-v14';
+const VERSION = 'pianito-v15';
 const ARCHIVOS = [
   './',
   './index.html',
@@ -49,7 +49,9 @@ self.addEventListener('fetch', (e) => {
   const deLaApp = url.origin === self.location.origin || url.hostname === 'cdn.jsdelivr.net';
   if (!deLaApp || url.pathname.endsWith('/admin.html') || url.pathname.endsWith('/js/admin.js')) return;
   e.respondWith(
-    fetch(e.request)
+    // no-cache: pregunta siempre al servidor si hay versión nueva (sin esto el navegador
+    // usa su copia por 10 minutos y una publicación nueva tarda en llegar).
+    fetch(e.request, { cache: 'no-cache' })
       .then((resp) => {
         const copia = resp.clone();
         caches.open(VERSION).then((c) => c.put(e.request, copia));
