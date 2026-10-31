@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Pianito · Administrador</title>
+  <link rel="icon" href="icons/icono-192.png">
+  <style>
+    :root {
+      --fondo: #f6f4fb; --tarjeta: #fff; --tinta: #1e1b4b; --suave: #6b6593; --linea: #e6e1f5;
+      --primario: #7c3aed; --exito: #16a34a; --exito-fondo: #dcfce7; --error: #e11d48;
+      --fuente: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--fondo); color: var(--tinta); font-family: var(--fuente); }
+    main { max-width: 1040px; margin: 0 auto; padding: 20px 16px 48px; }
+    h1 { margin: 0; font-size: 1.6rem; }
+    h1 small { display: block; font-size: .9rem; color: var(--suave); font-weight: 600; }
+    .cabecera { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+    .cabecera img { width: 48px; height: 48px; }
+    .marca { display: flex; align-items: center; gap: 12px; }
+    .caja { background: var(--tarjeta); border-radius: 18px; padding: 18px; box-shadow: 0 2px 0 var(--linea); }
+    .login { max-width: 380px; margin: 40px auto; display: flex; flex-direction: column; gap: 12px; }
+    label { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: .95rem; }
+    input, select { font: inherit; font-size: 1rem; padding: .55em .75em; border-radius: 12px; border: 2px solid var(--linea); background: #fff; color: var(--tinta); min-width: 0; }
+    input:focus, select:focus { outline: none; border-color: var(--primario); }
+    button { font: inherit; font-weight: 800; border: 0; border-radius: 999px; padding: .6em 1.2em; cursor: pointer; background: var(--primario); color: #fff; }
+    button.suave { background: #fff; color: var(--tinta); box-shadow: inset 0 0 0 2px var(--linea); }
+    button:disabled { opacity: .5; cursor: default; }
+    .mensaje { min-height: 1.3em; margin: 0; font-weight: 700; color: var(--error); }
+    .mensaje.bien { color: var(--exito); }
+    .cifras { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+    .cifra { background: var(--tarjeta); border-radius: 16px; padding: 12px 14px; box-shadow: 0 2px 0 var(--linea); }
+    .cifra b { display: block; font-size: 1.7rem; }
+    .cifra span { color: var(--suave); font-weight: 700; font-size: .9rem; }
+    .filtros { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .filtros input { flex: 1 1 220px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--linea); vertical-align: middle; }
+    th { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--suave); }
+    td.correo { font-weight: 700; overflow-wrap: anywhere; }
+    td small { color: var(--suave); }
+    .estado { display: inline-block; padding: .2em .7em; border-radius: 999px; font-weight: 800; font-size: .85rem; background: #f1f0f7; color: var(--suave); }
+    .estado.pago { background: var(--exito-fondo); color: var(--exito); }
+    .nota { width: 100%; font-size: .9rem; padding: .4em .6em; }
+    .acciones { display: flex; gap: 6px; flex-wrap: wrap; }
+    .acciones button { padding: .45em .9em; font-size: .9rem; }
+    .vacio { text-align: center; color: var(--suave); padding: 30px 0; }
+    .oculto { display: none !important; }
+    @media (max-width: 720px) {
+      .cifras { grid-template-columns: 1fr 1fr 1fr; }
+      .cifra b { font-size: 1.3rem; }
+      thead { display: none; }
+      table, tbody, tr, td { display: block; width: 100%; }
+      tr { border-bottom: 2px solid var(--linea); padding: 8px 0; }
+      td { border: 0; padding: 4px 0; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="cabecera">
+      <div class="marca">
+        <img src="img/rana.png" alt="">
+        <h1>Pianito · Administrador<small>Habilita a las familias que pagaron con Culqi</small></h1>
+      </div>
+      <div id="sesion" class="oculto">
+        <span id="sesion-correo"></span>
+        <button id="btn-salir" class="suave">Salir</button>
+      </div>
+    </div>
+
+    <form id="form-login" class="caja login oculto">
+      <h2 style="margin:0">Entrar</h2>
+      <label>Correo <input id="correo" type="email" autocomplete="username" required></label>
+      <label>Contraseña <input id="clave" type="password" autocomplete="current-password" required></label>
+      <button type="submit">Entrar</button>
+      <p id="msg-login" class="mensaje" role="status"></p>
+    </form>
+
+    <section id="panel" class="oculto">
+      <div class="cifras">
+        <div class="cifra"><b id="n-total">0</b><span>cuentas</span></div>
+        <div class="cifra"><b id="n-pago">0</b><span>con pase completo</span></div>
+        <div class="cifra"><b id="n-gratis">0</b><span>gratis</span></div>
+      </div>
+      <div class="caja">
+        <div class="filtros">
+          <input id="buscar" type="search" placeholder="Buscar por correo o nombre…">
+          <select id="filtro">
+            <option value="todos">Todos</option>
+            <option value="gratis">Solo gratis</option>
+            <option value="pago">Solo pase completo</option>
+          </select>
+          <button id="btn-recargar" class="suave">↻ Actualizar</button>
+        </div>
+        <p id="msg-panel" class="mensaje" role="status"></p>
+        <table>
+          <thead><tr><th>Correo</th><th>Niño/a</th><th>Registro</th><th>Estado</th><th>Nota (código Culqi)</th><th></th></tr></thead>
+          <tbody id="filas"></tbody>
+        </table>
+        <p id="vacio" class="vacio oculto">No hay cuentas que coincidan.</p>
+      </div>
+    </section>
+
+    <p id="sin-config" class="caja oculto">Falta configurar Supabase en <code>js/config-nube.js</code> (mira el README).</p>
+  </main>
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

@@ -51,6 +51,25 @@
           <button class="boton-edad grande" data-modo="grandes"><span>🚀</span>8 años o más</button>
         </div>
       </div>
+      <!-- Registro (solo si la cuenta en la nube está configurada) -->
+      <form id="form-cuenta" class="form-cuenta oculto" novalidate>
+        <div class="cuenta-pestanas" role="tablist">
+          <button type="button" class="cuenta-pestana activa" data-cuenta="registro">Regístrate</button>
+          <button type="button" class="cuenta-pestana" data-cuenta="entrar">Ya tengo cuenta</button>
+        </div>
+        <p class="cuenta-nota">Para el papá o la mamá · Los 4 primeros niveles son gratis</p>
+        <label class="campo-cuenta campo-nombre">Nombre del niño o niña
+          <input id="cuenta-nombre" type="text" autocomplete="off" maxlength="40" placeholder="Ej. Sofía">
+        </label>
+        <label class="campo-cuenta">Correo
+          <input id="cuenta-correo" type="email" autocomplete="email" inputmode="email" required placeholder="papa@correo.com">
+        </label>
+        <label class="campo-cuenta">Contraseña
+          <input id="cuenta-clave" type="password" autocomplete="new-password" required minlength="6" placeholder="Mínimo 6">
+        </label>
+        <button id="btn-cuenta" type="submit" class="boton-grande">Crear cuenta y tocar 🎹</button>
+        <button id="btn-olvide" type="button" class="enlace oculto">¿Olvidaste tu contraseña?</button>
+      </form>
       <p id="mensaje-inicio" class="mensaje-inicio" role="status"></p>
     </div>
   </section>
@@ -169,6 +188,13 @@
         <input type="range" id="aj-sensibilidad" min="1" max="10" step="1">
         <small>Súbela si no reconoce las notas. Bájala si hay ruido en casa.</small>
       </label>
+      <div id="aj-cuenta" class="aj-cuenta oculto">
+        <p><strong>Cuenta:</strong> <span id="aj-cuenta-correo"></span><br><span id="aj-cuenta-plan"></span></p>
+        <div class="aj-cuenta-botones">
+          <button type="button" id="btn-desbloquear-cuenta" class="boton-secundario">⭐ Desbloquear todo</button>
+          <button type="button" id="btn-salir-cuenta" class="boton-secundario">Cerrar sesión</button>
+        </div>
+      </div>
       <button type="button" id="btn-borrar-progreso" class="boton-peligro">Borrar progreso</button>
       <button value="cerrar" class="boton-grande">Listo</button>
     </form>
@@ -230,6 +256,40 @@
       <p id="consejo-etiqueta" class="consejo-etiqueta">👨‍👩‍👧 Para el adulto</p>
       <p id="consejo-texto"></p>
       <button value="ok" class="boton-grande">¡Empezar!</button>
+    </form>
+  </dialog>
+
+  <!-- Desbloquear los niveles de pago -->
+  <dialog id="dialogo-premium" class="dialogo dialogo-premium">
+    <form method="dialog">
+      <img class="mascota" src="img/rana.png" alt="">
+      <h2>⭐ ¡Desbloquea todo Pianito!</h2>
+      <p class="premium-texto">Los 4 primeros niveles son gratis. Con el pase completo se abren los <strong>31 niveles</strong>: canciones, ritmo, acordes, pedal y lectura de partituras, hasta nivel experto.</p>
+      <p class="premium-precio"><span id="premium-precio"></span><small>pago único</small></p>
+      <a id="btn-pagar" class="boton-grande boton-pagar" target="_blank" rel="noopener">Pagar con tarjeta, Yape o Plin 💳</a>
+      <ol class="premium-pasos">
+        <li>Paga con el correo de tu cuenta: <strong id="premium-correo"></strong></li>
+        <li id="premium-paso-aviso">Avísanos y en unos minutos activamos tu cuenta.</li>
+        <li>Toca <em>“Ya pagué”</em> para abrir los niveles.</li>
+      </ol>
+      <a id="btn-whatsapp" class="boton-secundario oculto" target="_blank" rel="noopener">💬 Avisar por WhatsApp</a>
+      <p id="premium-mensaje" class="mensaje-inicio" role="status"></p>
+      <div class="premium-botones">
+        <button type="button" id="btn-ya-pague" class="boton-secundario">✅ Ya pagué</button>
+        <button value="cerrar" class="boton-secundario">Ahora no</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Nueva contraseña (desde el enlace del correo) -->
+  <dialog id="dialogo-clave" class="dialogo">
+    <form id="form-clave" method="dialog">
+      <h2>Nueva contraseña</h2>
+      <label class="campo-cuenta">Escribe tu nueva contraseña
+        <input id="nueva-clave" type="password" autocomplete="new-password" minlength="6">
+      </label>
+      <p id="clave-mensaje" class="mensaje-inicio" role="status"></p>
+      <button id="btn-guardar-clave" type="button" class="boton-grande">Guardar</button>
     </form>
   </dialog>
 

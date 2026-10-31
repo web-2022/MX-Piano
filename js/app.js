@@ -16,6 +16,7 @@ import {
 import { registrarPartituras } from './lecciones.js';
 import { pentagramaSVG, figuraSVG } from './pentagrama.js';
 import { cargarAjustes, guardarAjustes, cargarProgreso, guardarProgreso } from './almacen.js';
+import * as nube from './nube.js';
 
 const $ = (s) => document.querySelector(s);
 
@@ -111,12 +112,154 @@ function sonar(fn, ...args) {
 }
 
 // ================= Inicio =================
-// La primera vez se pregunta la edad; después, el botón "¡A tocar!" va directo.
-if (!estado.ajustes.modo) {
-  $('#btn-empezar').classList.add('oculto');
-  $('#eleccion-edad').classList.remove('oculto');
+// Con cuentas activadas, primero el registro. Después, la primera vez se pregunta la edad;
+// luego el botón "¡A tocar!" va directo.
+function pasoInicio() {
+  const pideCuenta = nube.configurada() && !nube.cuentaLocal();
+  $('#form-cuenta').classList.toggle('oculto', !pideCuenta);
+  $('#btn-empezar').classList.toggle('oculto', pideCuenta || !estado.ajustes.modo);
+  $('#eleccion-edad').classList.toggle('oculto', pideCuenta || !!estado.ajustes.modo);
 }
+pasoInicio();
 aplicarModo();
+
+// ---- Registro / ingreso ----
+let modoCuenta = 'registro';
+function elegirModoCuenta(m) {
+  modoCuenta = m;
+  document.querySelectorAll('.cuenta-pestana').forEach((b) => b.classList.toggle('activa', b.dataset.cuenta === m));
+  $('#form-cuenta').classList.toggle('entrando', m === 'entrar');
+  $('#btn-cuenta').textContent = m === 'entrar' ? 'Entrar 🎹' : 'Crear cuenta y tocar 🎹';
+  $('#btn-olvide').classList.toggle('oculto', m !== 'entrar');
+  $('#cuenta-clave').autocomplete = m === 'entrar' ? 'current-password' : 'new-password';
+  avisoInicio('');
+}
+function avisoInicio(texto, bien = false) {
+  const msg = $('#mensaje-inicio');
+  msg.textContent = texto;
+  msg.classList.toggle('bien', bien);
+}
+document.querySelectorAll('.cuenta-pestana').forEach((b) => b.addEventListener('click', () => elegirModoCuenta(b.dataset.cuenta)));
+
+$('#form-cuenta').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const correo = $('#cuenta-correo').value.trim().toLowerCase();
+  const clave = $('#cuenta-clave').value;
+  const nombre = $('#cuenta-nombre').value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return avisoInicio('Escribe un correo válido.');
+  if (clave.length < 6) return avisoInicio('La contraseña debe tener al menos 6 letras o números.');
+  const boton = $('#btn-cuenta');
+  boton.disabled = true;
+  avisoInicio('Un momento…', true);
+  try {
+    if (modoCuenta === 'registro') {
+      const r = await nube.registrar(correo, clave, nombre);
+      if (r.confirmar) {
+        elegirModoCuenta('entrar');
+        $('#cuenta-correo').value = correo;
+        avisoInicio('¡Listo! Te enviamos un correo: confírmalo y luego entra aquí.', true);
+        return;
+      }
+    } else {
+      await nube.entrar(correo, clave);
+    }
+    avisoInicio('');
+    pasoInicio();
+    mostrarCuentaEnAjustes();
+  } catch (e) {
+    avisoInicio(e.message);
+  } finally {
+    boton.disabled = false;
+  }
+});
+
+$('#btn-olvide').addEventListener('click', async () => {
+  const correo = $('#cuenta-correo').value.trim().toLowerCase();
+  if (!correo) return avisoInicio('Escribe tu correo y vuelve a tocar "¿Olvidaste tu contraseña?".');
+  try {
+    await nube.olvideClave(correo);
+    avisoInicio('Te enviamos un correo para crear una nueva contraseña.', true);
+  } catch (e) { avisoInicio(e.message); }
+});
+
+// Enlace del correo de "olvidé mi contraseña": pedir la nueva.
+if (nube.configurada()) {
+  nube.alRecuperarClave(() => $('#dialogo-clave').showModal()).catch(() => {});
+  // Al abrir la app con internet se revisa si ya pagó (el permiso se da desde el panel).
+  nube.actualizarPerfil().then(() => {
+    mostrarCuentaEnAjustes();
+    pasoInicio();
+    if ($('#pantalla-mapa').classList.contains('activa')) dibujarMapa();
+  }).catch(() => {});
+}
+$('#btn-guardar-clave').addEventListener('click', async () => {
+  const clave = $('#nueva-clave').value;
+  const msg = $('#clave-mensaje');
+  if (clave.length < 6) { msg.textContent = 'Mínimo 6 letras o números.'; return; }
+  try {
+    await nube.cambiarClave(clave);
+    await nube.actualizarPerfil();
+    $('#dialogo-clave').close();
+    pasoInicio();
+  } catch (e) { msg.textContent = e.message; }
+});
+
+// ---- Desbloquear (pago con Culqi; la cuenta se activa desde el panel de administrador) ----
+function abrirPremium() {
+  const N = nube.NUBE;
+  const c = nube.cuentaLocal();
+  $('#premium-precio').textContent = N.precio;
+  $('#premium-correo').textContent = c?.correo || '';
+  const pagar = $('#btn-pagar');
+  if (N.culqiLink) pagar.href = N.culqiLink; else pagar.removeAttribute('href');
+  const wa = $('#btn-whatsapp');
+  if (N.whatsapp) {
+    const texto = `Hola, pagué Pianito. Mi correo es ${c?.correo || ''}`;
+    wa.href = `https://wa.me/${N.whatsapp}?text=${encodeURIComponent(texto)}`;
+    wa.classList.remove('oculto');
+    $('#premium-paso-aviso').textContent = 'Avísanos por WhatsApp y en unos minutos activamos tu cuenta.';
+  } else {
+    wa.classList.add('oculto');
+  }
+  $('#premium-mensaje').textContent = '';
+  $('#dialogo-premium').showModal();
+}
+$('#btn-ya-pague').addEventListener('click', async () => {
+  const msg = $('#premium-mensaje');
+  msg.classList.remove('bien');
+  msg.textContent = 'Revisando…';
+  const c = await nube.actualizarPerfil().catch(() => null);
+  if (c?.premium) {
+    msg.classList.add('bien');
+    msg.textContent = '¡Listo! Ya están abiertos todos los niveles. 🎉';
+    mostrarCuentaEnAjustes();
+    dibujarMapa();
+    setTimeout(() => $('#dialogo-premium').close(), 1600);
+  } else {
+    msg.textContent = 'Todavía no vemos el pago activado. Si ya avisaste, espera unos minutos y vuelve a tocar.';
+  }
+});
+
+function mostrarCuentaEnAjustes() {
+  const c = nube.cuentaLocal();
+  const caja = $('#aj-cuenta');
+  caja.classList.toggle('oculto', !nube.configurada() || !c);
+  if (!c) return;
+  $('#aj-cuenta-correo').textContent = c.correo + (c.nombre ? ` (${c.nombre})` : '');
+  $('#aj-cuenta-plan').textContent = c.premium
+    ? '⭐ Pase completo: todos los niveles abiertos'
+    : `Gratis: niveles 0 a ${nube.NUBE.gratisHastaNivel}`;
+  $('#btn-desbloquear-cuenta').classList.toggle('oculto', !!c.premium);
+}
+mostrarCuentaEnAjustes();
+$('#btn-desbloquear-cuenta').addEventListener('click', () => { $('#dialogo-ajustes').close(); abrirPremium(); });
+$('#btn-salir-cuenta').addEventListener('click', async () => {
+  await nube.salir();
+  $('#dialogo-ajustes').close();
+  mostrar('pantalla-inicio');
+  elegirModoCuenta('entrar');
+  pasoInicio();
+});
 
 document.querySelectorAll('.boton-edad').forEach((b) => {
   b.addEventListener('click', () => {
@@ -218,7 +361,8 @@ function dibujarMapa() {
       mapa.appendChild(letrero);
     }
     const seccion = document.createElement('section');
-    seccion.className = 'mundo';
+    const dePago = !nube.nivelPermitido(mundo.nivel);
+    seccion.className = 'mundo' + (dePago ? ' premium' : '');
     seccion.style.setProperty('--color-mundo', mundo.color);
     const ganadas = mundo.lecciones.reduce((sum, l) => sum + estrellasDe(l.id), 0);
     seccion.innerHTML = `
@@ -233,13 +377,15 @@ function dibujarMapa() {
     for (const leccion of mundo.lecciones) {
       const est = estrellasDe(leccion.id);
       total += est;
-      const bloqueada = !estado.ajustes.desbloquearTodo &&
-        (esGrande() ? !abiertoEste : !anteriorCompletada);
+      const bloqueada = dePago || (!estado.ajustes.desbloquearTodo &&
+        (esGrande() ? !abiertoEste : !anteriorCompletada));
       const siguiente = !bloqueada && est === 0 && !siguienteMarcada;
       if (siguiente) siguienteMarcada = true;
       const boton = botonParada(leccion, { bloqueada, siguiente, est });
+      if (dePago) boton.classList.add('premium');
       if (siguiente) botonSiguiente = boton;
       boton.addEventListener('click', () => {
+        if (dePago) { abrirPremium(); return; }
         if (bloqueada) {
           sacudir(boton);
           if (esGrande()) globoMapa(boton, 'Gana estrellas en 3 lecciones del mundo anterior');
@@ -283,7 +429,7 @@ function dibujarParque() {
   let nuevos = 0;
   for (const juego of JUEGOS) {
     const est = estrellasDe(juego.id);
-    const abierto = estado.ajustes.desbloquearTodo || estrellasDe(juego.requiere) > 0;
+    const abierto = leccionPermitida(juego.requiere) && (estado.ajustes.desbloquearTodo || estrellasDe(juego.requiere) > 0);
     if (abierto && est === 0) nuevos++;
     const req = buscarLeccion(juego.requiere);
     const tarjeta = document.createElement('button');
@@ -667,7 +813,14 @@ function generarObjetivos(leccion) {
   return lista;
 }
 
+// ¿La lección está en un nivel gratis o la cuenta ya pagó?
+function leccionPermitida(id) {
+  const mundo = MUNDOS.find((m) => m.lecciones.some((l) => l.id === id));
+  return !mundo || nube.nivelPermitido(mundo.nivel);
+}
+
 async function empezarLeccion(id) {
+  if (!leccionPermitida(id)) { abrirPremium(); return; }
   detenerRitmo();
   estado.juego?.minijuego?.detener();
   const leccion = buscarLeccion(id);

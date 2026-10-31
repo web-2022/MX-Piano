@@ -286,3 +286,42 @@ Para canciones usa solo obras de **dominio público** (tradicionales o clásicas
 - Mostrar la partitura completa (varias notas en el pentagrama) en las lecciones importadas.
 - Varios perfiles de niños en el mismo iPad.
 - Más canciones en el Valle de las Canciones.
+
+## Cuentas, pagos y panel de administrador 💳
+
+Pianito tiene **registro** (correo y contraseña del papá o la mamá), **niveles 0 a 3 gratis** y del 4 en adelante con candado ⭐.
+Quien paga con **Culqi** se habilita a mano desde el **panel de administrador** (`admin.html`).
+Mientras `js/config-nube.js` esté vacío, la app funciona como siempre: sin registro y todo abierto.
+
+### 1. Crear la base de datos (Supabase, gratis) — una sola vez
+1. Entra a https://supabase.com → **Start your project** → crea un proyecto (región: *South America (São Paulo)*).
+2. Menú **SQL Editor → New query**: pega todo `supabase/esquema.sql` y pulsa **Run**.
+3. Menú **Authentication → Sign In / Providers → Email**: desactiva **Confirm email**
+   (así la familia entra al instante; el correo gratis de Supabase solo envía unos pocos por hora).
+4. Menú **Authentication → URL Configuration**: en **Site URL** pon `https://web-2022.github.io/MX-Piano/`.
+5. Menú **Project Settings → API**: copia **Project URL** y la clave **anon public**.
+
+### 2. Configurar la app
+Edita `js/config-nube.js`:
+```js
+supabaseUrl: 'https://TU-PROYECTO.supabase.co',
+supabaseClave: 'eyJ...',                          // anon public (es pública, no es secreta)
+culqiLink: 'https://express.culqi.com/pago/...',   // Culqi → Links de pago
+precio: 'S/ 39.90',
+whatsapp: '51987654321',                           // opcional, para que te avisen del pago
+```
+Cambia `VERSION` en `sw.js`, sube los cambios (`git push`) y espera 1–2 minutos.
+
+### 3. Hacerte administrador
+1. Abre la app y **regístrate** con tu correo.
+2. En Supabase → **SQL Editor**, ejecuta (con tu correo):
+   `update public.perfiles set es_admin = true where correo = 'tu-correo@gmail.com';`
+3. Entra a **https://web-2022.github.io/MX-Piano/admin.html** con ese correo y contraseña.
+
+### 4. Cuando una familia paga
+1. Te llega el pago en Culqi (y el aviso por WhatsApp con su correo).
+2. En `admin.html` busca el correo, escribe el código de operación en **Nota** y pulsa **✅ Activar**.
+3. La familia toca **“Ya pagué”** (o cierra y abre la app) y se abren los 31 niveles.
+
+> La cuenta queda guardada en el iPad: funciona sin internet. El candado está en la app (no en el servidor),
+> así que alguien con conocimientos técnicos podría saltarlo; para una app infantil es lo normal y no tiene costo.

@@ -1170,3 +1170,48 @@ body.grandes .notas-flotantes { opacity: .5; }
 .impro-escala span { background: var(--color); color: #fff; font-weight: 900; padding: .3em .7em; border-radius: 999px; }
 .impro-barra { width: min(420px, 80vw); height: 18px; background: #e5dccb; border-radius: 9px; overflow: hidden; }
 .impro-barra div { height: 100%; width: 0; background: linear-gradient(90deg, #4ade80, #a855f7); transition: width .2s; }
+
+/* ---------- Cuenta: registro e ingreso ---------- */
+input { -webkit-user-select: text; user-select: text; font-family: inherit; }
+.form-cuenta {
+  display: flex; flex-direction: column; gap: 10px;
+  width: min(420px, calc(100vw - 32px));
+  background: var(--tarjeta); border-radius: var(--radio); padding: 18px 18px 14px;
+  box-shadow: var(--sombra); text-align: left;
+}
+.cuenta-pestanas { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--fondo-2); border-radius: 999px; padding: 5px; }
+.cuenta-pestana { background: transparent; border-radius: 999px; padding: .55em .4em; font-weight: 800; font-size: 1.05rem; color: var(--tinta-suave); }
+.cuenta-pestana.activa { background: #fff; color: var(--primario); box-shadow: 0 2px 0 rgba(30, 27, 75, .12); }
+.cuenta-nota { margin: 2px 0; font-size: .95rem; font-weight: 700; color: var(--tinta-suave); text-align: center; }
+.campo-cuenta { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: 1rem; }
+.campo-cuenta input {
+  font-size: 1.15rem; padding: .6em .8em; border-radius: 14px;
+  border: 2px solid #e4ddf7; background: #fdfcff; color: var(--tinta); width: 100%;
+}
+.campo-cuenta input:focus { outline: none; border-color: var(--primario); }
+.form-cuenta .boton-grande { margin-top: 6px; font-size: 1.3rem; }
+.form-cuenta.entrando .campo-nombre { display: none; }
+.enlace { background: none; color: var(--primario); font-weight: 700; text-decoration: underline; padding: 4px; font-size: .95rem; }
+.mensaje-inicio.bien { color: var(--exito); }
+
+/* Ajustes: cuenta */
+.aj-cuenta { background: var(--fondo); border-radius: 16px; padding: 10px 14px; }
+.aj-cuenta p { margin: 0 0 8px; line-height: 1.4; overflow-wrap: anywhere; }
+.aj-cuenta-botones { display: flex; flex-wrap: wrap; gap: 8px; }
+.aj-cuenta-botones .boton-secundario { font-size: 1rem; padding: .5em 1em; }
+
+/* Niveles de pago */
+.parada.premium .piedra { border: 3px dashed #f5c542; }
+.mundo.premium .mundo-cabecera h2::after { content: ' ⭐'; }
+.dialogo-premium form { align-items: center; text-align: center; gap: 10px; }
+.dialogo-premium .mascota { width: 90px; height: 90px; }
+.dialogo-premium h2 { margin: 0; color: var(--primario); }
+.premium-texto { margin: 0; font-size: 1.1rem; line-height: 1.4; }
+.premium-precio { margin: 4px 0; font-size: 2.2rem; font-weight: 900; display: flex; flex-direction: column; line-height: 1.05; }
+.premium-precio small { font-size: .9rem; color: var(--tinta-suave); font-weight: 700; }
+.boton-pagar { text-decoration: none; font-size: 1.25rem; background: #16a34a; box-shadow: 0 6px 0 #15803d; }
+.boton-pagar:active { box-shadow: 0 2px 0 #15803d; }
+.premium-pasos { text-align: left; margin: 4px 0; padding-left: 1.3em; font-size: 1rem; line-height: 1.45; overflow-wrap: anywhere; }
+.dialogo-premium a.boton-secundario { text-decoration: none; color: var(--tinta); font-size: 1.05rem; }
+.premium-botones { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.premium-botones .boton-secundario { font-size: 1.05rem; }

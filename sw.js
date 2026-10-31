@@ -1,6 +1,6 @@
 // Service worker: guarda la app para que funcione sin internet.
 // Cambia VERSION cada vez que publiques cambios, para que el iPad descargue lo nuevo.
-const VERSION = 'pianito-v12';
+const VERSION = 'pianito-v13';
 const ARCHIVOS = [
   './',
   './index.html',
@@ -21,6 +21,8 @@ const ARCHIVOS = [
   './js/pentagrama.js',
   './js/sonido.js',
   './js/tono.js',
+  './js/nube.js',
+  './js/config-nube.js',
   './img/rana.png',
   './icons/icono-192.png',
   './icons/icono-512.png',
@@ -42,6 +44,10 @@ self.addEventListener('activate', (e) => {
 // Primero la red (para ver cambios mientras desarrollas); si no hay internet, la copia guardada.
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  // Cuentas (Supabase) y el panel de administrador: siempre directo a internet, nunca guardados.
+  const url = new URL(e.request.url);
+  const deLaApp = url.origin === self.location.origin || url.hostname === 'cdn.jsdelivr.net';
+  if (!deLaApp || url.pathname.endsWith('/admin.html') || url.pathname.endsWith('/js/admin.js')) return;
   e.respondWith(
     fetch(e.request)
       .then((resp) => {
