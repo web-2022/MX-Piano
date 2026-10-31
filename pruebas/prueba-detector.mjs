@@ -1,20 +1,37 @@
 // Prueba del detector con sonidos de piano sintéticos (sin micrófono).
 // Ejecutar en la carpeta del proyecto:   node pruebas/prueba-detector.mjs
-import { NucleoDetector } from '../js/detector.js';
-import { notaAMidi, midiAFrecuencia, nombreConOctava } from '../js/notas.js';
+import { NucleoDetector, CorrectorSolape } from '../js/detector.js';
+import { notaAMidi, midiAFrecuencia, nombreConOctava, claseNota } from '../js/notas.js';
 
 import { SR, nuevaSenal, piano, ruido, voz, filtrar } from './sintetizador.mjs';
 
 const HOP = 800; // 60 cuadros por segundo
 
+// El mismo camino que en el iPad: detector de tono + corrector de notas encimadas.
 function correr(s, { sensibilidad = 5 } = {}) {
   const det = new NucleoDetector();
   det.umbralRms = 0.05 * Math.pow(0.7, sensibilidad - 1);
+  const cor = new CorrectorSolape();
   const tono = filtrar(s);
+  const largo = (k) => tono.subarray(Math.max(0, k - 8192), k);
   const notas = [];
   for (let fin = 2048; fin <= s.length; fin += HOP) {
-    const info = det.procesar(tono.subarray(fin - 2048, fin), s.subarray(fin - 1024, fin), SR, (fin / SR) * 1000);
-    if (info.nota) notas.push({ nota: nombreConOctava(info.nota.midi), t: +(info.nota.instante / 1000).toFixed(2), latencia: Math.round(fin / SR * 1000 - info.nota.instante) });
+    const ahora = (fin / SR) * 1000;
+    const sonabaAntes = !!det.activa || det.rmsAnterior > det.umbralEfectivo();
+    const notaSonando = !!det.activa;
+    const midiSonando = det.activa?.midi ?? null;
+    const info = det.procesar(tono.subarray(fin - 2048, fin), s.subarray(fin - 1024, fin), SR, ahora);
+    const salida = cor.cuadro({
+      ahora, info, sonabaAntes, notaSonando, midiSonando,
+      antes: info.ataque != null && fin >= 8192 ? Float32Array.from(largo(fin)) : null,
+      antesDe: (t) => { const k = Math.floor((t / 1000) * SR); return k >= 8192 ? Float32Array.from(tono.subarray(k - 8192, k)) : null; },
+      largo: () => largo(fin), sampleRate: SR, desvio: det.desvio, minimo: (det.umbralRms * det.umbralRms) / 32,
+    });
+    for (const n of salida) {
+      det.ultimaClase = claseNota(n.midi); det.ultimoMidi = n.midi;
+      if (det.activa) det.activa.midi = n.midi;
+      notas.push({ nota: nombreConOctava(n.midi), t: +(n.instante / 1000).toFixed(2), latencia: Math.round(ahora - n.instante) });
+    }
   }
   return { notas, det };
 }
@@ -174,6 +191,91 @@ function comprobar(nombre, ok, detalle) {
   const { fines } = eventos(s);
   comprobar('Picado Do-Re-Mi', fines.length === 3 && fines.every((f) => !f.ligada && f.duracion < 320),
     fines.map((f) => `${f.nota} ${f.duracion} ms${f.ligada ? ' (ligada)' : ''}`).join(' · '));
+}
+
+
+// ───── Notas encimadas: la anterior sigue sonando al tocar la siguiente ─────
+// Igual que en el iPad: detector de tono + corrector de solape (ventana larga de 8192 muestras).
+function detectorCompleto(s, conCorrector) {
+  const det = new NucleoDetector();
+  det.umbralRms = 0.012;
+  const cor = new CorrectorSolape();
+  const f = filtrar(s);
+  const notas = [];
+  const largoEn = (fin) => f.subarray(Math.max(0, fin - 8192), fin);
+  for (let fin = 8192; fin <= s.length; fin += HOP) {
+    const ahora = (fin / SR) * 1000;
+    const sonabaAntes = !!det.activa || det.rmsAnterior > det.umbralEfectivo();
+    const notaSonando = !!det.activa;
+    const midiSonando = det.activa?.midi ?? null;
+    const info = det.procesar(f.subarray(fin - 2048, fin), s.subarray(fin - 1024, fin), SR, ahora);
+    if (!conCorrector) { if (info.nota) notas.push(info.nota.midi); continue; }
+    const salida = cor.cuadro({
+      ahora, info, sonabaAntes, notaSonando, midiSonando, antes: info.ataque != null ? Float32Array.from(largoEn(fin)) : null,
+      antesDe: (t) => { const k = Math.floor((t / 1000) * SR); return k >= 8192 ? Float32Array.from(f.subarray(k - 8192, k)) : null; },
+      largo: () => largoEn(fin), sampleRate: SR, desvio: det.desvio, minimo: (0.012 * 0.012) / 32,
+    });
+    for (const n of salida) {
+      det.ultimaClase = claseNota(n.midi); det.ultimoMidi = n.midi;
+      if (det.activa) det.activa.midi = n.midi;
+      notas.push(n.midi);
+    }
+  }
+  return notas;
+}
+{
+  console.log('— Arpegio Do-Mi-Sol, cada nota suelta tarde (la mezcla "suena" como Do2) —');
+  const arp = ['Do4', 'Mi4', 'Sol4', 'Do5', 'Sol4', 'Mi4', 'Do4', 'Mi4', 'Sol4', 'Do5'];
+  let bien = 0;
+  for (let k = 0; k < 10; k++) {
+    const s = nuevaSenal(5); ruido(s, 0.003);
+    arp.forEach((n, i) => piano(s, n, 0.4 + i * 0.38, { vol: 0.2, dur: 0.75 }));
+    const oidas = detectorCompleto(s, true).map((m) => nombreConOctava(m));
+    if (oidas.join() === arp.map((x) => nombreConOctava(notaAMidi(x))).join()) bien++;
+    else if (k < 2) console.log('    oyó:', oidas.join(' '));
+  }
+  const ok = bien >= 9;
+  if (!ok) fallos++;
+  console.log(`${ok ? '✅' : '❌'} Arpegio: ${bien} de 10 sin errores`);
+}
+{
+  console.log('— Escala que baja, cada nota suelta tarde —');
+  const esc = ['Do5', 'Si4', 'La4', 'Sol4', 'Fa4', 'Mi4', 'Re4', 'Do4'];
+  let bien = 0;
+  for (let k = 0; k < 10; k++) {
+    const s = nuevaSenal(4); ruido(s, 0.003);
+    esc.forEach((n, i) => piano(s, n, 0.4 + i * 0.32, { vol: 0.2, dur: 0.75 }));
+    const oidas = detectorCompleto(s, true).map((m) => nombreConOctava(m));
+    if (oidas.map((x) => x.replace(/\d$/, '')).join() === esc.map((x) => nombreConOctava(notaAMidi(x)).replace(/\d$/, '')).join()) bien++;
+    else if (k < 2) console.log('    oyó:', oidas.join(' '));
+  }
+  const ok = bien >= 9;
+  if (!ok) fallos++;
+  console.log(`${ok ? '✅' : '❌'} Escala que baja: ${bien} de 10 sin errores`);
+}
+{
+  console.log('— Notas encimadas (300 pares al azar) —');
+  const NOTAS = ['Do4', 'Re4', 'Mi4', 'Fa4', 'Sol4', 'La4', 'Si4', 'Do5', 'Do3', 'Mi3', 'Sol3', 'Fa#4', 'Re5'];
+  const cuenta = { sin: { bien: 0 }, con: { bien: 0 } };
+  for (let k = 0; k < 300; k++) {
+    const a = NOTAS[k % NOTAS.length];
+    const b = NOTAS[(k * 7 + 3) % NOTAS.length] === a ? NOTAS[(k + 1) % NOTAS.length] : NOTAS[(k * 7 + 3) % NOTAS.length];
+    const sep = 0.25 + ((k * 37) % 60) / 100;
+    const mant = sep + 0.05 + ((k * 53) % 50) / 100;
+    const s = nuevaSenal(2.6); ruido(s, 0.003);
+    piano(s, a, 0.4, { vol: 0.2, dur: mant });
+    piano(s, b, 0.4 + sep, { vol: 0.12 + ((k * 11) % 15) / 100, dur: 0.7 });
+    for (const modo of ['sin', 'con']) {
+      const n = detectorCompleto(s, modo === 'con');
+      // Bien: exactamente dos notas, y la segunda es la tocada (en cualquier octava).
+      if (n.length === 2 && claseNota(n[1]) === claseNota(notaAMidi(b)) && claseNota(n[0]) === claseNota(notaAMidi(a))) cuenta[modo].bien++;
+    }
+  }
+  console.log(`   detector de tono solo: ${cuenta.sin.bien} de 300 bien`);
+  console.log(`   con el corrector:      ${cuenta.con.bien} de 300 bien`);
+  const ok = cuenta.con.bien >= 270;
+  if (!ok) fallos++;
+  console.log(`${ok ? '✅' : '❌'} Notas encimadas: al menos 90 % bien con el corrector`);
 }
 
 console.log(fallos ? `\n${fallos} caso(s) con fallas` : '\nTodo bien');

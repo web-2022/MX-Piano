@@ -209,6 +209,21 @@ node pruebas/prueba-detector.mjs
 Toca pianos sintéticos (notas sueltas, repetidas, rápidas, desafinadas, graves, suaves con ruido,
 con voz de TV) y dice si reconoció exactamente lo que se tocó.
 
+## Revisar todas las lecciones automáticamente 🤖
+
+`pruebas/navegador/` tiene un **piano virtual** que reemplaza al micrófono (el sonido entra por el mismo
+camino que el piano real) y un **robot** que toca cada lección como un niño: suelta las teclas un poco
+tarde y, en las lecciones con pedal, deja sonar las notas. Así se prueba la detección completa.
+
+```
+python3 -m http.server 8765                      (en una terminal, en la carpeta del proyecto)
+pip install playwright && playwright install chromium
+python3 pruebas/navegador/revisar.py             (las 152 lecciones; ~45 min)
+python3 pruebas/navegador/revisar.py n4-2 n11-6  (solo esas)
+```
+
+Una lección bien tocada debe terminar con ⭐⭐⭐. Si da menos estrellas, la app se equivocó al escuchar.
+
 ## Si una nota no se reconoce
 
 1. En ⚙️ activa **"Mostrar lo que escucha el micrófono"**. Debajo de la lección aparece lo que oye y la

@@ -119,6 +119,37 @@ conAnterior('Error: Do sonando, pide Re, toca Mi', 'Do4', 'Mi4', 'Re4', false);
 conAnterior('Error: Sol sonando, pide La, toca La y Si', 'Sol4', ['La4', 'Si4'], 'La4', false);
 conAnterior('Error: Do sonando, pide Re, no toca nada', 'Do4', [], 'Re4', false);
 
+// ───── Todas las lecciones de acordes: cada cambio de acorde, con el anterior todavía sonando ─────
+{
+  console.log('— Lecciones de acordes (cada cambio, el anterior sonando) —');
+  const { LECCIONES } = await import('../js/lecciones.js');
+  let cambios = 0;
+  const malos = [];
+  for (const l of LECCIONES.filter((x) => x.tipo === 'acordes')) {
+    const lista = l.acordes.map((a) => (Array.isArray(a) ? a : a.notas));
+    const pedal = !!l.pedal;
+    for (let i = 0; i < lista.length; i++) {
+      const s = nuevaSenal(1.4); ruido(s, 0.003);
+      if (i > 0) lista[i - 1].forEach((n) => {
+        const otra = lista[i].includes(n); // la misma tecla otra vez: el martillo golpea la misma cuerda
+        piano(s, n, 0.2, { vol: 0.18, dur: otra ? 0.49 : (pedal ? 2 : 0.75), corte: otra });
+      });
+      lista[i].forEach((n) => piano(s, n, 0.7, { vol: 0.18, dur: 0.6 }));
+      const f = filtrar(s);
+      const g = Math.floor(0.7 * SR);
+      const fin = Math.floor(0.92 * SR);
+      const r = verificarNotas(f.subarray(fin - N, fin), SR, lista[i].map(notaAMidi),
+        { antes: f.subarray(g - N, g), pedal, minimo: (0.012 * 0.012) / 32 });
+      cambios++;
+      if (!r.ok) malos.push(`${l.id} #${i} ${lista[i].join('+')}: ${textoAcorde(r)}`);
+    }
+  }
+  const bien = malos.length === 0;
+  if (!bien) fallos++;
+  console.log(`${bien ? '✅' : '❌'} ${cambios - malos.length} de ${cambios} cambios de acorde reconocidos`);
+  malos.slice(0, 8).forEach((m) => console.log('    ', m));
+}
+
 // ───── Piso de ruido ─────
 console.log('— Ruido sin notas (con piso de energía) —');
 for (const [nombre, pedal] of [['Solo ruido, modo normal', false], ['Solo ruido, modo pedal', true]]) {

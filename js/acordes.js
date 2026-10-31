@@ -52,6 +52,34 @@ function energiaNota(buf, w, sampleRate, midi, desvio, excluir = null, agudos = 
   return pesos ? total / pesos : 0;
 }
 
+// Lo NUEVO de una nota: se suma armónico por armónico lo que creció desde antes del golpe.
+// (Restar los totales fallaba: si un armónico coincide con una nota que sigue sonando fuerte y se
+// apaga, esa caída anulaba el crecimiento de los demás armónicos.)
+function incrementoNota(buf, antes, w, sampleRate, midi, desvio, excluir = null) {
+  const f0 = midiAFrecuencia(midi + desvio);
+  const separacionMin = (2.6 * sampleRate) / buf.length;
+  let total = 0;
+  let pesos = 0;
+  let crecen = 0;
+  let creceFundamental = false;
+  for (let h = 1; h <= 6; h++) {
+    const fh = f0 * h * Math.sqrt(1 + 0.0003 * h * h);
+    if (fh > 2300) break;
+    if (fh * 0.0595 < separacionMin) continue;
+    if (excluir?.some((fx) => Math.abs(1200 * Math.log2(fh / fx)) < 45)) continue;
+    const ahora = potencia(buf, w, sampleRate, fh);
+    const previa = potencia(antes, w, sampleRate, fh);
+    total += Math.max(0, ahora - previa);
+    if (ahora > previa * 1.15) crecen++;
+    if (h === 1 && ahora > previa * 1.3) creceFundamental = true;
+    pesos++;
+  }
+  // Al golpear de verdad una nota crecen casi todos sus armónicos; si crece uno solo, es por otra nota.
+  // (o, si el armónico principal creció con claridad, eso basta: los demás pueden "latir" con otras notas)
+  if (!pesos || (crecen < Math.min(pesos, Math.max(2, pesos / 3)) && !creceFundamental)) return 0;
+  return total / pesos;
+}
+
 // ¿Están sonando estas notas?
 //   buf: muestras recientes (ideal ~170 ms, por ejemplo 8192 a 48 kHz), sin el golpe del martillo.
 //   esperadas: números MIDI.  desvio: desafinación del piano en semitonos (del detector).
@@ -80,23 +108,46 @@ export function verificarNotas(buf, sampleRate, esperadas, { desvio = 0, pedal =
 
   const conjunto = new Set(esperadas);
   const maximo = Math.max(...esperadas.map(E));
+  // Armónicos de las notas pedidas: al medir una tecla VECINA se saltan, porque si coinciden con
+  // otra nota pedida (por ejemplo, el 3.er armónico de Do3 = Sol4) la vecina "parece" sonar.
+  const parcialesPedidas = [];
+  for (const p of esperadas) {
+    for (let k = 1; k <= 10; k++) parcialesPedidas.push(midiAFrecuencia(p + desvio) * k * Math.sqrt(1 + 0.0003 * k * k));
+  }
+  const cacheV = new Map();
+  const EV = (v) => {
+    if (!cacheV.has(v)) cacheV.set(v, energiaNota(buf, w, sampleRate, v, desvio, parcialesPedidas));
+    return cacheV.get(v);
+  };
+  const cacheVA = new Map();
+  const nuevaEV = (v) => {
+    if (!antes) return EV(v);
+    if (!cacheVA.has(v)) cacheVA.set(v, Math.max(0, EV(v) - energiaNota(antes, w, sampleRate, v, desvio, parcialesPedidas)));
+    return cacheVA.get(v);
+  };
   const detalle = {};
   const faltan = [];
+  const noNuevas = [];
   for (const m of esperadas) {
     const e = E(m);
     // Vecinas que no son parte del acorde
     const vecinasIdx = [m - 1, m + 1].filter((v) => !conjunto.has(v));
-    const vecinas = vecinasIdx.map(E);
+    const vecinas = vecinasIdx.map(EV);
     let contraste = e / Math.max(1e-12, ...vecinas);
     // La vecina suena solo porque la tocó antes (ya sonaba igual antes del golpe): se compara con lo nuevo.
     if (antes && !pedal && contraste < 2.5) {
       // Solo vale si la nota pedida también es nueva (apareció con este golpe).
       const nm = nuevaE(m);
-      if (nm > 0.3 * e) contraste = Math.max(contraste, nm / Math.max(1e-12, ...vecinasIdx.map(nuevaE)));
+      // (en los graves, parte de la energía de la nota viene de otra que sigue sonando: basta 15 % nueva)
+      if (nm > 0.15 * e) contraste = Math.max(contraste, nm / Math.max(1e-12, ...vecinasIdx.map(nuevaEV)));
     }
     const relativa = e / Math.max(1e-12, maximo);
     detalle[m] = { contraste: +contraste.toFixed(1), relativa: +relativa.toFixed(3) };
-    if (e < minimo) { faltan.push(m); detalle[m].debil = true; continue; }
+    // Bajo el piso de ruido: no suena. Excepción: con pedal el sonido sostenido sube el "ruido"
+    // medido, y un bajo suave junto a una nota fuerte queda por debajo aunque se oiga clarísimo
+    // (se acepta si destaca mucho frente a sus teclas vecinas, cosa que el ruido nunca hace).
+    const claro = e > minimo * 0.1 && relativa >= 0.05 && contraste >= 8;
+    if (e < minimo && !claro) { faltan.push(m); detalle[m].debil = true; continue; }
     if (pedal && antes) {
       // Energía nueva (lo que apareció con el golpe) de la nota y de sus vecinas.
       // Solo armónicos propios: los que comparte con otra nota pedida (una quinta, una octava)
@@ -108,20 +159,29 @@ export function verificarNotas(buf, sampleRate, esperadas, { desvio = 0, pedal =
       }
       const propios = energiaNota(buf, w, sampleRate, m, desvio, otras, true) > 0 ? otras : null;
       const ahoraA = (x) => energiaNota(buf, w, sampleRate, x, desvio, x === m ? propios : null, true);
-      const nueva = (x) => Math.max(0, ahoraA(x) - energiaNota(antes, w, sampleRate, x, desvio, x === m ? propios : null, true));
-      const inc = nueva(m);
+      const inc = incrementoNota(buf, antes, w, sampleRate, m, desvio, propios);
       const eA = ahoraA(m);
-      const incVecinas = Math.max(1e-12, ...[m - 1, m + 1].filter((v) => !conjunto.has(v)).map(nueva));
+      // Vecinas: sin los armónicos de las notas pedidas (si no, una vecina "crece" por culpa de otra nota pedida).
+      const incVecinas = Math.max(1e-12, ...[m - 1, m + 1].filter((v) => !conjunto.has(v))
+        .map((v) => incrementoNota(buf, antes, w, sampleRate, v, desvio, parcialesPedidas)));
       detalle[m].nueva = +(inc / Math.max(1e-12, eA)).toFixed(2);
       detalle[m].frenteVecinas = +(inc / incVecinas).toFixed(1);
       // Al menos 30 % de su energía es nueva (volver a tocar una nota que aún suena la sube
       // ~1,5 veces; una nota que solo sigue sonando no sube) y lo nuevo no viene de una vecina.
-      if (relativa < 0.04 || inc < 0.3 * eA || inc < 2 * incVecinas) faltan.push(m);
+      if (relativa < 0.04) faltan.push(m);                       // no suena
+      else if (inc < 0.12 * eA || inc < 2 * incVecinas) noNuevas.push(m); // suena, pero no se ve "nueva"
       continue;
     }
     if (contraste < 2.5 || relativa < 0.04) faltan.push(m);
   }
-  if (pedal) return { ok: !faltan.length, faltan, sobran: [], detalle };
+  if (pedal) {
+    // Con pedal una nota puede quedar tapada por las que siguen sonando (comparten armónicos) y no
+    // "verse" nueva aunque se tocó. En un acorde basta con que la mayoría se vea nueva y todas suenen;
+    // una nota sola sí tiene que verse nueva.
+    const permitidas = esperadas.length > 1 ? Math.floor(esperadas.length / 2) : 0;
+    if (noNuevas.length > permitidas) faltan.push(...noNuevas);
+    return { ok: !faltan.length, faltan, sobran: [], detalle };
+  }
 
   // Teclas de más: el error típico es apoyar también la tecla de al lado.
   // Se miran las teclas a uno y dos semitonos de cada nota pedida, usando solo los
@@ -139,8 +199,12 @@ export function verificarNotas(buf, sampleRate, esperadas, { desvio = 0, pedal =
       let e = energiaNota(buf, w, sampleRate, m, desvio, parciales);
       if (!e) continue; // todos sus armónicos coinciden con los pedidos: no se puede saber
       // Si ya sonaba antes del golpe, es la nota anterior apagándose: solo cuenta lo que aumentó.
-      if (antes) e = Math.max(0, e - energiaNota(antes, w, sampleRate, m, desvio, parciales));
-      if (e > minimo * 0.3) sobran.push(m);
+      if (antes) {
+        // Debe haber crecido de verdad: una nota que se está apagando nunca es "de más".
+        const previa = energiaNota(antes, w, sampleRate, m, desvio, parciales);
+        e = e > previa * 1.5 ? e - previa : 0;
+      }
+      if (e > Math.max(minimo * 0.3, maximo * 0.05)) sobran.push(m);
     }
   }
   return { ok: !faltan.length && !sobran.length, faltan, sobran, detalle };
@@ -155,4 +219,54 @@ export function textoAcorde({ faltan, sobran }) {
   if (faltan.length) return `Falta ${lista(faltan)}`;
   if (sobran.length) return `Sobra ${lista(sobran)}`;
   return '';
+}
+
+// ¿Qué nota acaba de aparecer? Se usa cuando se toca una nota mientras la anterior todavía suena:
+// la mezcla de dos notas confunde al detector de tono (puede "oír" una nota más grave que nadie tocó).
+// Compara el sonido de ahora con el de justo antes del golpe y busca la nota cuya energía creció más.
+//   ahora, antes: ~170 ms de sonido (por ejemplo 8192 muestras a 48 kHz).
+// Devuelve { midi, seguridad } o null si no hay una nota nueva clara.
+export function notaNueva(ahora, antes, sampleRate, { desvio = 0, minimo = 0, desde = 36, hasta = 96 } = {}) {
+  const w = hann(ahora.length);
+  const cache = new Map();
+  // Energía NUEVA en una frecuencia (ahora menos antes del golpe).
+  const nuevaEn = (f) => {
+    const k = Math.round(f * 4);
+    if (!cache.has(k)) {
+      const e = potencia(ahora, w, sampleRate, f);
+      cache.set(k, [e, Math.max(0, e - (antes ? potencia(antes, w, sampleRate, f) : 0))]);
+    }
+    return cache.get(k);
+  };
+  // Puntaje: lo nuevo en el armónico 1 por lo nuevo en el mejor de los armónicos 2 y 3 (media
+  // geométrica). Una nota "fantasma" más grave no tiene su propio armónico 1: puntaje ~0. Se usa el
+  // mejor de 2 y 3 porque uno puede coincidir con un armónico de la nota anterior (que no "crece").
+  const puntaje = (m) => {
+    const f0 = midiAFrecuencia(m + desvio);
+    const arm = [1, 2, 3].map((h) => nuevaEn(f0 * h * Math.sqrt(1 + 0.0003 * h * h)));
+    const n1 = arm[0][1];
+    return { p: Math.sqrt(Math.max(1e-30, n1 * Math.max(arm[1][1], arm[2][1]))), e: (arm[0][0] + arm[1][0] + arm[2][0]) / 3, n1, e1: arm[0][0] };
+  };
+  const lista = [];
+  for (let m = desde; m <= hasta; m++) lista.push({ m, ...puntaje(m) });
+  let mejor = lista.reduce((a, b) => (b.p > a.p ? b : a));
+  // ¿Una octava más abajo? Si esa nota también tiene su propio armónico 1 nuevo, la tocada era la grave
+  // (el armónico 2 de una nota grave puede parecer otra nota una octava arriba).
+  const baja = lista[mejor.m - 12 - desde];
+  if (baja && baja.n1 > 0.15 * mejor.n1 && baja.p > 0.2 * mejor.p) mejor = baja;
+  // Misma tecla otra vez, justo después de soltarla: los agudos de la anterior ya se apagaron y
+  // "parecen nuevos" (sale la octava de arriba). Si la fundamental de abajo suena fuerte y creció, es esa.
+  else if (baja && baja.n1 > 0 && baja.e1 > 0.25 * mejor.e1 && baja.n1 > 0.05 * mejor.n1) mejor = baja;
+  if (!mejor || mejor.p <= 1e-15 || mejor.e < minimo) return null;
+  const vecina = (d) => lista[mejor.m + d - desde]?.p || 0;
+  const contraste = mejor.p / Math.max(1e-20, vecina(-1), vecina(1));
+  if (contraste < 3) return null;
+  return { midi: mejor.m, seguridad: contraste };
+}
+
+// ¿Cuánto creció la fundamental de una nota desde antes del golpe? (ahora / antes; >1,3 = se volvió a tocar)
+export function crecimientoFundamental(ahora, antes, sampleRate, midi, desvio = 0) {
+  const w = hann(ahora.length);
+  const f0 = midiAFrecuencia(midi + desvio);
+  return potencia(ahora, w, sampleRate, f0) / Math.max(1e-20, potencia(antes, w, sampleRate, f0));
 }

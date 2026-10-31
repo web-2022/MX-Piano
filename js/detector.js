@@ -15,7 +15,91 @@
 // La lógica está en NucleoDetector (sin Web Audio) para poder probarla con señales sintéticas.
 import { detectarTono } from './tono.js';
 import { frecuenciaAMidi, claseNota } from './notas.js';
-import { verificarNotas } from './acordes.js';
+import { verificarNotas, notaNueva, crecimientoFundamental } from './acordes.js';
+
+// ── Notas encimadas ──
+// Cuando se toca una nota mientras la anterior todavía suena (lo normal en un niño), las dos se
+// mezclan y el detector de tono puede "oír" una nota que nadie tocó o perder la nueva. En ese caso
+// el corrector espera ~170 ms y compara el sonido con el de justo antes del golpe: la nota tocada es
+// la que APARECIÓ (notaNueva). Funciona igual en el navegador y en las pruebas (sin Web Audio).
+export class CorrectorSolape {
+  constructor() {
+    this.pendiente = null;
+    this.bloqueoHasta = 0;
+  }
+
+  // f: { ahora, info, sonabaAntes, largo (función que da ~170 ms de sonido), antes (copia previa al golpe),
+  //      sampleRate, desvio, minimo }. Devuelve las notas a avisar: [{ midi, frecuencia, instante, fuerza }]
+  cuadro(f) {
+    const { ahora, info } = f;
+    const salida = [];
+    const fin = () => {
+      // Recuerda la última nota realmente avisada (no las que el corrector bloqueó).
+      if (salida.length) this.ultimaEmitida = salida[salida.length - 1].midi;
+      return salida;
+    };
+    if (info.ataque != null && info.escuchando && f.sonabaAntes && f.antes) {
+      if (this.pendiente) this._resolver(f, salida);
+      this.pendiente = { t: info.ataque, antes: f.antes, nucleo: null, fuerza: info.rms, anterior: this.ultimaEmitida };
+      this.bloqueoHasta = 0;
+      this.claseBloqueada = null;
+    } else if (info.ataque != null) {
+      // Golpe limpio (no sonaba nada): la nota que venga es confiable y no hay nada que bloquear.
+      this.claseBloqueada = null;
+      this.bloqueoHasta = 0;
+      this.golpeLimpio = info.ataque;
+    }
+    // Nota nueva SIN golpe oído mientras otra seguía sonando (por ejemplo, bajando una escala: la nota
+    // de arriba tapa el golpe de la de abajo). El tono de la mezcla puede salir "entre las dos"
+    // (Re♯ en vez de Re): también se revisa, comparando con el sonido de justo antes.
+    if (info.nota && !this.pendiente && f.notaSonando && f.antesDe && ahora >= this.bloqueoHasta
+      && !(ahora - (this.golpeLimpio ?? -Infinity) < 250)) {
+      const antes = f.antesDe(info.nota.instante - 20);
+      if (antes) {
+        this.pendiente = { t: info.nota.instante, antes, nucleo: info.nota, fuerza: info.nota.fuerza || info.rms, anterior: this.ultimaEmitida };
+        this.claseBloqueada = null;
+        if (ahora - this.pendiente.t >= 170) this._resolver(f, salida);
+        return fin();
+      }
+    }
+    if (info.nota) {
+      if (this.pendiente) {
+        this.pendiente.nucleo = this.pendiente.nucleo || info.nota;
+        this.pendiente.fuerza = Math.max(this.pendiente.fuerza, info.nota.fuerza || 0);
+      } else if (ahora >= this.bloqueoHasta && !(this.claseBloqueada === info.nota.midi % 12)) {
+        salida.push(info.nota);
+      }
+    }
+    if (this.pendiente && ahora - this.pendiente.t >= 170) this._resolver(f, salida);
+    return fin();
+  }
+
+  _resolver(f, salida) {
+    const p = this.pendiente;
+    this.pendiente = null;
+    const r = notaNueva(f.largo(), p.antes, f.sampleRate, { desvio: f.desvio, minimo: f.minimo });
+    if (r) {
+      // Nota repetida: el detector de tono dice "la misma que sonaba" y el corrector la ve en otra octava
+      // (los agudos de la anterior ya se habían apagado y parecían nuevos): manda el detector de tono.
+      // Y si el detector de tono dice "la misma" y su fundamental volvió a crecer, también es repetida
+      // (el corrector puede haber visto un armónico, como el 3.º, que crece más tras soltar la tecla).
+      // Distancias de armónicos/subarmónicos (octava, octava+quinta, dos octavas...).
+      const ARMONICOS = [12, 19, 24, 28, 31];
+      if (p.nucleo && p.nucleo.midi === p.anterior && r.midi !== p.nucleo.midi
+        && (ARMONICOS.includes(Math.abs(r.midi - p.nucleo.midi))
+          || crecimientoFundamental(f.largo(), p.antes, f.sampleRate, p.nucleo.midi, f.desvio) > 1.3)) {
+        r.midi = p.nucleo.midi;
+      }
+      salida.push({ midi: r.midi, frecuencia: 440 * Math.pow(2, (r.midi - 69) / 12), instante: p.t, fuerza: p.fuerza });
+      // Lo que el detector de tono diga en los próximos 600 ms viene de la misma mezcla: se ignora;
+      // y esa misma nota no se vuelve a avisar hasta un golpe nuevo.
+      this.bloqueoHasta = f.ahora + 600;
+      this.claseBloqueada = r.midi % 12;
+    } else if (p.nucleo) {
+      salida.push(p.nucleo);
+    }
+  }
+}
 
 const FREC_MIN = 60;    // un poco más grave que Do2
 const FREC_MAX = 2100;  // Do7
@@ -71,16 +155,24 @@ export class NucleoDetector {
     const n = crudo.length;
     // Toda la ventana (~21 ms): más que el tiempo entre cuadros (~16 ms), así ningún golpe
     // cae en un hueco entre una mirada y la siguiente.
-    const desde = 1;
+    // Segunda diferencia: resalta los agudos del martillo frente al sonido sostenido de la nota.
     let agudo = 0;
-    for (let i = desde; i < n; i++) {
-      const d = crudo[i] - crudo[i - 1];
+    for (let i = 2; i < n; i++) {
+      const d = crudo[i] - 2 * crudo[i - 1] + crudo[i - 2];
       agudo += d * d;
     }
-    agudo /= n - desde;
+    agudo /= n - 2;
     this.cuadros++;
     const calentando = this.cuadros < 12; // ~0,2 s al encender el micrófono
-    const golpe = !calentando && agudo > this.agudoAnterior * 4 && agudo > this.ruidoAgudo * 8 && rms > umbral * 0.7;
+    // Se compara con lo MÁS BAJO de los últimos ~70 ms (no solo con el cuadro anterior): como las
+    // ventanas se solapan, el golpe se reparte en dos cuadros y la subida de uno a otro es menor.
+    // Así se detecta el golpe aunque la nota anterior siga sonando.
+    this.historialAgudo = this.historialAgudo || [];
+    const base = this.historialAgudo.length ? Math.min(...this.historialAgudo) : Infinity;
+    const golpe = !calentando && agudo > base * 3.5 && agudo > this.ruidoAgudo * 8 && rms > umbral * 0.7
+      && ahora - this.ultimoGolpe > 90;
+    this.historialAgudo.push(agudo);
+    if (this.historialAgudo.length > 4) this.historialAgudo.shift();
     this.agudoAnterior = agudo;
 
     // --- Tono ---
@@ -351,6 +443,10 @@ export class Detector {
     this.analizadorTono.getFloatTimeDomainData(this.bufTono);
     this.analizadorCrudo.getFloatTimeDomainData(this.bufCrudo);
     const ahora = performance.now();
+    // ¿Sonaba una nota justo antes de este cuadro? (para saber si un golpe nuevo se encima)
+    const sonabaAntes = !!this.nucleo.activa || this.nucleo.rmsAnterior > this.nucleo.umbralEfectivo();
+    const notaSonando = !!this.nucleo.activa; // una nota ya avisada que todavía no se apagó
+    const midiSonando = this.nucleo.activa?.midi ?? null;
     const info = this.nucleo.procesar(this.bufTono, this.bufCrudo, this.ctx.sampleRate, ahora, ahora < this.silenciadoHasta);
     this.onNivel?.(info);
     this._vigilar(ahora);
@@ -366,7 +462,33 @@ export class Detector {
       this.onAtaque?.(info.ataque);
     }
     if (info.fin) this.onFin?.(info.fin.midi, info.fin.duracion, 'mic', info.fin.instante, !!info.fin.ligada);
-    if (info.nota) this.onNota?.(info.nota.midi, info.nota.frecuencia, 'mic', info.nota.instante, info.nota.fuerza);
+    this.corrector = this.corrector || new CorrectorSolape();
+    // Copias del sonido cada ~50 ms (las últimas ~0,5 s), para saber qué sonaba antes de una nota.
+    this.copias = this.copias || [];
+    this.cuadroCopia = (this.cuadroCopia || 0) + 1;
+    if (this.cuadroCopia % 3 === 0 && this.analizadorAcorde) {
+      const b = this.copias.length >= 10 ? this.copias.shift().b : new Float32Array(this.analizadorAcorde.fftSize);
+      this.analizadorAcorde.getFloatTimeDomainData(b);
+      this.copias.push({ t: ahora, b });
+    }
+    const notas = this.corrector.cuadro({
+      ahora, info, sonabaAntes, notaSonando, midiSonando,
+      antes: info.ataque != null ? this.bufAntes : null,
+      antesDe: (t) => {
+        let mejor = null;
+        for (const c of this.copias) if (c.t <= t && (!mejor || c.t > mejor.t)) mejor = c;
+        return mejor && t - mejor.t < 150 ? Float32Array.from(mejor.b) : null;
+      },
+      largo: () => { this.analizadorAcorde.getFloatTimeDomainData(this.bufAcorde); return this.bufAcorde; },
+      sampleRate: this.ctx.sampleRate, desvio: this.nucleo.desvio, minimo: this.minimoNota(),
+    });
+    for (const n of notas) {
+      // El núcleo queda sabiendo cuál fue la nota real (para no repetirla después).
+      this.nucleo.ultimaClase = claseNota(n.midi);
+      this.nucleo.ultimoMidi = n.midi;
+      if (this.nucleo.activa) this.nucleo.activa.midi = n.midi;
+      this.onNota?.(n.midi, n.frecuencia, 'mic', n.instante, n.fuerza);
+    }
   }
 
   // ¿Están sonando estas notas ahora? (para acordes). Prueba también una octava

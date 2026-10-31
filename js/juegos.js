@@ -73,6 +73,7 @@ function atrapaMoscas(leccion, api) {
     erroresMosca = 0;
     const el = document.createElement('div');
     el.className = 'mosca';
+    el.dataset.midi = midi; // (para las pruebas automáticas)
     el.innerHTML = `<span class="alas">🪰</span>${etiquetaNota(midi, leccion)}`;
     charca.appendChild(el);
     mosca = { midi, el, progreso: 0, estado: 'vuela', fase: Math.random() * 6 };

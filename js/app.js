@@ -1003,6 +1003,7 @@ function terminarLeccion(opciones = {}) {
 // ================= Modo ritmo =================
 const TOLERANCIA_MS = 350;    // qué tan antes o después se acepta una nota
 const PERFECTO_MS = 150;
+const DEMORA_CONFIRMACION_MS = 260; // lo que puede tardar en llegar el aviso de una nota encimada
 const LATENCIA_MIC_MS = 40;   // demora del micrófono del iPad en entregar el sonido (el golpe ya se mide aparte)
 const CUENTA = 4;             // pulsos de cuenta antes de empezar
 
@@ -1154,7 +1155,9 @@ function correrRitmo(demo) {
       if (!demo) {
         r.eventos.forEach((e, i) => {
           if (e.estado !== 'pendiente') return;
-          if ((t - e.inicio) * beatMs > r.tolerancia) {
+          // Se espera un poco más que la ventana: cuando la nota anterior todavía suena, el detector
+          // tarda ~200 ms en confirmar cuál se tocó (la puntuación usa el momento real del golpe).
+          if ((t - e.inicio) * beatMs > r.tolerancia + DEMORA_CONFIRMACION_MS) {
             if (e.midi == null) { e.estado = 'silencio'; estadoBloque(i, 'bien'); return; }
             e.estado = 'fallo';
             j.errores++;
