@@ -9,10 +9,32 @@ const azar = (lista) => lista[Math.floor(Math.random() * lista.length)];
 const ESPERA_MS = 220;   // después del ataque, para que pase el golpe del martillo
 const SEGUNDA_MS = 160;  // segundo intento (por si las notas no bajaron justo juntas)
 
+// El nombre como está escrito en la lección ("Fa#4" → "Fa♯", "Sib4" → "Si♭"), así en Sol menor
+// el Fa♯ no aparece como Sol♭.
+export function nombreDeTexto(texto) {
+  return texto.replace(/-?\d+$/, '').replace('#', '♯').replace(/^(Do|Re|Mi|Fa|Sol|La|Si)b$/, '$1♭');
+}
+
 // Normaliza un elemento de la lección: ['Do4', 'Mi4'] o { notas: [...], nombre: 'Do mayor' }.
 function normalizar(item) {
-  const notas = Array.isArray(item) ? item : item.notas;
-  return { midis: notas.map(notaAMidi).sort((a, b) => a - b), nombre: Array.isArray(item) ? '' : item.nombre || '' };
+  const textos = Array.isArray(item) ? item : item.notas;
+  const pares = textos.map((t) => [notaAMidi(t), nombreDeTexto(t)]).sort((a, b) => a[0] - b[0]);
+  return {
+    midis: pares.map((p) => p[0]),
+    nombres: Object.fromEntries(pares),
+    nombre: Array.isArray(item) ? '' : item.nombre || '',
+  };
+}
+
+// Inversiones de un acorde (la nota de abajo pasa arriba), para aceptar cualquiera.
+function inversiones(midis) {
+  const lista = [midis];
+  let actual = midis;
+  for (let k = 1; k < midis.length; k++) {
+    actual = [...actual.slice(1), actual[0] + 12];
+    lista.push(actual);
+  }
+  return lista;
 }
 
 export function leccionAcordes(leccion, api) {
@@ -43,14 +65,16 @@ export function leccionAcordes(leccion, api) {
       setTimeout(() => vivo && api.terminar(), 500);
       return;
     }
-    const { midis, nombre } = lista[indice];
+    const { midis, nombre, nombres } = lista[indice];
+    const nom = (m) => nombres[m] || nombreNota(m);
     tocadas = new Set();
     fallos = 0;
     esc.querySelector('.acorde-nombre').textContent = nombre || (midis.length > 1 ? '¡Juntas!' : '');
-    // La nota más aguda arriba, como en la partitura.
+    esc.querySelector('.acorde').classList.toggle('solo-cifrado', !!leccion.soloCifrado);
+    // La nota más aguda arriba, como en la partitura. En "solo cifrado" las notas se esconden.
     cajaNotas.innerHTML = [...midis].reverse().map((m) => `
-      <span class="acorde-nota" data-midi="${m}" style="--color:${colorNota(m)}">
-        ${nombreNota(m)}${dosManos ? `<small>${m < 60 ? 'izq' : 'der'}</small>` : ''}
+      <span class="acorde-nota${leccion.soloCifrado ? ' escondida' : ''}" data-midi="${m}" style="--color:${colorNota(m)}">
+        <b>${nom(m)}</b>${dosManos ? `<small>${m < 60 ? 'izq' : 'der'}</small>` : ''}
       </span>`).join('');
     cajaNotas.classList.remove('aparece');
     void cajaNotas.offsetWidth;
@@ -64,11 +88,12 @@ export function leccionAcordes(leccion, api) {
       api.vigilar(midis, () => { if (vivo && indice === i) acierto(); }, { cualquierOctava: !dosManos });
     }
     if (!conservarGlobo) {
-      const izq = midis.filter((m) => m < 60).map(nombreNota).join(' y ');
-      const der = midis.filter((m) => m >= 60).map(nombreNota).join(' y ');
-      api.globo(midis.length === 1 ? `¡Toca ${nombreNota(midis[0])}!`
-        : dosManos && izq && der ? `Izquierda ${izq} + derecha ${der}, ¡juntas!`
-          : `¡Toca ${midis.map(nombreNota).join(', ')} juntas!`);
+      const izq = midis.filter((m) => m < 60).map(nom).join(' y ');
+      const der = midis.filter((m) => m >= 60).map(nom).join(' y ');
+      api.globo(leccion.soloCifrado ? `¿Qué notas tiene ${nombre}?`
+        : midis.length === 1 ? `¡Toca ${nom(midis[0])}!`
+          : dosManos && izq && der ? `Izquierda ${izq} + derecha ${der}, ¡juntas!`
+            : `¡Toca ${midis.map(nom).join(', ')} juntas!`);
     }
   }
 
@@ -102,6 +127,8 @@ export function leccionAcordes(leccion, api) {
     api.globo(`¡Casi! ${texto}`);
     if (fallos === 1) api.decir(`Casi. ${texto}.`, { menor: true });
     if (fallos >= 2 && leccion.ayudaVisual === false) lista[indice].midis.forEach((m) => api.marcarTecla(m, 'objetivo', 1e9));
+    // Cifrado: después de dos intentos se muestran las notas.
+    if (fallos >= 2) cajaNotas.querySelectorAll('.escondida').forEach((el) => el.classList.remove('escondida'));
   }
 
   function pista(resultado) {
@@ -122,10 +149,21 @@ export function leccionAcordes(leccion, api) {
     await api.esperar(Math.max(0, instante + espera - performance.now()));
     if (indice !== i) { ocupado = false; return; }
     const opciones = { cualquierOctava: !dosManos, antes };
-    let r = vivo && api.escuchando() ? api.verificarAcorde(objetivo.midis, opciones) : null;
+    // Con "cualquierInversion" vale Do-Mi-Sol, Mi-Sol-Do o Sol-Do-Mi.
+    const candidatos = leccion.cualquierInversion ? inversiones(objetivo.midis) : [objetivo.midis];
+    const verificar = () => {
+      let primero = null;
+      for (const c of candidatos) {
+        const r = api.verificarAcorde(c, opciones);
+        if (r.ok) return r;
+        primero = primero || r;
+      }
+      return primero;
+    };
+    let r = vivo && api.escuchando() ? verificar() : null;
     if (r && !r.ok) {
       await api.esperar(SEGUNDA_MS);
-      if (vivo && api.escuchando() && indice === i) r = api.verificarAcorde(objetivo.midis, opciones);
+      if (vivo && api.escuchando() && indice === i) r = verificar();
     }
     ocupado = false;
     if (!r || !vivo || indice !== i) return;

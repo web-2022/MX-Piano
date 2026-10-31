@@ -35,6 +35,11 @@ El iPad escucha por el micrófono y reconoce la nota que se tocó.
 | 23 | Salón de los Acompañamientos | Vals, arpegio roto, melodía con vals, Alberti con melodía, Sonata fácil de Mozart (K. 545) |
 | 24 | Taller del Pedal | Cambio de pedal, arpegios amplios, Canción de cuna de Brahms, Preludio en Do de Bach |
 | 25 | Puerta de las Tonalidades | Re mayor (posición, escala, lectura), escala de Si♭ mayor, Canon de Pachelbel |
+| 26 | Observatorio de la Primera Vista | Melodías nuevas al azar cada vez, en clave de Sol, de Fa y con armadura |
+| 27 | Gimnasio de los Dedos | Cinco dedos parejos, Hanon n.º 1, terceras, escala a dos octavas, estudio estilo Czerny |
+| 28 | Club del Swing | Síncopa, contratiempo, corcheas con swing, bajo de blues, The Entertainer (Joplin) |
+| 29 | Estudio del Cifrado | C, F, G, Am, Dm, Em, G7; leer solo el cifrado (cualquier inversión); acompañar; **improvisar** |
+| 30 | Gran Recital | Passacaglia de Händel (acordes, dos manos, arpegiada, recital final) y 8 compases del Preludio de Bach |
 
 Cada lección se desbloquea al terminar la anterior. En ⚙️ el profesor puede
 **desbloquear todas** para saltar a cualquier lección.
@@ -253,7 +258,6 @@ Para canciones usa solo obras de **dominio público** (tradicionales o clásicas
 ## Lo que sigue
 
 - Ajustar en el iPad real los límites de fuerte/suave, picado/ligado y acordes.
-- Etapa 3 (niveles 21 a 30): acordes invertidos, escalas menores, piezas clásicas completas, lectura a primera vista.
 - Mostrar la partitura completa (varias notas en el pentagrama) en las lecciones importadas.
 - Varios perfiles de niños en el mismo iPad.
 - Más canciones en el Valle de las Canciones.

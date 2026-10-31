@@ -21,6 +21,12 @@
 //   armadura: 'sol' | 'fa' | 're' | 'sib'  (pentagrama: Fa♯, Si♭, Fa♯ y Do♯, o Si♭ y Mi♭ al inicio)
 //   tonalidad: 'sol' | 'fa' | 're' | 'sib' | 'lam' | 'rem'  (acompañamiento en esa tonalidad; 'lam' = La menor)
 //   pedal: true                         (lección que se toca con pedal: se juzga lo que acaba de sonar)
+//   generar: { notas, largo, saltoMax, empezar, terminar }  (canción nueva al azar cada vez: primera vista)
+//   soloCifrado: true                   (acordes: solo se ve el nombre, por ejemplo "Am"; las notas aparecen tras 2 intentos)
+//   cualquierInversion: true            (acordes: vale cualquier inversión del acorde)
+//
+//   improvisa    -> los acordes pasan solos y el niño inventa con las notas de "escala".
+//                   { acordes: [{ nombre: 'C', notas: [...] }], escala: ['Do', 'Re', ...], compasMs, meta }
 //   sinAcompanamiento: true             (escuchar la canción sin acordes, por ejemplo si está en menor)
 //   pulso: 1.5                          (ritmo: cada cuántas negras suena el clic; 1,5 en 6/8 y 3/8)
 //   tiempos: [..]                       (canciones: duración de cada nota, para "Escuchar la canción"
@@ -1285,6 +1291,282 @@ export const MUNDOS = [
                 'Re5', 'Do#5', 'Si4', 'La4', 'Sol4', 'Fa#4', 'Sol4', 'Mi4', 'Fa#4'],
         tiempos: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
         consejo: 'La melodía del Canon en su tonalidad original, Re mayor. Es la misma progresión de acordes que tocó en la Rueda de las Inversiones.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 26 ─────────────────────────
+  {
+    id: 'mundo26',
+    emoji: '🔭',
+    titulo: 'Observatorio de la Primera Vista',
+    nivel: 26,
+    color: '#bae6fd',
+    lecciones: [
+      {
+        id: 'n26-1', titulo: 'Leer sin practicar: 5 notas', emoji: '👁️',
+        tipo: 'cancion', vista: 'pentagrama', clave: 'sol', colores: true, mostrarNombre: false, ayudaVisual: false,
+        generar: { notas: ['Do4', 'Re4', 'Mi4', 'Fa4', 'Sol4'], largo: 8, saltoMax: 1, empezar: 'Do4', terminar: 'Do4' },
+        consejo: 'Cada vez sale una melodía nueva que nunca vio. El secreto: mirar si la nota sube o baja, y si va por grados (al lado) o salta.',
+      },
+      {
+        id: 'n26-2', titulo: 'Primera vista con saltos', emoji: '🦘',
+        tipo: 'cancion', vista: 'pentagrama', clave: 'sol', colores: false, mostrarNombre: false, ayudaVisual: false,
+        generar: { notas: ['Do4', 'Re4', 'Mi4', 'Fa4', 'Sol4'], largo: 10, saltoMax: 2, empezar: 'Do4', terminar: 'Do4' },
+        consejo: 'Ahora hay saltos de tercera: de línea a línea o de espacio a espacio. En blanco y negro, como una partitura de verdad.',
+      },
+      {
+        id: 'n26-3', titulo: 'Primera vista en clave de Fa', emoji: '🐻',
+        tipo: 'cancion', vista: 'pentagrama', clave: 'fa', colores: false, mostrarNombre: false, ayudaVisual: false,
+        mano: 'izquierda', registro: true, teclado: [48, 72],
+        generar: { notas: ['Do3', 'Re3', 'Mi3', 'Fa3', 'Sol3'], largo: 8, saltoMax: 2, empezar: 'Do3', terminar: 'Do3' },
+        consejo: 'Lo mismo con la mano izquierda, en clave de Fa. Primero que encuentre el Do y después siga el dibujo.',
+      },
+      {
+        id: 'n26-4', titulo: 'Primera vista en Sol mayor', emoji: '🌄',
+        tipo: 'cancion', vista: 'pentagrama', clave: 'sol', armadura: 'sol', colores: false, mostrarNombre: false,
+        ayudaVisual: false, teclado: [60, 76], posicion: 'Sol4',
+        generar: { notas: ['Fa#4', 'Sol4', 'La4', 'Si4', 'Do5', 'Re5'], largo: 10, saltoMax: 2, empezar: 'Sol4', terminar: 'Sol4' },
+        consejo: 'Con armadura: antes de empezar, que diga en voz alta "todos los Fa son Fa♯".',
+      },
+      {
+        id: 'n26-5', titulo: 'Desafío de primera vista', emoji: '🏆', premio: true,
+        tipo: 'cancion', vista: 'pentagrama', clave: 'sol', colores: false, mostrarNombre: false, ayudaVisual: false,
+        teclado: [60, 79],
+        generar: { notas: ['Do4', 'Re4', 'Mi4', 'Fa4', 'Sol4', 'La4', 'Si4', 'Do5', 'Re5', 'Mi5'], largo: 14, saltoMax: 3, empezar: 'Do4', terminar: 'Do5' },
+        consejo: 'Diez notas posibles, saltos de hasta una cuarta. La mano se tiene que mover: que mire un poco adelante, no solo la nota que toca.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 27 ─────────────────────────
+  {
+    id: 'mundo27',
+    emoji: '🏋️',
+    titulo: 'Gimnasio de los Dedos',
+    nivel: 27,
+    color: '#fecaca',
+    lecciones: [
+      {
+        id: 'n27-1', titulo: 'Cinco dedos parejos', emoji: '🖐️',
+        tipo: 'ritmo', tempo: 60, subdividir: true,
+        figuras: [['Do4', 0.5], ['Re4', 0.5], ['Mi4', 0.5], ['Fa4', 0.5], ['Sol4', 0.5], ['Fa4', 0.5], ['Mi4', 0.5], ['Re4', 0.5],
+                  ['Do4', 0.5], ['Re4', 0.5], ['Mi4', 0.5], ['Fa4', 0.5], ['Sol4', 0.5], ['Fa4', 0.5], ['Mi4', 0.5], ['Re4', 0.5],
+                  ['Do4', 4]],
+        consejo: 'Como un ejercicio de Czerny: que todas las notas suenen iguales, como un collar de perlas. Primero en 🐢 Lento.',
+      },
+      {
+        id: 'n27-2', titulo: 'Hanon n.º 1', emoji: '🧗', teclado: [60, 79],
+        tipo: 'ritmo', tempo: 56, subdividir: true,
+        // Ejercicio n.º 1 de "El pianista virtuoso", Charles-Louis Hanon (1873), dominio público.
+        figuras: [['Do4', 0.5], ['Mi4', 0.5], ['Fa4', 0.5], ['Sol4', 0.5], ['La4', 0.5], ['Sol4', 0.5], ['Fa4', 0.5], ['Mi4', 0.5],
+                  ['Re4', 0.5], ['Fa4', 0.5], ['Sol4', 0.5], ['La4', 0.5], ['Si4', 0.5], ['La4', 0.5], ['Sol4', 0.5], ['Fa4', 0.5],
+                  ['Mi4', 0.5], ['Sol4', 0.5], ['La4', 0.5], ['Si4', 0.5], ['Do5', 0.5], ['Si4', 0.5], ['La4', 0.5], ['Sol4', 0.5],
+                  ['Fa4', 0.5], ['La4', 0.5], ['Si4', 0.5], ['Do5', 0.5], ['Re5', 0.5], ['Do5', 0.5], ['Si4', 0.5], ['La4', 0.5]],
+        consejo: 'El ejercicio más famoso para fortalecer los dedos 4 y 5. Dedos 1-2-3-4-5-4-3-2 en cada grupo, y el grupo sube una nota.',
+      },
+      {
+        id: 'n27-3', titulo: 'Notas dobles: terceras', emoji: '👯', ayudaVisual: true,
+        tipo: 'acordes', teclado: [60, 79],
+        acordes: [['Do4', 'Mi4'], ['Re4', 'Fa4'], ['Mi4', 'Sol4'], ['Fa4', 'La4'], ['Sol4', 'Si4'],
+                  ['Fa4', 'La4'], ['Mi4', 'Sol4'], ['Re4', 'Fa4'], ['Do4', 'Mi4']],
+        consejo: 'Terceras seguidas con los dedos 1-3 y 2-4, alternando. Las dos notas tienen que bajar exactamente juntas.',
+      },
+      {
+        id: 'n27-4', titulo: 'Escala a dos octavas', emoji: '🪜', teclado: [60, 84],
+        tipo: 'cancion', ayudaVisual: false, tempo: 110,
+        notas: ['Do4', 'Re4', 'Mi4', 'Fa4', 'Sol4', 'La4', 'Si4', 'Do5', 'Re5', 'Mi5', 'Fa5', 'Sol5', 'La5', 'Si5', 'Do6',
+                'Si5', 'La5', 'Sol5', 'Fa5', 'Mi5', 'Re5', 'Do5', 'Si4', 'La4', 'Sol4', 'Fa4', 'Mi4', 'Re4', 'Do4'],
+        dedos: [1, 2, 3, 1, 2, 3, 4, 1, 2, 3, 1, 2, 3, 4, 5, 4, 3, 2, 1, 3, 2, 1, 4, 3, 2, 1, 3, 2, 1],
+        tiempos: Array(28).fill(0.5).concat([2]),
+        consejo: 'El pulgar pasa por debajo dos veces al subir: después de Mi y después de Si. Que la mano viaje sin saltos.',
+      },
+      {
+        id: 'n27-5', titulo: 'Estudio de Czerny', emoji: '🏆', premio: true,
+        tipo: 'ritmo', tempo: 54, subdividir: true, teclado: [55, 79],
+        // En el estilo de los estudios para principiantes de Carl Czerny (dominio público): arpegios y escalas en corcheas.
+        figuras: [['Do4', 0.5], ['Mi4', 0.5], ['Sol4', 0.5], ['Mi4', 0.5], ['Do4', 0.5], ['Mi4', 0.5], ['Sol4', 0.5], ['Mi4', 0.5],
+                  ['Re4', 0.5], ['Fa4', 0.5], ['Sol4', 0.5], ['Fa4', 0.5], ['Si3', 0.5], ['Re4', 0.5], ['Sol4', 0.5], ['Re4', 0.5],
+                  ['Do4', 0.5], ['Re4', 0.5], ['Mi4', 0.5], ['Fa4', 0.5], ['Sol4', 0.5], ['La4', 0.5], ['Si4', 0.5], ['Do5', 0.5],
+                  ['Sol4', 1], ['Mi4', 1], ['Do4', 2]],
+        consejo: 'Arpegio, acorde roto y escala: todo lo del gimnasio junto. Primero 🐢 Lento, después 🚶 Medio.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 28 ─────────────────────────
+  {
+    id: 'mundo28',
+    emoji: '🎷',
+    titulo: 'Club del Swing',
+    nivel: 28,
+    color: '#fcd34d',
+    lecciones: [
+      {
+        id: 'n28-1', titulo: 'Síncopa: el acento escondido', emoji: '🙃',
+        tipo: 'ritmo', tempo: 60, subdividir: true,
+        figuras: [['Do4', 0.5], ['Re4', 1], ['Mi4', 0.5], ['Do4', 2],
+                  ['Mi4', 0.5], ['Fa4', 1], ['Sol4', 0.5], ['Mi4', 2]],
+        consejo: 'Corta-larga-corta: "ti-TAA-ti". La nota larga cae entre dos clics, como un saltito que llega antes de tiempo.',
+      },
+      {
+        id: 'n28-2', titulo: 'Notas a contratiempo', emoji: '🦘',
+        tipo: 'ritmo', tempo: 58, subdividir: true,
+        figuras: [[null, 0.5], ['Do4', 0.5], [null, 0.5], ['Mi4', 0.5], [null, 0.5], ['Sol4', 0.5], [null, 0.5], ['Mi4', 0.5],
+                  [null, 0.5], ['Re4', 0.5], [null, 0.5], ['Fa4', 0.5], ['Mi4', 2]],
+        consejo: 'Las notas caen en el "y", entre los clics: clic-NOTA-clic-NOTA. Que diga "uno Y dos Y" y toque solo en la Y.',
+      },
+      {
+        id: 'n28-3', titulo: 'Corcheas con swing', emoji: '🎷',
+        tipo: 'ritmo', tempo: 72,
+        figuras: [['Do4', 2 / 3], ['Mi4', 1 / 3], ['Sol4', 2 / 3], ['La4', 1 / 3], ['Sol4', 2 / 3], ['Mi4', 1 / 3], ['Do4', 1],
+                  ['Re4', 2 / 3], ['Fa4', 1 / 3], ['La4', 2 / 3], ['Si4', 1 / 3], ['La4', 2 / 3], ['Fa4', 1 / 3], ['Re4', 1]],
+        consejo: 'En el jazz las corcheas no son iguales: la primera es larga y la segunda cortita, "doo-ba, doo-ba", como al caminar con onda.',
+      },
+      {
+        id: 'n28-4', titulo: 'Bajo de blues', emoji: '🎸', mano: 'izquierda', registro: true,
+        tipo: 'ritmo', tempo: 72, teclado: [41, 67],
+        figuras: [['Do3', 2 / 3], ['Mi3', 1 / 3], ['Sol3', 2 / 3], ['La3', 1 / 3], ['Sib3', 2 / 3], ['La3', 1 / 3], ['Sol3', 2 / 3], ['Mi3', 1 / 3],
+                  ['Fa3', 2 / 3], ['La3', 1 / 3], ['Do4', 2 / 3], ['Re4', 1 / 3], ['Mib4', 2 / 3], ['Re4', 1 / 3], ['Do4', 2 / 3], ['La3', 1 / 3]],
+        consejo: 'El bajo que camina del boogie-woogie, con swing. Sube por el acorde y toca la "nota de blues" (Si♭ y Mi♭).',
+      },
+      {
+        id: 'n28-5', titulo: 'The Entertainer', emoji: '🏆', premio: true,
+        tipo: 'cancion', ayudaVisual: false, teclado: [60, 79], tempo: 80,
+        // "The Entertainer", Scott Joplin (1902), dominio público. Comienzo del tema.
+        notas: ['Re4', 'Re#4', 'Mi4', 'Do5', 'Mi4', 'Do5', 'Mi4', 'Do5',
+                'Do5', 'Re5', 'Re#5', 'Mi5', 'Do5', 'Re5', 'Mi5', 'Si4', 'Re5', 'Do5'],
+        tiempos: [0.25, 0.25, 0.25, 0.5, 0.25, 0.5, 0.25, 1.5,
+                  0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.5, 0.25, 0.5, 2],
+        consejo: 'El ragtime más famoso, lleno de síncopas. Primero que lo escuche con "Escuchar la canción" para sentir el ritmo saltarín.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 29 ─────────────────────────
+  {
+    id: 'mundo29',
+    emoji: '🎤',
+    titulo: 'Estudio del Cifrado',
+    nivel: 29,
+    color: '#ddd6fe',
+    lecciones: [
+      {
+        id: 'n29-1', titulo: 'Las letras de los acordes', emoji: '🔤', ayudaVisual: true,
+        tipo: 'acordes', cantidad: 10, teclado: [55, 76],
+        acordes: [
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'C' }, { notas: ['Fa4', 'La4', 'Do5'], nombre: 'F' },
+          { notas: ['Sol4', 'Si4', 'Re5'], nombre: 'G' }, { notas: ['La4', 'Do5', 'Mi5'], nombre: 'Am' },
+        ],
+        consejo: 'En las canciones populares los acordes se escriben con letras: C = Do, D = Re, E = Mi, F = Fa, G = Sol, A = La, B = Si. Una "m" significa menor: Am = La menor.',
+      },
+      {
+        id: 'n29-2', titulo: 'Lee el cifrado', emoji: '🕵️', ayudaVisual: false, soloCifrado: true, cualquierInversion: true,
+        tipo: 'acordes', cantidad: 10, teclado: [55, 79],
+        acordes: [
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'C' }, { notas: ['Fa4', 'La4', 'Do5'], nombre: 'F' },
+          { notas: ['Sol4', 'Si4', 'Re5'], nombre: 'G' }, { notas: ['La4', 'Do5', 'Mi5'], nombre: 'Am' },
+          { notas: ['Re4', 'Fa4', 'La4'], nombre: 'Dm' }, { notas: ['Mi4', 'Sol4', 'Si4'], nombre: 'Em' },
+        ],
+        consejo: 'Solo aparece la letra: tiene que armar el acorde solo (salta una tecla, toca, salta una tecla, toca). Vale en cualquier inversión.',
+      },
+      {
+        id: 'n29-3', titulo: 'El acorde de séptima', emoji: '7️⃣', ayudaVisual: true,
+        tipo: 'acordes', cantidad: 8, teclado: [55, 79],
+        acordes: [
+          { notas: ['Sol4', 'Si4', 'Re5', 'Fa5'], nombre: 'G7' },
+          { notas: ['Si3', 'Fa4', 'Sol4'], nombre: 'G7 (fácil)' },
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'C' },
+        ],
+        consejo: 'G7 tiene cuatro notas y "quiere" volver a C. Hay una versión fácil de tres notas que se toca con la mano casi quieta.',
+      },
+      {
+        id: 'n29-4', titulo: 'Acompaña Estrellita', emoji: '🎂', soloCifrado: true, cualquierInversion: true,
+        tipo: 'acordes', ayudaVisual: false, teclado: [55, 79],
+        // "Ah, vous dirai-je, maman" (dominio público): solo los acordes, uno por compás.
+        acordes: [
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'C' }, { notas: ['Fa4', 'La4', 'Do5'], nombre: 'F' },
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'C' }, { notas: ['Si3', 'Fa4', 'Sol4'], nombre: 'G7' },
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'C' }, { notas: ['Si3', 'Fa4', 'Sol4'], nombre: 'G7' },
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'C' }, { notas: ['Si3', 'Fa4', 'Sol4'], nombre: 'G7' },
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'C' },
+        ],
+        consejo: 'Mientras el adulto canta Estrellita, el niño toca un acorde por frase leyendo el cifrado. ¡Así se acompaña cualquier canción!',
+      },
+      {
+        id: 'n29-5', titulo: 'Improvisa con Ranita', emoji: '🏆', premio: true,
+        tipo: 'improvisa', teclado: [60, 84], meta: 32, compasMs: 2400,
+        escala: ['Do', 'Re', 'Mi', 'Sol', 'La'],
+        acordes: [
+          { nombre: 'C', notas: ['Do3', 'Mi3', 'Sol3'] }, { nombre: 'Am', notas: ['La2', 'Do3', 'Mi3'] },
+          { nombre: 'F', notas: ['Fa2', 'La2', 'Do3'] }, { nombre: 'G', notas: ['Sol2', 'Si2', 'Re3'] },
+        ],
+        consejo: 'Los acordes van pasando solos y el niño inventa su melodía con las cinco notas que brillan (la escala pentatónica: con ellas todo suena bien). Con audífonos o con el teclado de la pantalla, Ranita toca los acordes.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 30 ─────────────────────────
+  {
+    id: 'mundo30',
+    emoji: '👑',
+    titulo: 'Gran Recital',
+    nivel: 30,
+    color: '#fbcfe8',
+    lecciones: [
+      {
+        id: 'n30-1', titulo: 'Passacaglia: los acordes', emoji: '🏰', bemoles: true, soloCifrado: false, ayudaVisual: true,
+        tipo: 'acordes', teclado: [55, 79],
+        // Passacaglia de la Suite en Sol menor HWV 432, G. F. Händel (1720), dominio público. Sus 8 acordes.
+        acordes: [
+          { notas: ['Re4', 'Sol4', 'Sib4'], nombre: 'Gm' }, { notas: ['Do4', 'Mib4', 'Sol4'], nombre: 'Cm' },
+          { notas: ['Do4', 'Fa4', 'La4'], nombre: 'F' }, { notas: ['Re4', 'Fa4', 'Sib4'], nombre: 'B♭' },
+          { notas: ['Mib4', 'Sol4', 'Sib4'], nombre: 'E♭' }, { notas: ['Mib4', 'Sol4', 'Do5'], nombre: 'Cm' },
+          { notas: ['Re4', 'Fa#4', 'La4'], nombre: 'D' }, { notas: ['Re4', 'Sol4', 'Sib4'], nombre: 'Gm' },
+        ],
+        consejo: 'La Passacaglia es una cadena de 8 acordes que se repite mientras la música cambia encima. Primero los acordes solos, en Sol menor (con Si♭ y Mi♭).',
+      },
+      {
+        id: 'n30-2', titulo: 'Passacaglia a dos manos', emoji: '🎻', bemoles: true, mano: 'ambas',
+        tipo: 'acordes', teclado: [41, 72],
+        acordes: [
+          ['Sol2', 'Re4', 'Sol4', 'Sib4'], ['Do3', 'Do4', 'Mib4', 'Sol4'], ['Fa2', 'Do4', 'Fa4', 'La4'], ['Sib2', 'Re4', 'Fa4', 'Sib4'],
+          ['Mib3', 'Mib4', 'Sol4', 'Sib4'], ['Do3', 'Mib4', 'Sol4', 'Do5'], ['Re3', 'Re4', 'Fa#4', 'La4'], ['Sol2', 'Re4', 'Sol4', 'Sib4'],
+        ],
+        consejo: 'La izquierda toca el bajo, que baja de quinta en quinta, y la derecha el acorde. Son los acordes de la versión famosa de Halvorsen para violín y viola.',
+      },
+      {
+        id: 'n30-3', titulo: 'Passacaglia arpegiada', emoji: '🌊', bemoles: true, pedal: true,
+        tipo: 'cancion', ayudaVisual: false, teclado: [41, 72], tonalidad: 'sol', tempo: 100, sinAcompanamiento: true,
+        notas: ['Sol2', 'Re4', 'Sol4', 'Sib4', 'Do3', 'Do4', 'Mib4', 'Sol4', 'Fa2', 'Do4', 'Fa4', 'La4', 'Sib2', 'Re4', 'Fa4', 'Sib4',
+                'Mib3', 'Mib4', 'Sol4', 'Sib4', 'Do3', 'Mib4', 'Sol4', 'Do5', 'Re3', 'Re4', 'Fa#4', 'La4', 'Sol2', 'Re4', 'Sol4', 'Sib4'],
+        tiempos: Array(31).fill(0.5).concat([2]),
+        consejo: 'Cada acorde se toca nota por nota, desde el bajo: así suena la primera variación. Con pedal, cambiándolo en cada bajo.',
+      },
+      {
+        id: 'n30-4', titulo: 'Preludio de Bach: 8 compases', emoji: '🎼', pedal: true,
+        tipo: 'cancion', ayudaVisual: false, teclado: [59, 81], tempo: 66,
+        // Preludio en Do mayor BWV 846, J. S. Bach (1722), dominio público. Primeros ocho compases (cada uno, la primera mitad).
+        notas: ['Do4', 'Mi4', 'Sol4', 'Do5', 'Mi5', 'Sol4', 'Do5', 'Mi5',
+                'Do4', 'Re4', 'La4', 'Re5', 'Fa5', 'La4', 'Re5', 'Fa5',
+                'Si3', 'Re4', 'Sol4', 'Re5', 'Fa5', 'Sol4', 'Re5', 'Fa5',
+                'Do4', 'Mi4', 'Sol4', 'Do5', 'Mi5', 'Sol4', 'Do5', 'Mi5',
+                'Do4', 'Mi4', 'La4', 'Mi5', 'La5', 'La4', 'Mi5', 'La5',
+                'Do4', 'Re4', 'Fa#4', 'La4', 'Re5', 'Fa#4', 'La4', 'Re5',
+                'Si3', 'Re4', 'Sol4', 'Re5', 'Sol5', 'Sol4', 'Re5', 'Sol5',
+                'Si3', 'Do4', 'Mi4', 'Sol4', 'Do5', 'Mi4', 'Sol4', 'Do5'],
+        tiempos: Array(63).fill(0.25).concat([1]),
+        consejo: 'El preludio completo hasta el compás 8. La mano casi no se mueve dentro de cada compás: que piense en el acorde, no en las notas sueltas.',
+      },
+      {
+        id: 'n30-5', titulo: 'Recital final: Passacaglia', emoji: '👑', premio: true, bemoles: true, mano: 'ambas', pedal: true,
+        tipo: 'acordes', teclado: [41, 79],
+        // Arreglo propio, sencillo, de la Passacaglia de Händel (dominio público): bajo + acorde, y una melodía que baja.
+        acordes: [
+          ['Sol2', 'Sib4'], ['Re4'], ['Sol4'], ['Do3', 'Do5'], ['Mib4'], ['Sol4'], ['Fa2', 'La4'], ['Do4'], ['Fa4'], ['Sib2', 'Sib4'], ['Re4'], ['Fa4'],
+          ['Mib3', 'Sol4'], ['Sib4'], ['Mib5'], ['Do3', 'Sol4'], ['Do5'], ['Mib5'], ['Re3', 'Fa#4'], ['La4'], ['Re5'], ['Sol2', 'Re4', 'Sol4', 'Sib4'],
+        ],
+        consejo: '¡El gran final del viaje! El bajo de la Passacaglia en la izquierda y un arpegio que canta encima. Con pedal en cada bajo. Bravo por llegar hasta aquí: ya toca como pianista.',
       },
     ],
   },

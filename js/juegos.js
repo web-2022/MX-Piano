@@ -37,6 +37,7 @@ export function crearJuego(leccion, api) {
   if (leccion.tipo === 'dinamica') return dinamica(leccion, api);
   if (leccion.tipo === 'articulacion') return articulacion(leccion, api);
   if (leccion.tipo === 'acordes') return leccionAcordes(leccion, api);
+  if (leccion.tipo === 'improvisa') return improvisa(leccion, api);
   throw new Error('Juego desconocido: ' + leccion.tipo);
 }
 
@@ -389,5 +390,88 @@ function carrera(leccion, api) {
       if (corriendo && objetivo != null) api.sonar('nota', objetivo);
     },
     detener() { vivo = false; corriendo = false; },
+  };
+}
+
+// ───────────────────────── IMPROVISACIÓN ─────────────────────────
+// Los acordes van pasando (cifrado americano) y el niño inventa su melodía con las notas de la
+// escala que se muestran. Las notas de la escala suman; las demás no "suenan tan bien".
+// leccion: { acordes: [{ nombre: 'C', notas: ['Do3', 'Mi3', 'Sol3'] }], escala: ['Do', 'Re', ...],
+//            compasMs: 2400, meta: 24 }
+function improvisa(leccion, api) {
+  const esc = api.escenario;
+  const acordes = leccion.acordes.map((a) => ({ nombre: a.nombre, midis: a.notas.map(notaAMidi) }));
+  const NOMBRES = { Do: 0, Re: 2, Mi: 4, Fa: 5, Sol: 7, La: 9, Si: 11 };
+  const clases = new Set(leccion.escala.map((n) => NOMBRES[n]));
+  const compasMs = leccion.compasMs || 2400;
+  let buenas = 0;
+  let k = 0;
+  let reloj = null;
+  let vivo = true;
+
+  esc.innerHTML = `
+    <div class="improvisa">
+      <div class="impro-acordes"><span class="impro-actual"></span><span class="impro-siguiente"></span></div>
+      <div class="impro-escala">${leccion.escala.map((n) => `<span style="--color:${colorNota(60 + NOMBRES[n])}">${n}</span>`).join('')}</div>
+      <div class="impro-barra"><div></div></div>
+    </div>`;
+  const actual = esc.querySelector('.impro-actual');
+
+  function marcarEscala() {
+    document.querySelectorAll('#teclado [data-midi]').forEach((t) => {
+      t.classList.toggle('objetivo', clases.has(claseNota(Number(t.dataset.midi))));
+    });
+  }
+
+  function compas() {
+    if (!vivo) return;
+    const a = acordes[k % acordes.length];
+    actual.textContent = a.nombre;
+    actual.classList.remove('cambia');
+    void actual.offsetWidth;
+    actual.classList.add('cambia');
+    esc.querySelector('.impro-siguiente').textContent = acordes[(k + 1) % acordes.length].nombre;
+    api.fondo(a.midis, compasMs / 1000);
+    k++;
+  }
+
+  return {
+    async iniciar() {
+      marcarEscala();
+      api.globo('¡Inventa tu melodía!');
+      await api.decir('Inventa tu propia melodía con las teclas que brillan. ¡No hay notas equivocadas, solo unas más bonitas que otras!');
+      if (!vivo) return;
+      compas();
+      reloj = setInterval(compas, compasMs);
+    },
+    nota(midi) {
+      if (!vivo) return;
+      const a = acordes[(k - 1 + acordes.length) % acordes.length];
+      if (clases.has(claseNota(midi))) {
+        buenas++;
+        api.marcarTecla(midi, 'acierto', 300);
+        if (a.midis.some((m) => claseNota(m) === claseNota(midi))) api.chispas(actual); // nota del acorde: ¡brilla!
+        api.globo(azar(['♪', '♫', '¡Lindo!', '♪ ♪', '¡Sigue!']));
+      } else {
+        api.marcarTecla(midi, 'error', 300);
+        api.contarError();
+        api.globo('Esa no suena tan bien aquí: prueba las que brillan');
+      }
+      esc.querySelector('.impro-barra div').style.width = `${Math.min(100, (buenas / leccion.meta) * 100)}%`;
+      if (buenas >= leccion.meta) {
+        vivo = false;
+        clearInterval(reloj);
+        api.terminar({ frase: '¡Qué linda melodía inventaste!' });
+      }
+    },
+    escuchar() {
+      const a = acordes[(k - 1 + acordes.length) % acordes.length];
+      a.midis.forEach((m) => api.sonar('nota', m, 1));
+    },
+    detener() {
+      vivo = false;
+      clearInterval(reloj);
+      document.querySelectorAll('#teclado .objetivo').forEach((t) => t.classList.remove('objetivo'));
+    },
   };
 }

@@ -630,11 +630,28 @@ function mostrarObjetivo(midi, indice) {
 
 // ================= Juego =================
 // Tipos que dibuja su propio módulo (js/juegos.js y js/expresion.js) dentro de #escenario.
-const TIPOS_JUEGO = ['atrapa', 'eco', 'carrera', 'dinamica', 'articulacion', 'acordes'];
+const TIPOS_JUEGO = ['atrapa', 'eco', 'carrera', 'dinamica', 'articulacion', 'acordes', 'improvisa'];
 const esMiniJuego = (l) => TIPOS_JUEGO.includes(l.tipo);
+
+// Lectura a primera vista: una melodía nueva cada vez, que avanza por grados y saltos pequeños.
+// generar: { notas: [...], largo: 8, saltoMax: 2, empezar: 'Do4', terminar: 'Do4' }
+function melodiaNueva({ notas, largo = 8, saltoMax = 2, empezar, terminar }) {
+  const escala = notas.map(notaAMidi).sort((a, b) => a - b);
+  let i = empezar ? escala.indexOf(notaAMidi(empezar)) : Math.floor(Math.random() * escala.length);
+  if (i < 0) i = 0;
+  const lista = [escala[i]];
+  for (let k = 1; k < largo; k++) {
+    const paso = Math.floor(Math.random() * (2 * saltoMax + 1)) - saltoMax || (Math.random() < 0.5 ? -1 : 1);
+    i = Math.max(0, Math.min(escala.length - 1, i + paso));
+    lista.push(escala[i]);
+  }
+  if (terminar) lista[lista.length - 1] = notaAMidi(terminar);
+  return lista;
+}
 
 function generarObjetivos(leccion) {
   if (leccion.tipo === 'ritmo' || esMiniJuego(leccion)) return [];
+  if (leccion.generar) return melodiaNueva(leccion.generar);
   const notas = leccion.notas.map(notaAMidi);
   if (leccion.tipo === 'cancion') return notas;
   const cantidad = Math.round(leccion.cantidad * (esGrande() ? 1.25 : 1));
@@ -674,7 +691,7 @@ async function empezarLeccion(id) {
   $('#velocidad').classList.toggle('oculto', !esRitmo);
   marcarVelocidad();
   $('#escenario').classList.toggle('oculto', !esJuego);
-  $('#btn-cancion').classList.toggle('oculto', leccion.tipo !== 'cancion');
+  $('#btn-cancion').classList.toggle('oculto', leccion.tipo !== 'cancion' || !!leccion.generar);
   pararCancion();
   $('#escenario').innerHTML = '';
   dibujarTeclado(leccion.teclado);
@@ -750,6 +767,17 @@ function apiJuego(j) {
     vigilar: (esperadas, alOir, opciones) => { if (activo()) estado.detector.vigilar(esperadas, alOir, opciones); },
     dejarDeVigilar: () => estado.detector.dejarDeVigilar(),
     antesDelGolpe: () => estado.detector.bufAntes,
+    // Fondo para improvisar: los acordes suenan solo con el teclado de la pantalla o con audífonos
+    // (ajuste "acompañar"); con el micrófono abierto suena un clic suave, que no se confunde con notas.
+    fondo: (midis, segundos) => {
+      if (!activo() || !estado.ctx) return;
+      const nodos = estado.nodosVivo || (estado.nodosVivo = []);
+      if (estado.ajustes.tecladoPantalla || estado.ajustes.acompanarVivo) {
+        midis.forEach((m, k) => programarNota(estado.ctx, m, estado.ctx.currentTime + 0.02, segundos * 0.95, nodos, k ? 0.06 : 0.12));
+      } else {
+        programarClic(estado.ctx, estado.ctx.currentTime + 0.02, true, nodos, 0.6);
+      }
+    },
     esAcierto: (tocada, objetivo) => esAcierto(j.leccion, tocada, objetivo),
     contarError: () => { j.errores++; },
     chispas,
@@ -932,6 +960,7 @@ function totalNotas(j) {
   if (l.tipo === 'carrera') return l.meta;
   if (l.tipo === 'dinamica' || l.tipo === 'articulacion') return l.secuencia?.length || l.cantidad;
   if (l.tipo === 'acordes') return l.cantidad || l.acordes.length;
+  if (l.tipo === 'improvisa') return l.meta;
   return j.objetivos.length;
 }
 

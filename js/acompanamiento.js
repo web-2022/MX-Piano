@@ -69,6 +69,7 @@ export function melodiaDe(leccion) {
 
 // ¿La lección tiene una melodía que se pueda escuchar con orquesta?
 export function tieneMelodia(leccion) {
+  if (leccion.generar || leccion.tipo === 'improvisa') return false;
   return leccion.tipo === 'cancion' || leccion.tipo === 'ritmo' || !!leccion.secuencia;
 }
 
