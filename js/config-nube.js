@@ -4,7 +4,7 @@
 // Pasos: README.md → "Cuentas con Google Sheets".
 export const NUBE = {
   // Dirección del programa de Google (Implementar → Aplicación web → URL que termina en /exec)
-  scriptUrl: '',
+  scriptUrl: 'https://script.google.com/macros/s/AKfycbxiUSqzguyB4eHk6Vx6t6Na_di4pwbfxAqMJaW0oAJv93oiFYFDN-FiOGqhYkgDzMny_Q/exec',
 
   // Culqi → Links de pago: crea un link con el precio y pégalo aquí
   culqiLink: '',            // ej. 'https://express.culqi.com/pago/XXXXXX'

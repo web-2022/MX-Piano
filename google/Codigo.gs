@@ -7,6 +7,12 @@
  * Instalación: README.md → "Cuentas con Google Sheets".
  */
 
+// Ejecuta esta función una vez desde el editor para crear la hoja y dar los permisos.
+function preparar() {
+  hoja();
+  Logger.log('Hoja lista: ' + SpreadsheetApp.getActiveSpreadsheet().getUrl());
+}
+
 const HOJA = 'Cuentas';
 const COLUMNAS = [
   'Correo', 'Nombre del niño', 'Pase completo', 'Administrador', 'Nota (código Culqi)', 'Pagado el',
@@ -264,10 +270,4 @@ function onEdit(e) {
   if (h.getName() !== HOJA || e.range.getColumn() !== C['Pase completo'] + 1 || e.range.getRow() < 2) return;
   const fecha = h.getRange(e.range.getRow(), C['Pagado el'] + 1);
   fecha.setValue(siONo(e.range.getValue()) ? new Date() : '');
-}
-
-// Ejecuta esta función una vez desde el editor para crear la hoja y dar los permisos.
-function preparar() {
-  hoja();
-  Logger.log('Hoja lista: ' + SpreadsheetApp.getActiveSpreadsheet().getUrl());
 }
