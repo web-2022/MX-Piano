@@ -287,41 +287,30 @@ Para canciones usa solo obras de **dominio público** (tradicionales o clásicas
 - Varios perfiles de niños en el mismo iPad.
 - Más canciones en el Valle de las Canciones.
 
-## Cuentas, pagos y panel de administrador 💳
+## Cuentas con Google Sheets 💳
 
 Pianito tiene **registro** (correo y contraseña del papá o la mamá), **niveles 0 a 3 gratis** y del 4 en adelante con candado ⭐.
-Quien paga con **Culqi** se habilita a mano desde el **panel de administrador** (`admin.html`).
-Mientras `js/config-nube.js` esté vacío, la app funciona como siempre: sin registro y todo abierto.
+Las cuentas se guardan en una **hoja de Google Sheets** tuya. La app no la lee directamente: pasa por un pequeño
+programa de Google (`google/Codigo.gs`) que cifra las contraseñas y solo deja ver o cambiar todas las cuentas al administrador.
+Mientras `scriptUrl` en `js/config-nube.js` esté vacío, la app funciona sin registro y todo abierto.
 
-### 1. Crear la base de datos (Supabase, gratis) — una sola vez
-1. Entra a https://supabase.com → **Start your project** → crea un proyecto (región: *South America (São Paulo)*).
-2. Menú **SQL Editor → New query**: pega todo `supabase/esquema.sql` y pulsa **Run**.
-3. Menú **Authentication → Sign In / Providers → Email**: desactiva **Confirm email**
-   (así la familia entra al instante; el correo gratis de Supabase solo envía unos pocos por hora).
-4. Menú **Authentication → URL Configuration**: en **Site URL** pon `https://web-2022.github.io/MX-Piano/`.
-5. Menú **Project Settings → API**: copia **Project URL** y la clave **anon public**.
+### Instalar (una sola vez)
+1. Crea una hoja nueva en Google Sheets llamada **Pianito · Cuentas**.
+2. Menú **Extensiones → Apps Script**. Borra lo que haya y pega todo `google/Codigo.gs`. Guarda.
+3. Arriba elige la función **preparar** y pulsa **Ejecutar**. Google pedirá permisos: acepta (es tu propio programa;
+   usa la hoja y tu Gmail para enviar el código de "olvidé mi contraseña").
+4. **Implementar → Nueva implementación → Aplicación web**:
+   *Ejecutar como*: **Yo** · *Quién tiene acceso*: **Cualquier persona**. Copia la URL que termina en `/exec`.
+5. Pégala en `js/config-nube.js` → `scriptUrl`, cambia `VERSION` en `sw.js` y sube los cambios.
 
-### 2. Configurar la app
-Edita `js/config-nube.js`:
-```js
-supabaseUrl: 'https://TU-PROYECTO.supabase.co',
-supabaseClave: 'eyJ...',                          // anon public (es pública, no es secreta)
-culqiLink: 'https://express.culqi.com/pago/...',   // Culqi → Links de pago
-precio: 'S/ 39.90',
-whatsapp: '51987654321',                           // opcional, para que te avisen del pago
-```
-Cambia `VERSION` en `sw.js`, sube los cambios (`git push`) y espera 1–2 minutos.
+### Hacerte administrador
+Regístrate en la app con tu correo y, en la hoja, marca la casilla **Administrador** de tu fila
+(marca también **Pase completo** para ver todos los niveles). Entra a **https://web-2022.github.io/MX-Piano/admin.html**.
 
-### 3. Hacerte administrador
-1. Abre la app y **regístrate** con tu correo.
-2. En Supabase → **SQL Editor**, ejecuta (con tu correo):
-   `update public.pianito_perfiles set es_admin = true where correo = 'tu-correo@gmail.com';`
-3. Entra a **https://web-2022.github.io/MX-Piano/admin.html** con ese correo y contraseña.
+### Cuando una familia paga
+Busca su correo y marca **Pase completo** (en la hoja o con **✅ Activar** en `admin.html`); anota el código de la operación
+de Culqi en **Nota**. La familia toca **“Ya pagué”** o vuelve a abrir la app.
 
-### 4. Cuando una familia paga
-1. Te llega el pago en Culqi (y el aviso por WhatsApp con su correo).
-2. En `admin.html` busca el correo, escribe el código de operación en **Nota** y pulsa **✅ Activar**.
-3. La familia toca **“Ya pagué”** (o cierra y abre la app) y se abren los 31 niveles.
-
-> La cuenta queda guardada en el iPad: funciona sin internet. El candado está en la app (no en el servidor),
-> así que alguien con conocimientos técnicos podría saltarlo; para una app infantil es lo normal y no tiene costo.
+> No edites las columnas grises ocultas (hash, sal, tokens…): son técnicas.
+> Si cambias `Codigo.gs`, usa **Implementar → Gestionar implementaciones → editar → Nueva versión** para que la URL no cambie.
+> El candado está en la app; alguien con conocimientos técnicos podría saltarlo. Para una app infantil es lo normal.

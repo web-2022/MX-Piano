@@ -1,25 +1,12 @@
-// Cuentas de Pianito (Supabase): registro, ingreso y si la cuenta ya pagó (premium).
+// Cuentas de Pianito guardadas en Google Sheets (a través de Google Apps Script: google/Codigo.gs).
 // La cuenta se guarda también en el dispositivo, así la app funciona sin internet.
 import { NUBE } from './config-nube.js';
 
-export const SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 const CLAVE_LOCAL = 'pianito-cuenta';
 
-export const configurada = () => !!(NUBE.supabaseUrl && NUBE.supabaseClave);
+export const configurada = () => !!NUBE.scriptUrl;
 
-let cliente = null;
-export async function obtenerCliente() {
-  if (!configurada()) return null;
-  if (!cliente) {
-    const { createClient } = await import(SUPABASE_JS);
-    cliente = createClient(NUBE.supabaseUrl, NUBE.supabaseClave, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
-    });
-  }
-  return cliente;
-}
-
-// ---- Copia local de la cuenta ----
+// ---- Copia local de la cuenta (incluye el token de la sesión) ----
 export function cuentaLocal() {
   try { return JSON.parse(localStorage.getItem(CLAVE_LOCAL)) || null; } catch { return null; }
 }
@@ -38,80 +25,60 @@ export function nivelPermitido(nivel) {
 }
 export const esPremium = () => !configurada() || !!cuentaLocal()?.premium;
 
-// Lee el perfil del servidor (premium puede haber cambiado desde el panel).
-export async function actualizarPerfil() {
-  const sb = await obtenerCliente();
-  if (!sb) return null;
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) {
-    return cuentaLocal(); // sin sesión válida (o sin internet): se queda la copia local
+// Llama al programa de Google. Se envía como texto (sin cabeceras especiales) para que el
+// navegador no haga una consulta previa, que Google no acepta.
+export async function llamar(accion, datos = {}) {
+  let resp;
+  try {
+    resp = await fetch(NUBE.scriptUrl, { method: 'POST', body: JSON.stringify({ accion, ...datos }) });
+  } catch {
+    throw new Error('No hay conexión a internet. Inténtalo de nuevo.');
   }
-  const { data, error } = await sb.from('pianito_perfiles').select('correo, nombre, premium, es_admin').eq('id', session.user.id).maybeSingle();
-  if (error) return cuentaLocal();
-  const c = {
-    id: session.user.id,
-    correo: data?.correo || session.user.email,
-    nombre: data?.nombre || session.user.user_metadata?.nombre || '',
-    premium: !!data?.premium,
-    esAdmin: !!data?.es_admin,
-  };
-  guardarLocal(c);
-  return c;
+  let r;
+  try { r = await resp.json(); } catch { throw new Error('El servidor no respondió bien. Inténtalo de nuevo.'); }
+  if (!r.ok) throw new Error(r.error || 'Algo salió mal.');
+  return r;
 }
 
-const MENSAJES = {
-  'Invalid login credentials': 'Correo o contraseña incorrectos.',
-  'User already registered': 'Ese correo ya tiene cuenta. Usa "Ya tengo cuenta".',
-  'Email not confirmed': 'Primero confirma tu correo (revisa tu bandeja de entrada).',
-  'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 letras o números.',
-};
-const traducir = (e) => {
-  const m = e?.message || String(e);
-  for (const [k, v] of Object.entries(MENSAJES)) if (m.includes(k)) return v;
-  if (/fetch|network|Failed/i.test(m)) return 'No hay conexión a internet. Inténtalo de nuevo.';
-  if (/rate limit/i.test(m)) return 'Demasiados intentos. Espera unos minutos.';
-  return m;
-};
+// Lee la cuenta del servidor (el pase completo puede haberse activado desde la hoja o el panel).
+export async function actualizarPerfil() {
+  const local = cuentaLocal();
+  if (!configurada() || !local?.token) return local;
+  let r;
+  try { r = await llamar('perfil', { token: local.token }); } catch { return local; } // sin internet
+  if (!r.cuenta) { guardarLocal(null); return null; } // sesión cerrada en otro lado
+  guardarLocal(r.cuenta);
+  return r.cuenta;
+}
 
 export async function registrar(correo, clave, nombre) {
-  const sb = await obtenerCliente();
-  const { data, error } = await sb.auth.signUp({
-    email: correo, password: clave,
-    options: { data: { nombre, app: 'pianito' }, emailRedirectTo: location.origin + location.pathname },
-  });
-  if (error) throw new Error(traducir(error));
-  if (!data.session) return { confirmar: true }; // el proyecto pide confirmar el correo
-  return { cuenta: await actualizarPerfil() };
+  const r = await llamar('registrar', { correo, clave, nombre });
+  guardarLocal(r.cuenta);
+  return { cuenta: r.cuenta };
 }
 
 export async function entrar(correo, clave) {
-  const sb = await obtenerCliente();
-  const { error } = await sb.auth.signInWithPassword({ email: correo, password: clave });
-  if (error) throw new Error(traducir(error));
-  return actualizarPerfil();
+  const r = await llamar('entrar', { correo, clave });
+  guardarLocal(r.cuenta);
+  return r.cuenta;
 }
 
+// Envía un código de 6 números al correo.
 export async function olvideClave(correo) {
-  const sb = await obtenerCliente();
-  const { error } = await sb.auth.resetPasswordForEmail(correo, { redirectTo: location.origin + location.pathname });
-  if (error) throw new Error(traducir(error));
+  await llamar('olvide', { correo });
 }
 
-export async function cambiarClave(clave) {
-  const sb = await obtenerCliente();
-  const { error } = await sb.auth.updateUser({ password: clave });
-  if (error) throw new Error(traducir(error));
+// Cambia la contraseña con el código del correo y deja la sesión abierta.
+export async function restablecerClave(correo, codigo, clave) {
+  const r = await llamar('restablecer', { correo, codigo, clave });
+  guardarLocal(r.cuenta);
+  return r.cuenta;
 }
 
 export async function salir() {
-  try { await (await obtenerCliente())?.auth.signOut(); } catch { /* sin internet */ }
+  const local = cuentaLocal();
   guardarLocal(null);
-}
-
-// Avisa cuando el papá abrió el enlace de "olvidé mi contraseña".
-export async function alRecuperarClave(fn) {
-  const sb = await obtenerCliente();
-  sb?.auth.onAuthStateChange((evento) => { if (evento === 'PASSWORD_RECOVERY') fn(); });
+  if (local?.token) { try { await llamar('salir', { token: local.token }); } catch { /* sin internet */ } }
 }
 
 export { NUBE };

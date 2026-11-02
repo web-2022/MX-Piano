@@ -153,13 +153,7 @@ $('#form-cuenta').addEventListener('submit', async (ev) => {
   avisoInicio('Un momento…', true);
   try {
     if (modoCuenta === 'registro') {
-      const r = await nube.registrar(correo, clave, nombre);
-      if (r.confirmar) {
-        elegirModoCuenta('entrar');
-        $('#cuenta-correo').value = correo;
-        avisoInicio('¡Listo! Te enviamos un correo: confírmalo y luego entra aquí.', true);
-        return;
-      }
+      await nube.registrar(correo, clave, nombre);
     } else {
       await nube.entrar(correo, clave);
     }
@@ -176,15 +170,19 @@ $('#form-cuenta').addEventListener('submit', async (ev) => {
 $('#btn-olvide').addEventListener('click', async () => {
   const correo = $('#cuenta-correo').value.trim().toLowerCase();
   if (!correo) return avisoInicio('Escribe tu correo y vuelve a tocar "¿Olvidaste tu contraseña?".');
+  avisoInicio('Enviando el código…', true);
   try {
     await nube.olvideClave(correo);
-    avisoInicio('Te enviamos un correo para crear una nueva contraseña.', true);
+    avisoInicio('');
+    $('#clave-correo').textContent = correo;
+    $('#codigo-clave').value = '';
+    $('#nueva-clave').value = '';
+    $('#clave-mensaje').textContent = '';
+    $('#dialogo-clave').showModal();
   } catch (e) { avisoInicio(e.message); }
 });
 
-// Enlace del correo de "olvidé mi contraseña": pedir la nueva.
 if (nube.configurada()) {
-  nube.alRecuperarClave(() => $('#dialogo-clave').showModal()).catch(() => {});
   // Al abrir la app con internet se revisa si ya pagó (el permiso se da desde el panel).
   nube.actualizarPerfil().then(() => {
     mostrarCuentaEnAjustes();
@@ -194,13 +192,17 @@ if (nube.configurada()) {
 }
 $('#btn-guardar-clave').addEventListener('click', async () => {
   const clave = $('#nueva-clave').value;
+  const codigo = $('#codigo-clave').value.trim();
   const msg = $('#clave-mensaje');
-  if (clave.length < 6) { msg.textContent = 'Mínimo 6 letras o números.'; return; }
+  if (!/^\d{6}$/.test(codigo)) { msg.textContent = 'Escribe el código de 6 números del correo.'; return; }
+  if (clave.length < 6) { msg.textContent = 'La contraseña debe tener al menos 6 letras o números.'; return; }
+  msg.textContent = 'Un momento…';
   try {
-    await nube.cambiarClave(clave);
-    await nube.actualizarPerfil();
+    await nube.restablecerClave($('#clave-correo').textContent, codigo, clave);
     $('#dialogo-clave').close();
+    avisoInicio('');
     pasoInicio();
+    mostrarCuentaEnAjustes();
   } catch (e) { msg.textContent = e.message; }
 });
 

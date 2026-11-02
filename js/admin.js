@@ -1,48 +1,56 @@
 // Panel de administrador de Pianito: ver cuentas y activar el pase completo a quien pagó.
-// La seguridad la pone Supabase (supabase/esquema.sql): solo una cuenta con es_admin puede ver y cambiar.
-import { configurada, obtenerCliente } from './nube.js';
+// La seguridad la pone el programa de Google (google/Codigo.gs): solo una cuenta marcada como
+// "Administrador" en la hoja puede ver y cambiar las cuentas.
+import { configurada, llamar } from './nube.js';
 
 const $ = (s) => document.querySelector(s);
-let sb = null;
+const CLAVE_ADMIN = 'pianito-admin'; // sesión del panel (aparte de la cuenta de la app)
+let token = null;
 let perfiles = [];
 
 function aviso(el, texto, bien = false) {
   el.textContent = texto;
   el.classList.toggle('bien', bien);
 }
+const leerSesion = () => { try { return JSON.parse(localStorage.getItem(CLAVE_ADMIN)); } catch { return null; } };
+const guardarSesion = (x) => {
+  try { if (x) localStorage.setItem(CLAVE_ADMIN, JSON.stringify(x)); else localStorage.removeItem(CLAVE_ADMIN); } catch { /* */ }
+};
 
 async function iniciar() {
   if (!configurada()) { $('#sin-config').classList.remove('oculto'); return; }
-  sb = await obtenerCliente();
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) await entrarAlPanel(session);
-  else $('#form-login').classList.remove('oculto');
+  const s = leerSesion();
+  if (s?.token) {
+    token = s.token;
+    mostrarPanel(s.correo);
+    if (await cargar()) return;
+    token = null; // la sesión ya no vale
+    guardarSesion(null);
+    $('#panel').classList.add('oculto');
+    $('#sesion').classList.add('oculto');
+  }
+  $('#form-login').classList.remove('oculto');
 }
 
-async function entrarAlPanel(session) {
-  const { data, error } = await sb.from('pianito_perfiles').select('es_admin').eq('id', session.user.id).maybeSingle();
-  if (error || !data?.es_admin) {
-    await sb.auth.signOut();
-    $('#form-login').classList.remove('oculto');
-    aviso($('#msg-login'), 'Esta cuenta no es de administrador.');
-    return;
-  }
+function mostrarPanel(correo) {
   $('#form-login').classList.add('oculto');
   $('#panel').classList.remove('oculto');
   $('#sesion').classList.remove('oculto');
-  $('#sesion-correo').textContent = session.user.email + ' ';
-  await cargar();
+  $('#sesion-correo').textContent = correo + ' ';
 }
 
 async function cargar() {
   aviso($('#msg-panel'), 'Cargando…', true);
-  const { data, error } = await sb.from('pianito_perfiles')
-    .select('id, correo, nombre, premium, pagado_en, nota, creado')
-    .order('creado', { ascending: false });
-  if (error) { aviso($('#msg-panel'), 'No se pudo cargar: ' + error.message); return; }
-  perfiles = data;
-  aviso($('#msg-panel'), '');
-  dibujar();
+  try {
+    const r = await llamar('adminListar', { token });
+    perfiles = r.cuentas;
+    aviso($('#msg-panel'), '');
+    dibujar();
+    return true;
+  } catch (e) {
+    aviso($('#msg-panel'), 'No se pudo cargar: ' + e.message);
+    return false;
+  }
 }
 
 const fecha = (t) => (t ? new Date(t).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }) : '');
@@ -59,12 +67,12 @@ function dibujar() {
     (filtro === 'todos' || (filtro === 'pago') === !!p.premium));
   $('#vacio').classList.toggle('oculto', lista.length > 0);
   $('#filas').innerHTML = lista.map((p) => `
-    <tr data-id="${p.id}">
+    <tr data-correo="${escapar(p.correo)}">
       <td class="correo">${escapar(p.correo)}</td>
       <td>${escapar(p.nombre) || '<small>—</small>'}</td>
       <td><small>${fecha(p.creado)}</small></td>
       <td><span class="estado ${p.premium ? 'pago' : ''}">${p.premium ? '⭐ Pase completo' : 'Gratis'}</span>
-        ${p.premium && p.pagado_en ? `<br><small>desde ${fecha(p.pagado_en)}</small>` : ''}</td>
+        ${p.premium && p.pagadoEn ? `<br><small>desde ${fecha(p.pagadoEn)}</small>` : ''}</td>
       <td><input class="nota" value="${escapar(p.nota)}" placeholder="Código de operación" aria-label="Nota"></td>
       <td class="acciones">
         ${p.premium
@@ -74,12 +82,19 @@ function dibujar() {
     </tr>`).join('');
 }
 
-async function cambiar(id, cambios, boton, redibujar = true) {
+async function cambiar(correo, cambios, boton, redibujar = true) {
   boton.disabled = true;
-  const { error } = await sb.from('pianito_perfiles').update(cambios).eq('id', id);
-  boton.disabled = false;
-  if (error) { aviso($('#msg-panel'), 'No se pudo guardar: ' + error.message); return; }
-  Object.assign(perfiles.find((p) => p.id === id), cambios);
+  try {
+    await llamar('adminCambiar', { token, correo, ...cambios });
+  } catch (e) {
+    aviso($('#msg-panel'), 'No se pudo guardar: ' + e.message);
+    return;
+  } finally {
+    boton.disabled = false;
+  }
+  const p = perfiles.find((x) => x.correo === correo);
+  Object.assign(p, cambios);
+  if ('premium' in cambios) p.pagadoEn = cambios.premium ? new Date().toISOString() : null;
   aviso($('#msg-panel'), 'Guardado ✔', true);
   if (redibujar) dibujar();
 }
@@ -87,30 +102,44 @@ async function cambiar(id, cambios, boton, redibujar = true) {
 $('#filas').addEventListener('click', (ev) => {
   const fila = ev.target.closest('tr');
   if (!fila) return;
-  const id = fila.dataset.id;
-  const nota = fila.querySelector('.nota').value.trim() || null;
-  if (ev.target.matches('.activar')) cambiar(id, { premium: true, pagado_en: new Date().toISOString(), nota }, ev.target);
-  if (ev.target.matches('.quitar')) {
-    const p = perfiles.find((x) => x.id === id);
-    if (confirm(`¿Quitar el pase completo a ${p.correo}?`)) cambiar(id, { premium: false, pagado_en: null, nota }, ev.target);
+  const correo = fila.dataset.correo;
+  const nota = fila.querySelector('.nota').value.trim();
+  if (ev.target.matches('.activar')) cambiar(correo, { premium: true, nota }, ev.target);
+  if (ev.target.matches('.quitar') && confirm(`¿Quitar el pase completo a ${correo}?`)) {
+    cambiar(correo, { premium: false, nota }, ev.target);
   }
 });
-// La nota se guarda al salir del campo
+// La nota se guarda al salir del campo (sin redibujar: así no se pierde el clic en Activar)
 $('#filas').addEventListener('change', (ev) => {
   if (!ev.target.matches('.nota')) return;
-  const id = ev.target.closest('tr').dataset.id;
-  cambiar(id, { nota: ev.target.value.trim() || null }, ev.target, false); // sin redibujar: no se pierde el clic en Activar
+  cambiar(ev.target.closest('tr').dataset.correo, { nota: ev.target.value.trim() }, ev.target, false);
 });
 
 $('#form-login').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   aviso($('#msg-login'), 'Entrando…', true);
-  const { data, error } = await sb.auth.signInWithPassword({ email: $('#correo').value.trim(), password: $('#clave').value });
-  if (error) { aviso($('#msg-login'), 'Correo o contraseña incorrectos.'); return; }
-  aviso($('#msg-login'), '');
-  await entrarAlPanel(data.session);
+  try {
+    const r = await llamar('entrar', { correo: $('#correo').value.trim().toLowerCase(), clave: $('#clave').value });
+    if (!r.cuenta.esAdmin) {
+      llamar('salir', { token: r.cuenta.token }).catch(() => {});
+      aviso($('#msg-login'), 'Esta cuenta no es de administrador.');
+      return;
+    }
+    token = r.cuenta.token;
+    guardarSesion({ token, correo: r.cuenta.correo });
+    aviso($('#msg-login'), '');
+    mostrarPanel(r.cuenta.correo);
+    await cargar();
+  } catch (e) {
+    aviso($('#msg-login'), e.message);
+  }
 });
-$('#btn-salir').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+$('#btn-salir').addEventListener('click', async () => {
+  const t = token;
+  guardarSesion(null);
+  try { await llamar('salir', { token: t }); } catch { /* sin internet */ }
+  location.reload();
+});
 $('#btn-recargar').addEventListener('click', cargar);
 $('#buscar').addEventListener('input', dibujar);
 $('#filtro').addEventListener('change', dibujar);

@@ -1,10 +1,10 @@
 // Configuración de cuentas y pagos de Pianito.
-// Mientras supabaseUrl esté vacío, la app funciona como antes: sin registro y todo abierto.
-// Pasos para llenarlo: README.md → "Cuentas, pagos y panel de administrador".
+// Las cuentas se guardan en una hoja de Google Sheets (programa: google/Codigo.gs).
+// Mientras scriptUrl esté vacío, la app funciona sin registro y todo abierto.
+// Pasos: README.md → "Cuentas con Google Sheets".
 export const NUBE = {
-  // Supabase → Project Settings → API
-  supabaseUrl: 'https://rhskytadammthiuigrcc.supabase.co',
-  supabaseClave: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoc2t5dGFkYW1tdGhpdWlncmNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM0NDIwMjksImV4cCI6MjEwOTAxODAyOX0.u2OAX3ZmkaPLf9TkugG-UbpJJzTqlJRuXEQKH8uAQis', // anon public (es pública)
+  // Dirección del programa de Google (Implementar → Aplicación web → URL que termina en /exec)
+  scriptUrl: '',
 
   // Culqi → Links de pago: crea un link con el precio y pégalo aquí
   culqiLink: '',            // ej. 'https://express.culqi.com/pago/XXXXXX'

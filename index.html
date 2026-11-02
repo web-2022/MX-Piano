@@ -285,11 +285,16 @@
   <dialog id="dialogo-clave" class="dialogo">
     <form id="form-clave" method="dialog">
       <h2>Nueva contraseña</h2>
-      <label class="campo-cuenta">Escribe tu nueva contraseña
-        <input id="nueva-clave" type="password" autocomplete="new-password" minlength="6">
+      <p class="premium-texto">Te enviamos un código de 6 números a <strong id="clave-correo"></strong>. Revisa también la carpeta de spam.</p>
+      <label class="campo-cuenta">Código del correo
+        <input id="codigo-clave" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456">
+      </label>
+      <label class="campo-cuenta">Nueva contraseña
+        <input id="nueva-clave" type="password" autocomplete="new-password" minlength="6" placeholder="Mínimo 6">
       </label>
       <p id="clave-mensaje" class="mensaje-inicio" role="status"></p>
       <button id="btn-guardar-clave" type="button" class="boton-grande">Guardar</button>
+      <button value="cerrar" class="enlace">Cancelar</button>
     </form>
   </dialog>
 
