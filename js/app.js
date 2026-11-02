@@ -250,7 +250,7 @@ function mostrarCuentaEnAjustes() {
   $('#aj-cuenta-correo').textContent = c.correo + (c.nombre ? ` (${c.nombre})` : '');
   $('#aj-cuenta-plan').textContent = c.premium
     ? '⭐ Pase completo: todos los niveles abiertos'
-    : `Gratis: niveles 0 a ${nube.NUBE.gratisHastaNivel}`;
+    : `Gratis: las ${nube.NUBE.clasesGratis} primeras clases y los juegos`;
   $('#btn-desbloquear-cuenta').classList.toggle('oculto', !!c.premium);
 }
 mostrarCuentaEnAjustes();
@@ -363,8 +363,8 @@ function dibujarMapa() {
       mapa.appendChild(letrero);
     }
     const seccion = document.createElement('section');
-    const dePago = !nube.nivelPermitido(mundo.nivel);
-    seccion.className = 'mundo' + (dePago ? ' premium' : '');
+    const mundoDePago = mundo.lecciones.every((l) => !leccionPermitida(l.id));
+    seccion.className = 'mundo' + (mundoDePago ? ' premium' : '');
     seccion.style.setProperty('--color-mundo', mundo.color);
     const ganadas = mundo.lecciones.reduce((sum, l) => sum + estrellasDe(l.id), 0);
     seccion.innerHTML = `
@@ -379,6 +379,7 @@ function dibujarMapa() {
     for (const leccion of mundo.lecciones) {
       const est = estrellasDe(leccion.id);
       total += est;
+      const dePago = !leccionPermitida(leccion.id);
       const bloqueada = dePago || (!estado.ajustes.desbloquearTodo &&
         (esGrande() ? !abiertoEste : !anteriorCompletada));
       const siguiente = !bloqueada && est === 0 && !siguienteMarcada;
@@ -431,7 +432,9 @@ function dibujarParque() {
   let nuevos = 0;
   for (const juego of JUEGOS) {
     const est = estrellasDe(juego.id);
-    const abierto = leccionPermitida(juego.requiere) && (estado.ajustes.desbloquearTodo || estrellasDe(juego.requiere) > 0);
+    // Los juegos son gratis: sin el pase completo se abren todos (sus clases de antes están cerradas);
+    // con el pase, se abren a medida que avanza en el viaje.
+    const abierto = estado.ajustes.desbloquearTodo || estrellasDe(juego.requiere) > 0 || !leccionPermitida(juego.requiere);
     if (abierto && est === 0) nuevos++;
     const req = buscarLeccion(juego.requiere);
     const tarjeta = document.createElement('button');
@@ -815,10 +818,11 @@ function generarObjetivos(leccion) {
   return lista;
 }
 
-// ¿La lección está en un nivel gratis o la cuenta ya pagó?
+// ¿La clase es de las gratis o la cuenta ya pagó? (los juegos y las partituras no son clases del viaje)
+const ORDEN_CLASES = MUNDOS.flatMap((m) => m.lecciones.map((l) => l.id));
 function leccionPermitida(id) {
-  const mundo = MUNDOS.find((m) => m.lecciones.some((l) => l.id === id));
-  return !mundo || nube.nivelPermitido(mundo.nivel);
+  const i = ORDEN_CLASES.indexOf(id);
+  return i < 0 || nube.leccionAbierta(i);
 }
 
 async function empezarLeccion(id) {

@@ -17,10 +17,11 @@ function guardarLocal(c) {
   } catch { /* modo privado */ }
 }
 
-// ¿Puede usar este nivel? (sin configurar la nube, todo abierto)
-export function nivelPermitido(nivel) {
+// ¿Puede usar esta clase? indice = posición de la clase en el viaje (0 = la primera).
+// Sin configurar la nube, todo abierto.
+export function leccionAbierta(indice) {
   if (!configurada()) return true;
-  if (nivel <= NUBE.gratisHastaNivel) return true;
+  if (indice < NUBE.clasesGratis) return true;
   return !!cuentaLocal()?.premium;
 }
 export const esPremium = () => !configurada() || !!cuentaLocal()?.premium;

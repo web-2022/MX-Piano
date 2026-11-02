@@ -289,7 +289,7 @@ Para canciones usa solo obras de **dominio público** (tradicionales o clásicas
 
 ## Cuentas con Google Sheets 💳
 
-Pianito tiene **registro** (correo y contraseña del papá o la mamá), **niveles 0 a 3 gratis** y del 4 en adelante con candado ⭐.
+Pianito tiene **registro** (correo y contraseña del papá o la mamá), **las 3 primeras clases y los juegos gratis**; desde la 4.ª clase, candado ⭐ (se cambia en `clasesGratis`).
 Las cuentas se guardan en una **hoja de Google Sheets** tuya. La app no la lee directamente: pasa por un pequeño
 programa de Google (`google/Codigo.gs`) que cifra las contraseñas y solo deja ver o cambiar todas las cuentas al administrador.
 Mientras `scriptUrl` en `js/config-nube.js` esté vacío, la app funciona sin registro y todo abierto.

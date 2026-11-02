@@ -11,6 +11,6 @@ export const NUBE = {
   precio: 'S/ 49.90',       // texto que ve el papá en la ventana de pago
   whatsapp: '',             // tu número con código de país, sin + (ej. '51987654321'), para avisar el pago
 
-  // Niveles gratis: del 0 hasta este número (0, 1, 2 y 3 = los 4 primeros)
-  gratisHastaNivel: 3,
+  // Clases gratis: las primeras de este número en el viaje (los juegos siempre son gratis)
+  clasesGratis: 3,
 };
