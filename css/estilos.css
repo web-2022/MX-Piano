@@ -1225,3 +1225,8 @@ input { -webkit-user-select: text; user-select: text; font-family: inherit; }
   #pantalla-inicio:has(#form-cuenta:not(.oculto)) .lema { margin-bottom: 4px; }
   #pantalla-inicio:has(#form-cuenta:not(.oculto)) .inicio-contenido { gap: 8px; }
 }
+
+/* Pestaña 🛠️ Panel (solo administradores): el panel va dentro de un marco */
+.panel-admin { padding: 0 !important; display: flex; }
+.panel-admin.oculto { display: none; }
+.marco-admin { border: 0; width: 100%; flex: 1; min-height: 70vh; background: transparent; border-radius: 22px; }

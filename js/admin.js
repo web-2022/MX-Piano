@@ -17,8 +17,22 @@ const guardarSesion = (x) => {
   try { if (x) localStorage.setItem(CLAVE_ADMIN, JSON.stringify(x)); else localStorage.removeItem(CLAVE_ADMIN); } catch { /* */ }
 };
 
+// Dentro de la app (pestaña 🛠️ Panel) se usa la sesión de la cuenta abierta en la app.
+const EMBEBIDO = new URLSearchParams(location.search).has('embebido');
+if (EMBEBIDO) document.body.classList.add('embebido');
+const cuentaApp = () => { try { return JSON.parse(localStorage.getItem('pianito-cuenta')); } catch { return null; } };
+
 async function iniciar() {
   if (!configurada()) { $('#sin-config').classList.remove('oculto'); return; }
+  const app = cuentaApp();
+  if (app?.esAdmin && app.token) {
+    token = app.token;
+    mostrarPanel(app.correo);
+    if (await cargar()) return;
+    token = null;
+    $('#panel').classList.add('oculto');
+    $('#sesion').classList.add('oculto');
+  }
   const s = leerSesion();
   if (s?.token) {
     token = s.token;

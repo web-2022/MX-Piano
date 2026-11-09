@@ -48,6 +48,10 @@
     .acciones button { padding: .45em .9em; font-size: .9rem; }
     .vacio { text-align: center; color: var(--suave); padding: 30px 0; }
     .oculto { display: none !important; }
+    /* Dentro de la app (pestaña Panel): sin cabecera ni botón de salir */
+    body.embebido { background: transparent; }
+    body.embebido main { padding-top: 4px; }
+    body.embebido .cabecera { display: none; }
     @media (max-width: 720px) {
       .cifras { grid-template-columns: 1fr 1fr 1fr; }
       .cifra b { font-size: 1.3rem; }

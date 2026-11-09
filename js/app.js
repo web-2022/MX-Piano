@@ -242,7 +242,22 @@ $('#btn-ya-pague').addEventListener('click', async () => {
   }
 });
 
+// Panel de administrador dentro de la app: una pestaña más, solo para cuentas de administrador.
+function abrirPanelAdmin() {
+  const cont = $('#paneladmin');
+  // Se vuelve a cargar cada vez, así la lista de cuentas está al día.
+  cont.innerHTML = '<iframe class="marco-admin" src="admin.html?embebido=1" title="Panel de administrador"></iframe>';
+}
+function mostrarPestanaAdmin() {
+  const esAdmin = nube.configurada() && !!nube.cuentaLocal()?.esAdmin;
+  const pestana = $('[data-pestana="paneladmin"]');
+  pestana.classList.toggle('oculto', !esAdmin);
+  if (!esAdmin && pestana.classList.contains('activa')) $('[data-pestana="mapa"]').click();
+  if (!esAdmin) $('#paneladmin').innerHTML = '';
+}
+
 function mostrarCuentaEnAjustes() {
+  mostrarPestanaAdmin();
   const c = nube.cuentaLocal();
   const caja = $('#aj-cuenta');
   caja.classList.toggle('oculto', !nube.configurada() || !c);
@@ -464,9 +479,10 @@ document.querySelectorAll('.pestana').forEach((p) => {
   p.addEventListener('click', () => {
     document.querySelectorAll('.pestana').forEach((x) => x.classList.toggle('activa', x === p));
     const ver = p.dataset.pestana;
-    for (const id of ['mapa', 'parque', 'partituras']) $('#' + id).classList.toggle('oculto', ver !== id);
+    for (const id of ['mapa', 'parque', 'partituras', 'paneladmin']) $('#' + id).classList.toggle('oculto', ver !== id);
     if (ver === 'mapa') dibujarMapa();
     if (ver === 'partituras') dibujarPartituras();
+    if (ver === 'paneladmin') abrirPanelAdmin();
   });
 });
 
