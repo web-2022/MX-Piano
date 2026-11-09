@@ -1230,3 +1230,15 @@ input { -webkit-user-select: text; user-select: text; font-family: inherit; }
 .panel-admin { padding: 0 !important; display: flex; }
 .panel-admin.oculto { display: none; }
 .marco-admin { border: 0; width: 100%; flex: 1; min-height: 70vh; background: transparent; border-radius: 22px; }
+
+/* Partituras gratis (biblioteca con un toque) */
+.biblioteca-gratis { background: #fff; border-radius: 24px; padding: 14px 16px 16px; box-shadow: var(--sombra); }
+.biblioteca-gratis h3 { margin: 0 0 10px; font-size: 1.25rem; }
+.biblioteca-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.tarjeta-gratis { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left;
+  background: #f5f3ff; border-radius: 16px; padding: 12px 14px; box-shadow: 0 3px 0 #ddd6fe; }
+.tarjeta-gratis:active { transform: translateY(2px); box-shadow: 0 1px 0 #ddd6fe; }
+.tg-titulo { font-weight: 800; font-size: 1.02rem; line-height: 1.2; }
+.tg-nivel { font-size: .85rem; font-weight: 700; color: var(--primario); }
+.tarjeta-gratis.agregada { background: #f0fdf4; box-shadow: 0 3px 0 #bbf7d0; cursor: default; }
+.tarjeta-gratis.agregada .tg-nivel { color: var(--exito); }

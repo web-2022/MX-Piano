@@ -500,6 +500,23 @@ function dibujarPartituras(mensaje = '') {
       ${mensaje ? `<p class="partituras-mensaje">${mensaje}</p>` : ''}
     </div>`;
   cont.querySelector('#btn-agregar-partitura').addEventListener('click', () => $('#archivo-partitura').click());
+
+  // Biblioteca de partituras gratis: se agregan con un toque.
+  const biblioteca = document.createElement('section');
+  biblioteca.className = 'biblioteca-gratis';
+  biblioteca.innerHTML = '<h3>🎁 Partituras gratis</h3><div class="biblioteca-lista"></div>';
+  const lista = biblioteca.querySelector('.biblioteca-lista');
+  for (const p of PARTITURAS_GRATIS) {
+    const ya = estado.partituras.some((x) => x.archivoGratis === p.archivo);
+    const b = document.createElement('button');
+    b.className = 'tarjeta-gratis' + (ya ? ' agregada' : '');
+    b.innerHTML = `<span class="tg-titulo">${escaparHtml(p.titulo)}</span><span class="tg-nivel">${ya ? '✓ Agregada' : p.nivel}</span>`;
+    b.disabled = ya;
+    b.addEventListener('click', () => { partituraGratisPendiente = p.archivo; agregarPartituraGratis(p); });
+    lista.appendChild(b);
+  }
+  cont.appendChild(biblioteca);
+
   if (!estado.partituras.length) {
     const vacio = document.createElement('p');
     vacio.className = 'partituras-vacio';
@@ -541,10 +558,35 @@ function escaparHtml(t) {
   return String(t || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
-$('#archivo-partitura').addEventListener('change', async (e) => {
+$('#archivo-partitura').addEventListener('change', (e) => {
   const archivo = e.target.files[0];
   e.target.value = '';
-  if (!archivo) return;
+  if (archivo) procesarPartitura(archivo);
+});
+
+// Partituras gratis que vienen con la app (carpeta partituras/ del sitio; obras de dominio público).
+const PARTITURAS_GRATIS = [
+  { archivo: '01-estrellita.musicxml', titulo: 'Estrellita, ¿dónde estás?', nivel: 'Muy fácil' },
+  { archivo: '08-oda-a-la-alegria-dos-manos.musicxml', titulo: 'Oda a la alegría (Beethoven)', nivel: 'Muy fácil' },
+  { archivo: '02-cancion-de-cuna-brahms.musicxml', titulo: 'Canción de cuna (Brahms)', nivel: 'Fácil' },
+  { archivo: '07-minueto-en-sol-petzold.musicxml', titulo: 'Minueto en Sol (Petzold)', nivel: 'Fácil' },
+  { archivo: '03-canon-pachelbel.musicxml', titulo: 'Canon en Re (Pachelbel)', nivel: 'Intermedio' },
+  { archivo: '04-greensleeves.musicxml', titulo: 'Greensleeves', nivel: 'Intermedio' },
+  { archivo: '05-para-elisa.musicxml', titulo: 'Para Elisa (Beethoven)', nivel: 'Intermedio' },
+  { archivo: '06-preludio-bach.musicxml', titulo: 'Preludio en Do (Bach)', nivel: 'Avanzado' },
+];
+async function agregarPartituraGratis(p) {
+  try {
+    const resp = await fetch('partituras/' + p.archivo);
+    if (!resp.ok) throw new Error();
+    procesarPartitura(new File([await resp.blob()], p.archivo));
+  } catch {
+    dibujarPartituras('⚠️ No pude descargar la partitura. Revisa la conexión a internet.');
+  }
+}
+
+let partituraGratisPendiente = null;
+async function procesarPartitura(archivo) {
   let analisis;
   try {
     analisis = analizar(await leerArchivo(archivo));
@@ -581,6 +623,7 @@ $('#archivo-partitura').addEventListener('change', async (e) => {
         mano: document.querySelector('[name="pt-mano"]:checked').value,
         modo: document.querySelector('[name="pt-modo"]:checked').value,
       });
+      if (partituraGratisPendiente === archivo.name) partitura.archivoGratis = archivo.name;
       estado.partituras.push(partitura);
       if (!guardarPartituras(estado.partituras)) throw new Error('No hay espacio para guardar la partitura en este iPad.');
       registrarPartituras(estado.partituras);
@@ -590,7 +633,7 @@ $('#archivo-partitura').addEventListener('change', async (e) => {
       dibujarPartituras(`⚠️ ${escaparHtml(error.message)}`);
     }
   }, { once: true });
-});
+}
 
 // ================= Efectos =================
 function sacudir(el) {
