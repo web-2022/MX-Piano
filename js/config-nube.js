@@ -7,7 +7,7 @@ export const NUBE = {
   scriptUrl: 'https://script.google.com/macros/s/AKfycbxiUSqzguyB4eHk6Vx6t6Na_di4pwbfxAqMJaW0oAJv93oiFYFDN-FiOGqhYkgDzMny_Q/exec',
 
   // Culqi → Links de pago: crea un link con el precio y pégalo aquí
-  culqiLink: 'https://express.culqi.com/pago/DBB74E6911',
+  culqiLink: 'https://express.culqi.com/pago/B8E48C18BA',
   precio: 'S/ 49.90',       // texto que ve el papá en la ventana de pago
   whatsapp: '',             // tu número con código de país, sin + (ej. '51987654321'), para avisar el pago
 
