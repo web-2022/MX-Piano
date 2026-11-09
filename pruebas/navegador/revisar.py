@@ -19,7 +19,15 @@ async def revisar(ids, resultados):
         opciones = {'args': ['--autoplay-policy=no-user-gesture-required']}
         if CHROME: opciones['executable_path'] = CHROME
         b = await p.chromium.launch(**opciones)
-        pg = await (await b.new_context(viewport={'width': 1180, 'height': 820})).new_page()
+        ctx = await b.new_context(viewport={'width': 1180, 'height': 820})
+        # Las pruebas no usan cuentas: se borra la dirección del programa de Google (todo abierto).
+        async def sin_cuentas(ruta):
+            r = await ruta.fetch()
+            texto = (await r.text())
+            import re as _re
+            await ruta.fulfill(response=r, body=_re.sub(r"scriptUrl: '[^']*'", "scriptUrl: ''", texto))
+        await ctx.route('**/js/config-nube.js*', sin_cuentas)
+        pg = await ctx.new_page()
         errores = []
         pg.on('pageerror', lambda e: errores.append(str(e)))
         await pg.add_init_script(PIANO)

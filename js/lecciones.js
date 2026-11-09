@@ -1570,6 +1570,226 @@ export const MUNDOS = [
       },
     ],
   },
+
+  // ───────────────────────── NIVEL 31 ─────────────────────────
+  // Camino a las baladas románticas (estilo "Ballade pour Adeline"): melodía en octavas.
+  {
+    id: 'mundo31',
+    emoji: '🏔️',
+    titulo: 'Cumbre de las Octavas',
+    nivel: 31,
+    color: '#c7d2fe',
+    lecciones: [
+      {
+        id: 'n31-1', titulo: 'La octava: pulgar y meñique', emoji: '🤙', ayudaVisual: true,
+        tipo: 'acordes', teclado: [60, 84],
+        acordes: [['Do4', 'Do5'], ['Re4', 'Re5'], ['Mi4', 'Mi5'], ['Fa4', 'Fa5'], ['Sol4', 'Sol5'],
+                  ['Fa4', 'Fa5'], ['Mi4', 'Mi5'], ['Re4', 'Re5'], ['Do4', 'Do5']],
+        consejo: 'Una octava es la misma nota, ocho teclas más arriba. Se toca con el pulgar (1) y el meñique (5), con la mano abierta como una araña. La muñeca suelta: la mano "rebota" de octava en octava.',
+      },
+      {
+        id: 'n31-2', titulo: 'Octavas que saltan', emoji: '🦘', ayudaVisual: true,
+        tipo: 'acordes', cantidad: 10, teclado: [60, 84],
+        acordes: [['Do4', 'Do5'], ['Mi4', 'Mi5'], ['Sol4', 'Sol5'], ['La4', 'La5'], ['Re4', 'Re5'], ['Fa4', 'Fa5']],
+        consejo: 'Ahora las octavas saltan. Truco: mirar la nota de abajo (el pulgar); el meñique cae solo si la mano mantiene la misma abertura.',
+      },
+      {
+        id: 'n31-3', titulo: 'Octavas con la izquierda', emoji: '🐘', ayudaVisual: true, pedal: true,
+        tipo: 'acordes', teclado: [36, 60],
+        acordes: [['Do2', 'Do3'], ['La2', 'La3'], ['Fa2', 'Fa3'], ['Sol2', 'Sol3'],
+                  ['Do2', 'Do3'], ['Fa2', 'Fa3'], ['Sol2', 'Sol3'], ['Do2', 'Do3']],
+        consejo: 'Las baladas románticas apoyan los acordes con un bajo grave y profundo en octavas. Meñique abajo, pulgar arriba. Con pedal, cambiándolo en cada octava.',
+      },
+      {
+        id: 'n31-4', titulo: 'Oda a la alegría en octavas', emoji: '🎆',
+        tipo: 'acordes', teclado: [60, 84], ayudaVisual: false,
+        // "Oda a la alegría", Ludwig van Beethoven (1824), dominio público. La melodía doblada en octavas.
+        acordes: [['Mi4', 'Mi5'], ['Fa4', 'Fa5'], ['Sol4', 'Sol5'], ['Fa4', 'Fa5'], ['Mi4', 'Mi5'], ['Re4', 'Re5'],
+                  ['Do4', 'Do5'], ['Re4', 'Re5'], ['Mi4', 'Mi5'], ['Re4', 'Re5'], ['Do4', 'Do5']],
+        consejo: 'Así suena una melodía "grande", como en las baladas de piano: las dos notas cantan juntas. Que el meñique (la nota de arriba) suene un poquito más fuerte: es el que lleva la melodía.',
+      },
+      {
+        id: 'n31-5', titulo: 'Canon con bajo en octavas', emoji: '🏆', premio: true, mano: 'ambas', pedal: true,
+        tipo: 'acordes', teclado: [36, 84], ayudaVisual: false,
+        // Canon en Re de Johann Pachelbel (c. 1680), dominio público: el bajo en octavas y la melodía arriba.
+        acordes: [['Re2', 'Re3', 'Fa#5'], ['La2', 'La3', 'Mi5'], ['Si2', 'Si3', 'Re5'], ['Fa#2', 'Fa#3', 'Do#5'],
+                  ['Sol2', 'Sol3', 'Si4'], ['Re2', 'Re3', 'La4'], ['Sol2', 'Sol3', 'Si4'], ['La2', 'La3', 'Do#5'],
+                  ['Re2', 'Re3', 'Re5']],
+        consejo: 'La izquierda toca el bajo del Canon en octavas y la derecha la melodía. Así se arma el sonido "lleno" de una balada: bajo grave abajo, melodía arriba y el pedal uniendo todo.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 32 ─────────────────────────
+  {
+    id: 'mundo32',
+    emoji: '🌄',
+    titulo: 'Montaña de los Arpegios Largos',
+    nivel: 32,
+    color: '#a7f3d0',
+    lecciones: [
+      {
+        id: 'n32-1', titulo: 'Arpegio de Do a dos octavas', emoji: '🌈', pedal: true, ayudaVisual: true,
+        tipo: 'cancion', teclado: [48, 84], tempo: 110,
+        notas: ['Do3', 'Sol3', 'Do4', 'Mi4', 'Sol4', 'Do5', 'Sol4', 'Mi4', 'Do4', 'Sol3', 'Do3'],
+        tiempos: Array(10).fill(0.5).concat([2]),
+        consejo: 'Dos octavas de arpegio: el pulgar pasa por debajo para seguir subiendo. Con pedal suena como un arpa enorme. Primero lento y parejo.',
+      },
+      {
+        id: 'n32-2', titulo: 'Arpegios de La menor, Fa y Sol', emoji: '🎠', pedal: true, ayudaVisual: true,
+        tipo: 'cancion', teclado: [41, 79], tempo: 110,
+        notas: ['La2', 'Mi3', 'La3', 'Do4', 'Mi4', 'La4', 'Mi4', 'Do4', 'La3', 'Mi3',
+                'Fa2', 'Do3', 'Fa3', 'La3', 'Do4', 'Fa4', 'Do4', 'La3', 'Fa3', 'Do3',
+                'Sol2', 'Re3', 'Sol3', 'Si3', 'Re4', 'Sol4', 'Re4', 'Si3', 'Sol3', 'Re3', 'Do3'],
+        tiempos: Array(30).fill(0.5).concat([2]),
+        consejo: 'El mismo dibujo con tres acordes distintos. Cambiar el pedal justo en la nota más grave de cada arpegio.',
+      },
+      {
+        id: 'n32-3', titulo: 'El acompañamiento que fluye', emoji: '🌊', pedal: true, ayudaVisual: false,
+        tipo: 'cancion', teclado: [41, 79], tempo: 76, sinAcompanamiento: true,
+        // Patrón de acompañamiento propio, como el de las baladas de piano: bajo, quinta, octava, décima… y vuelve.
+        notas: ['Do3', 'Sol3', 'Do4', 'Mi4', 'Sol4', 'Mi4', 'Do4', 'Sol3',
+                'La2', 'Mi3', 'La3', 'Do4', 'Mi4', 'Do4', 'La3', 'Mi3',
+                'Fa2', 'Do3', 'Fa3', 'La3', 'Do4', 'La3', 'Fa3', 'Do3',
+                'Sol2', 'Re3', 'Sol3', 'Si3', 'Re4', 'Si3', 'Sol3', 'Re3', 'Do3'],
+        tiempos: Array(32).fill(0.25).concat([2]),
+        consejo: 'Este es el tipo de acompañamiento de las baladas románticas: notas rapiditas y parejas, como agua que corre. La meta es que no se note dónde empieza y dónde termina cada grupo. Empezar en 🐢 Lento.',
+      },
+      {
+        id: 'n32-4', titulo: 'Melodía sobre el arpegio', emoji: '🎐', mano: 'ambas', pedal: true,
+        tipo: 'acordes', teclado: [41, 84], ayudaVisual: true,
+        // Arreglo propio: la izquierda arpegia y la derecha toca una nota larga al comienzo de cada acorde.
+        acordes: [['Do3', 'Mi5'], ['Sol3'], ['Do4'], ['Sol3'], ['La2', 'Do5'], ['Mi3'], ['La3'], ['Mi3'],
+                  ['Fa2', 'La4'], ['Do3'], ['Fa3'], ['Do3'], ['Sol2', 'Si4'], ['Re3'], ['Sol3'], ['Re3'], ['Do3', 'Do5']],
+        consejo: 'Las dos manos a la vez: la nota de la derecha baja junto con el bajo de la izquierda, y la izquierda sigue sola el arpegio mientras la melodía suena gracias al pedal.',
+      },
+      {
+        id: 'n32-5', titulo: 'Romanza de las dos manos', emoji: '🏆', premio: true, mano: 'ambas', pedal: true,
+        tipo: 'acordes', teclado: [41, 84], ayudaVisual: false,
+        // Composición propia para Pianito.
+        acordes: [['Do3', 'Sol5'], ['Sol3'], ['Do4', 'Mi5'], ['Sol3'], ['La2', 'Mi5'], ['Mi3'], ['La3', 'Do5'], ['Mi3'],
+                  ['Fa2', 'Re5'], ['Do3'], ['Fa3', 'Do5'], ['Do3'], ['Sol2', 'Si4'], ['Re3'], ['Sol3', 'Re5'], ['Re3'],
+                  ['Do3', 'Do5'], ['Sol3'], ['Do4', 'Mi5'], ['Sol2', 'Re5'], ['Do3', 'Do5']],
+        consejo: 'Una pequeña romanza: melodía arriba, arpegio abajo y pedal en cada bajo. Que la melodía "cante" más fuerte que el acompañamiento, como una voz con su guitarra.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 33 ─────────────────────────
+  {
+    id: 'mundo33',
+    emoji: '🌉',
+    titulo: 'Puente de las Modulaciones',
+    nivel: 33,
+    color: '#fed7aa',
+    lecciones: [
+      {
+        id: 'n33-1', titulo: 'Viajar de Do a Sol', emoji: '🧭', ayudaVisual: true,
+        tipo: 'acordes', teclado: [55, 79],
+        acordes: [
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'Do' }, { notas: ['Do4', 'Fa4', 'La4'], nombre: 'Fa' },
+          { notas: ['Si3', 'Re4', 'Sol4'], nombre: 'Sol' }, { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'Do' },
+          { notas: ['Do4', 'Re4', 'Fa#4', 'La4'], nombre: 'Re7 (puente)' }, { notas: ['Si3', 'Re4', 'Sol4'], nombre: 'Sol (casa nueva)' },
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'Do' }, { notas: ['Do4', 'Re4', 'Fa#4', 'La4'], nombre: 'Re7' },
+          { notas: ['Si3', 'Re4', 'Sol4'], nombre: 'Sol' },
+        ],
+        consejo: 'Modular es cambiar de "casa" (de tonalidad) en medio de la música. El acorde Re7, con su Fa♯, es el puente que lleva de Do a Sol. Las baladas cambian de casa para que el final suene más emocionante.',
+      },
+      {
+        id: 'n33-2', titulo: 'Viajar de Do a La menor', emoji: '🌧️', ayudaVisual: true,
+        tipo: 'acordes', teclado: [55, 79],
+        acordes: [
+          { notas: ['Do4', 'Mi4', 'Sol4'], nombre: 'Do' }, { notas: ['Do4', 'Mi4', 'La4'], nombre: 'La menor' },
+          { notas: ['Re4', 'Fa4', 'La4'], nombre: 'Re menor' }, { notas: ['Si3', 'Mi4', 'Sol#4'], nombre: 'Mi (puente)' },
+          { notas: ['Do4', 'Mi4', 'La4'], nombre: 'La menor' }, { notas: ['Re4', 'Fa4', 'La4'], nombre: 'Re menor' },
+          { notas: ['Si3', 'Mi4', 'Sol#4'], nombre: 'Mi' }, { notas: ['Do4', 'Mi4', 'La4'], nombre: 'La menor' },
+        ],
+        consejo: 'Para ir a La menor, el puente es el acorde de Mi mayor, con Sol♯ (una tecla negra). Ese Sol♯ hace que la música "pida" llegar a La menor. Escuchen cómo cambia el color: de alegre a nostálgico.',
+      },
+      {
+        id: 'n33-3', titulo: 'La melodía sube un tono', emoji: '📈',
+        tipo: 'cancion', teclado: [60, 79], tempo: 96, ayudaVisual: true,
+        // Melodía propia, primero en Do y después repetida un tono más arriba, en Re (como en el final de muchas baladas).
+        notas: ['Mi4', 'Sol4', 'La4', 'Sol4', 'Mi4', 'Re4', 'Do4', 'Re4', 'Mi4',
+                'Fa#4', 'La4', 'Si4', 'La4', 'Fa#4', 'Mi4', 'Re4', 'Mi4', 'Fa#4'],
+        tiempos: [1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+        consejo: 'La misma melodía, pero la segunda vez empieza un tono más arriba: aparece Fa♯ y Do… desaparece. Es el truco favorito de las baladas para el gran final.',
+      },
+      {
+        id: 'n33-4', titulo: 'Leer con cambio de armadura', emoji: '🎼',
+        tipo: 'aleatorio', vista: 'pentagrama', clave: 'sol', armadura: 'sol', colores: false, mostrarNombre: false,
+        notas: ['Sol4', 'La4', 'Si4', 'Do5', 'Re5', 'Mi5', 'Fa#5', 'Fa#4'], cantidad: 12, ayudaVisual: false, teclado: [60, 79],
+        consejo: 'En una partitura, cuando la música cambia de casa aparece una armadura nueva. Aquí: un sostenido, así que todos los Fa son Fa♯. Que lo diga en voz alta antes de empezar.',
+      },
+      {
+        id: 'n33-5', titulo: 'Oda viajera: Do, Sol y Re', emoji: '🏆', premio: true,
+        tipo: 'cancion', teclado: [59, 84], tempo: 100, ayudaVisual: false, sinAcompanamiento: true,
+        // "Oda a la alegría", Beethoven (dominio público): la primera frase en Do, luego en Sol y luego en Re.
+        notas: ['Mi4', 'Mi4', 'Fa4', 'Sol4', 'Sol4', 'Fa4', 'Mi4', 'Re4', 'Do4', 'Do4', 'Re4', 'Mi4', 'Mi4', 'Re4', 'Re4',
+                'Si4', 'Si4', 'Do5', 'Re5', 'Re5', 'Do5', 'Si4', 'La4', 'Sol4', 'Sol4', 'La4', 'Si4', 'Si4', 'La4', 'La4',
+                'Fa#5', 'Fa#5', 'Sol5', 'La5', 'La5', 'Sol5', 'Fa#5', 'Mi5', 'Re5', 'Re5', 'Mi5', 'Fa#5', 'Fa#5', 'Mi5', 'Mi5'],
+        tiempos: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5, 0.5, 2,
+                  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5, 0.5, 2,
+                  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5, 0.5, 2],
+        consejo: 'La Oda viaja por tres casas: Do (sin teclas negras), Sol (con Fa♯) y Re (con Fa♯ y Do♯). Cada vez más aguda y más luminosa.',
+      },
+    ],
+  },
+
+  // ───────────────────────── NIVEL 34 ─────────────────────────
+  {
+    id: 'mundo34',
+    emoji: '🌹',
+    titulo: 'Gran Final Romántico',
+    nivel: 34,
+    color: '#fecdd3',
+    lecciones: [
+      {
+        id: 'n34-1', titulo: 'Octava arriba, bajo abajo', emoji: '🎹', mano: 'ambas', pedal: true,
+        tipo: 'acordes', teclado: [36, 88], ayudaVisual: true,
+        acordes: [['Do3', 'Mi5', 'Mi6'], ['Sol3'], ['Do4'], ['La2', 'Do5', 'Do6'], ['Mi3'], ['La3'],
+                  ['Fa2', 'La4', 'La5'], ['Do3'], ['Fa3'], ['Sol2', 'Si4', 'Si5'], ['Re3'], ['Sol3'], ['Do3', 'Do5', 'Do6']],
+        consejo: 'Todo lo de las baladas junto: la derecha canta en octavas y la izquierda hace el arpegio. Es exactamente la "forma" de las baladas románticas de piano. Despacio y con pedal en cada bajo.',
+      },
+      {
+        id: 'n34-2', titulo: 'Preludio de Bach: la segunda parte', emoji: '🎼', pedal: true,
+        tipo: 'cancion', ayudaVisual: false, teclado: [38, 81], tempo: 66,
+        // Preludio en Do mayor BWV 846, J. S. Bach (1722), dominio público. Compases 9 a 16 (la primera mitad de cada uno).
+        notas: ['La2', 'Do4', 'Mi4', 'Sol4', 'Do5', 'Mi4', 'Sol4', 'Do5',
+                'Re2', 'La3', 'Re4', 'Fa#4', 'Do5', 'Re4', 'Fa#4', 'Do5',
+                'Sol2', 'Si3', 'Re4', 'Sol4', 'Si4', 'Re4', 'Sol4', 'Si4',
+                'Sol2', 'Sib3', 'Mi4', 'Sol4', 'Do#5', 'Mi4', 'Sol4', 'Do#5',
+                'Fa2', 'La3', 'Re4', 'La4', 'Re5', 'Re4', 'La4', 'Re5',
+                'Fa2', 'Lab3', 'Re4', 'Fa4', 'Si4', 'Re4', 'Fa4', 'Si4',
+                'Mi2', 'Sol3', 'Do4', 'Sol4', 'Do5', 'Do4', 'Sol4', 'Do5',
+                'Mi2', 'Fa3', 'La3', 'Do4', 'Fa4', 'La3', 'Do4', 'Fa4'],
+        tiempos: Array(63).fill(0.25).concat([1]),
+        consejo: 'Aquí el bajo baja mucho: hay que alcanzar la nota grave con la izquierda y volver rápido. Es un gran entrenamiento de resistencia y de saltos, como en las piezas románticas largas.',
+      },
+      {
+        id: 'n34-3', titulo: 'Resistencia: el arpegio largo', emoji: '⏱️', pedal: true, ayudaVisual: false,
+        tipo: 'cancion', teclado: [40, 81], tempo: 84, sinAcompanamiento: true,
+        // Ejercicio propio: cuatro acordes con el mismo patrón, dos vueltas sin parar.
+        notas: ['Do3', 'Sol3', 'Do4', 'Mi4', 'Sol4', 'Mi4', 'Do4', 'Sol3', 'La2', 'Mi3', 'La3', 'Do4', 'Mi4', 'Do4', 'La3', 'Mi3',
+                'Fa2', 'Do3', 'Fa3', 'La3', 'Do4', 'La3', 'Fa3', 'Do3', 'Sol2', 'Re3', 'Sol3', 'Si3', 'Re4', 'Si3', 'Sol3', 'Re3',
+                'Do3', 'Sol3', 'Do4', 'Mi4', 'Sol4', 'Mi4', 'Do4', 'Sol3', 'La2', 'Mi3', 'La3', 'Do4', 'Mi4', 'Do4', 'La3', 'Mi3',
+                'Fa2', 'Do3', 'Fa3', 'La3', 'Do4', 'La3', 'Fa3', 'Do3', 'Sol2', 'Re3', 'Sol3', 'Si3', 'Re4', 'Si3', 'Sol3', 'Re3', 'Do3'],
+        tiempos: Array(64).fill(0.25).concat([2]),
+        consejo: 'Las baladas piden tocar varios minutos sin cansarse. Dos vueltas completas sin parar, con la mano relajada. Si se cansa, que suelte los hombros y respire en cada Do.',
+      },
+      {
+        id: 'n34-4', titulo: 'Balada de Ranita', emoji: '👑', premio: true, mano: 'ambas', pedal: true,
+        tipo: 'acordes', teclado: [36, 88], ayudaVisual: false,
+        // Composición propia para Pianito: melodía en octavas, arpegio en la izquierda y un cambio de tonalidad al final (de Do a Re).
+        acordes: [['Do3', 'Sol4', 'Sol5'], ['Sol3'], ['Do4'], ['La2', 'Mi4', 'Mi5'], ['Mi3'], ['La3'],
+                  ['Fa2', 'La4', 'La5'], ['Do3'], ['Fa3'], ['Sol2', 'Si4', 'Si5'], ['Re3'], ['Sol3'],
+                  ['Do3', 'Do5', 'Do6'], ['Sol3'], ['Do4'], ['La2', 'Mi4', 'Mi5'], ['Mi3'], ['La3'],
+                  ['Re3', 'La4', 'La5'], ['La3'], ['Re4'], ['Si2', 'Fa#4', 'Fa#5'], ['Fa#3'], ['Si3'],
+                  ['Sol2', 'Si4', 'Si5'], ['Re3'], ['Sol3'], ['La2', 'Do#5', 'Do#6'], ['Mi3'], ['La3'], ['Re3', 'Re5', 'Re6']],
+        consejo: '¡El final del camino a las baladas! Octavas arriba, arpegio abajo, pedal, y al final la música "sube" de Do a Re. Con esto ya está listo para tocar arreglos de baladas románticas desde la pestaña 📄 Partituras.',
+      },
+    ],
+  },
 ];
 
 // ───────────────────────── PARQUE DE JUEGOS ─────────────────────────
