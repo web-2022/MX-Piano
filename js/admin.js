@@ -85,21 +85,22 @@ function dibujar() {
       <td class="correo">${escapar(p.correo)}</td>
       <td>${escapar(p.nombre) || '<small>—</small>'}</td>
       <td><small>${fecha(p.creado)}</small></td>
-      <td><span class="estado ${p.premium ? 'pago' : ''}">${p.premium ? '⭐ Pase completo' : 'Gratis'}</span>
-        ${p.premium && p.pagadoEn ? `<br><small>desde ${fecha(p.pagadoEn)}</small>` : ''}</td>
+      <td><span class="estado ${p.premium ? 'pago' : p.vencido ? 'vencido' : ''}">${p.premium ? '⭐ Pase completo' : p.vencido ? 'Vencido' : 'Gratis'}</span>
+        ${p.venceEl ? `<br><small>${p.premium ? 'hasta' : 'venció el'} ${fecha(p.venceEl)}</small>` : p.premium ? '<br><small>sin vencimiento</small>' : ''}</td>
       <td><input class="nota" value="${escapar(p.nota)}" placeholder="Código de operación" aria-label="Nota"></td>
       <td class="acciones">
         ${p.premium
-          ? '<button class="suave quitar">Quitar</button>'
-          : '<button class="activar">✅ Activar</button>'}
+          ? '<button class="activar suave">+1 año</button><button class="suave quitar">Quitar</button>'
+          : `<button class="activar">✅ ${p.vencido ? 'Renovar' : 'Activar'} 1 año</button>`}
       </td>
     </tr>`).join('');
 }
 
 async function cambiar(correo, cambios, boton, redibujar = true) {
   boton.disabled = true;
+  let r;
   try {
-    await llamar('adminCambiar', { token, correo, ...cambios });
+    r = await llamar('adminCambiar', { token, correo, ...cambios });
   } catch (e) {
     aviso($('#msg-panel'), 'No se pudo guardar: ' + e.message);
     return;
@@ -108,7 +109,11 @@ async function cambiar(correo, cambios, boton, redibujar = true) {
   }
   const p = perfiles.find((x) => x.correo === correo);
   Object.assign(p, cambios);
-  if ('premium' in cambios) p.pagadoEn = cambios.premium ? new Date().toISOString() : null;
+  if ('premium' in cambios) {
+    p.pagadoEn = cambios.premium ? new Date().toISOString() : null;
+    p.venceEl = r?.venceEl || null;
+    p.vencido = false;
+  }
   aviso($('#msg-panel'), 'Guardado ✔', true);
   if (redibujar) dibujar();
 }
@@ -118,7 +123,7 @@ $('#filas').addEventListener('click', (ev) => {
   if (!fila) return;
   const correo = fila.dataset.correo;
   const nota = fila.querySelector('.nota').value.trim();
-  if (ev.target.matches('.activar')) cambiar(correo, { premium: true, nota }, ev.target);
+  if (ev.target.matches('.activar')) cambiar(correo, { premium: true, nota }, ev.target); // activa o suma un año
   if (ev.target.matches('.quitar') && confirm(`¿Quitar el pase completo a ${correo}?`)) {
     cambiar(correo, { premium: false, nota }, ev.target);
   }

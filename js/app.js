@@ -212,6 +212,13 @@ function abrirPremium() {
   const c = nube.cuentaLocal();
   $('#premium-precio').textContent = N.precio;
   $('#premium-correo').textContent = c?.correo || '';
+  // Pase vencido (o por vencer): el mismo pago lo renueva por un año más.
+  const vencido = c?.vencido || (c?.premium && !nube.paseVigente(c));
+  const dias = nube.diasDePase(c);
+  $('#premium-titulo').textContent = vencido ? '⭐ Renueva tu pase completo'
+    : dias !== null && dias <= 30 ? '⭐ Renueva tu pase completo' : '⭐ ¡Desbloquea todo Pianito!';
+  $('#premium-estado').textContent = vencido && c.venceEl ? `Tu pase venció el ${nube.fechaCorta(c.venceEl)}.`
+    : dias !== null && dias > 0 ? `Tu pase vence el ${nube.fechaCorta(c.venceEl)}. Si renuevas ahora, se suma un año desde esa fecha.` : '';
   const pagar = $('#btn-pagar');
   if (N.culqiLink) pagar.href = N.culqiLink; else pagar.removeAttribute('href');
   const wa = $('#btn-whatsapp');
@@ -231,9 +238,9 @@ $('#btn-ya-pague').addEventListener('click', async () => {
   msg.classList.remove('bien');
   msg.textContent = 'Revisando…';
   const c = await nube.actualizarPerfil().catch(() => null);
-  if (c?.premium) {
+  if (nube.paseVigente(c)) {
     msg.classList.add('bien');
-    msg.textContent = '¡Listo! Ya están abiertos todos los niveles. 🎉';
+    msg.textContent = c.venceEl ? `¡Listo! Tu pase está activo hasta el ${nube.fechaCorta(c.venceEl)}. 🎉` : '¡Listo! Ya están abiertos todos los niveles. 🎉';
     mostrarCuentaEnAjustes();
     dibujarMapa();
     setTimeout(() => $('#dialogo-premium').close(), 1600);
@@ -263,10 +270,16 @@ function mostrarCuentaEnAjustes() {
   caja.classList.toggle('oculto', !nube.configurada() || !c);
   if (!c) return;
   $('#aj-cuenta-correo').textContent = c.correo + (c.nombre ? ` (${c.nombre})` : '');
-  $('#aj-cuenta-plan').textContent = c.premium
-    ? '⭐ Pase completo: todos los niveles abiertos'
+  const vigente = nube.paseVigente(c);
+  const dias = nube.diasDePase(c);
+  $('#aj-cuenta-plan').textContent = vigente
+    ? (c.venceEl ? `⭐ Pase completo hasta el ${nube.fechaCorta(c.venceEl)}` : '⭐ Pase completo: todos los niveles abiertos')
+    : c.venceEl ? `Tu pase venció el ${nube.fechaCorta(c.venceEl)}. Ahora: las ${nube.NUBE.clasesGratis} primeras clases y los juegos`
     : `Gratis: las ${nube.NUBE.clasesGratis} primeras clases y los juegos`;
-  $('#btn-desbloquear-cuenta').classList.toggle('oculto', !!c.premium);
+  const boton = $('#btn-desbloquear-cuenta');
+  boton.textContent = vigente ? '⭐ Renovar un año' : c.venceEl ? '⭐ Renovar el pase' : '⭐ Desbloquear todo';
+  // Se muestra si no tiene pase, si venció o si le queda un mes o menos.
+  boton.classList.toggle('oculto', vigente && (dias === null || dias > 30));
 }
 mostrarCuentaEnAjustes();
 $('#btn-desbloquear-cuenta').addEventListener('click', () => { $('#dialogo-ajustes').close(); abrirPremium(); });

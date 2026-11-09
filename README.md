@@ -307,6 +307,11 @@ Mientras `scriptUrl` en `js/config-nube.js` esté vacío, la app funciona sin re
 Regístrate en la app con tu correo y, en la hoja, marca la casilla **Administrador** de tu fila
 (marca también **Pase completo** para ver todos los niveles). Entra a **https://web-2022.github.io/MX-Piano/admin.html**.
 
+### El pase dura un año
+El pago (S/ 49.90) da **un año** de pase completo. Al activarlo se anota solo **"Vence el"** (hoy + 1 año) en la hoja.
+Al vencer, la cuenta vuelve a las clases gratis y la app muestra "Renueva tu pase". Renovar antes de que venza suma el año
+desde el vencimiento (no se pierden días). Si "Vence el" está vacío, el pase no vence (útil para tu propia cuenta).
+
 ### Cuando una familia paga
 Busca su correo y marca **Pase completo** (en la hoja o con **✅ Activar** en `admin.html`); anota el código de la operación
 de Culqi en **Nota**. La familia toca **“Ya pagué”** o vuelve a abrir la app.

@@ -22,9 +22,21 @@ function guardarLocal(c) {
 export function leccionAbierta(indice) {
   if (!configurada()) return true;
   if (indice < NUBE.clasesGratis) return true;
-  return !!cuentaLocal()?.premium;
+  return paseVigente(cuentaLocal());
 }
-export const esPremium = () => !configurada() || !!cuentaLocal()?.premium;
+export const esPremium = () => !configurada() || paseVigente(cuentaLocal());
+
+// El pase completo dura un año: se revisa también aquí, así vence aunque el iPad esté sin internet.
+export function paseVigente(c) {
+  if (!c?.premium) return false;
+  return !c.venceEl || new Date(c.venceEl) > new Date();
+}
+// Días que le quedan al pase (null si no vence).
+export function diasDePase(c) {
+  if (!c?.premium || !c.venceEl) return null;
+  return Math.ceil((new Date(c.venceEl) - Date.now()) / 86400000);
+}
+export const fechaCorta = (iso) => new Date(iso).toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
 
 // Llama al programa de Google. Se envía como texto (sin cabeceras especiales) para que el
 // navegador no haga una consulta previa, que Google no acepta.

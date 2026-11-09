@@ -43,6 +43,7 @@
     td small { color: var(--suave); }
     .estado { display: inline-block; padding: .2em .7em; border-radius: 999px; font-weight: 800; font-size: .85rem; background: #f1f0f7; color: var(--suave); }
     .estado.pago { background: var(--exito-fondo); color: var(--exito); }
+    .estado.vencido { background: #fef3c7; color: #b45309; }
     .nota { width: 100%; font-size: .9rem; padding: .4em .6em; }
     .acciones { display: flex; gap: 6px; flex-wrap: wrap; }
     .acciones button { padding: .45em .9em; font-size: .9rem; }
@@ -86,7 +87,7 @@
     <section id="panel" class="oculto">
       <div class="cifras">
         <div class="cifra"><b id="n-total">0</b><span>cuentas</span></div>
-        <div class="cifra"><b id="n-pago">0</b><span>con pase completo</span></div>
+        <div class="cifra"><b id="n-pago">0</b><span>con pase vigente</span></div>
         <div class="cifra"><b id="n-gratis">0</b><span>gratis</span></div>
       </div>
       <div class="caja">
