@@ -68,6 +68,7 @@ async function cargar() {
 }
 
 const fecha = (t) => (t ? new Date(t).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }) : '');
+const fechaHora = (t) => new Date(t).toLocaleString('es-PE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 const escapar = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 function dibujar() {
@@ -78,11 +79,15 @@ function dibujar() {
   const filtro = $('#filtro').value;
   const lista = perfiles.filter((p) =>
     (!q || (p.correo || '').toLowerCase().includes(q) || (p.nombre || '').toLowerCase().includes(q)) &&
-    (filtro === 'todos' || (filtro === 'pago') === !!p.premium));
+    (filtro === 'todos' || (filtro === 'avisos' ? !!p.avisoPago : (filtro === 'pago') === !!p.premium)));
+  // Primero los que avisaron "Ya pagué" (los más recientes arriba); después el resto en el orden de siempre.
+  lista.sort((a, b) => (b.avisoPago ? new Date(b.avisoPago).getTime() : 0) - (a.avisoPago ? new Date(a.avisoPago).getTime() : 0));
+  const avisos = perfiles.filter((p) => p.avisoPago).length;
+  $('#aviso-pagos').textContent = avisos ? `🔔 ${avisos} ${avisos === 1 ? 'familia dice' : 'familias dicen'} que ya pagó: revisa Culqi y actívalas.` : '';
   $('#vacio').classList.toggle('oculto', lista.length > 0);
   $('#filas').innerHTML = lista.map((p) => `
     <tr data-correo="${escapar(p.correo)}">
-      <td class="correo">${escapar(p.correo)}</td>
+      <td class="correo">${escapar(p.correo)}${p.avisoPago ? `<br><span class="aviso-pago">🔔 Dice que pagó · ${fechaHora(p.avisoPago)}</span>` : ''}</td>
       <td>${escapar(p.nombre) || '<small>—</small>'}</td>
       <td><small>${fecha(p.creado)}</small></td>
       <td><span class="estado ${p.premium ? 'pago' : p.vencido ? 'vencido' : ''}">${p.premium ? '⭐ Pase completo' : p.vencido ? 'Vencido' : 'Gratis'}</span>
@@ -113,6 +118,7 @@ async function cambiar(correo, cambios, boton, redibujar = true) {
     p.pagadoEn = cambios.premium ? new Date().toISOString() : null;
     p.venceEl = r?.venceEl || null;
     p.vencido = false;
+    if (cambios.premium) p.avisoPago = null;
   }
   aviso($('#msg-panel'), 'Guardado ✔', true);
   if (redibujar) dibujar();

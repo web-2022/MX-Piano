@@ -64,6 +64,19 @@ export async function actualizarPerfil() {
   return r.cuenta;
 }
 
+// "Ya pagué": avisa al administrador (queda registrado en la hoja) y devuelve la cuenta al día.
+export async function avisarPago() {
+  const local = cuentaLocal();
+  if (!configurada() || !local?.token) return { cuenta: local };
+  try {
+    const r = await llamar('avisoPago', { token: local.token });
+    if (r.cuenta) guardarLocal(r.cuenta);
+    return { cuenta: r.cuenta, avisado: !!r.avisado };
+  } catch {
+    return { cuenta: await actualizarPerfil() }; // programa de Google antiguo o sin internet
+  }
+}
+
 export async function registrar(correo, clave, nombre) {
   const r = await llamar('registrar', { correo, clave, nombre });
   guardarLocal(r.cuenta);

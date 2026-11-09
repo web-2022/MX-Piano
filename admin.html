@@ -44,6 +44,9 @@
     .estado { display: inline-block; padding: .2em .7em; border-radius: 999px; font-weight: 800; font-size: .85rem; background: #f1f0f7; color: var(--suave); }
     .estado.pago { background: var(--exito-fondo); color: var(--exito); }
     .estado.vencido { background: #fef3c7; color: #b45309; }
+    .aviso-pago { display: inline-block; margin-top: 4px; font-size: .8rem; font-weight: 800; color: #b45309; background: #fef3c7; border-radius: 999px; padding: .15em .6em; }
+    .aviso-pagos:empty { display: none; }
+    .aviso-pagos { margin: 0 0 8px; font-weight: 800; color: #b45309; background: #fef3c7; border-radius: 12px; padding: 8px 12px; }
     .nota { width: 100%; font-size: .9rem; padding: .4em .6em; }
     .acciones { display: flex; gap: 6px; flex-wrap: wrap; }
     .acciones button { padding: .45em .9em; font-size: .9rem; }
@@ -97,9 +100,11 @@
             <option value="todos">Todos</option>
             <option value="gratis">Solo gratis</option>
             <option value="pago">Solo pase completo</option>
+            <option value="avisos">🔔 Dicen que pagaron</option>
           </select>
           <button id="btn-recargar" class="suave">↻ Actualizar</button>
         </div>
+        <p id="aviso-pagos" class="aviso-pagos"></p>
         <p id="msg-panel" class="mensaje" role="status"></p>
         <table>
           <thead><tr><th>Correo</th><th>Niño/a</th><th>Registro</th><th>Estado</th><th>Nota (código Culqi)</th><th></th></tr></thead>

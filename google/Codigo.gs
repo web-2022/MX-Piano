@@ -20,9 +20,10 @@ const COLUMNAS = [
   'Registrado el', 'Último ingreso',
   // Columnas técnicas (no las edites):
   'hash', 'sal', 'tokens', 'intentos', 'bloqueo_hasta', 'codigo', 'codigo_vence',
-  // Agregada después (va al final para no mover los datos que ya existen):
-  'Vence el',
+  // Agregadas después (van al final para no mover los datos que ya existen):
+  'Vence el', 'Avisó pago',
 ];
+const AGREGADAS = ['Vence el', 'Avisó pago'];
 const DURACION_PASE_MESES = 12;
 const C = Object.fromEntries(COLUMNAS.map((n, i) => [n, i]));
 const VUELTAS = 300;            // vueltas del cifrado de la contraseña
@@ -60,9 +61,11 @@ function hoja() {
     h.setColumnWidth(1, 240);
     h.setColumnWidth(5, 180);
   }
-  // Hojas creadas antes de que existiera "Vence el": se agrega el título de la columna.
-  const titulo = h.getRange(1, C['Vence el'] + 1);
-  if (titulo.getValue() !== 'Vence el') titulo.setValue('Vence el').setFontWeight('bold').setBackground('#ede9fe');
+  // Hojas creadas antes de que existieran estas columnas: se agrega su título.
+  for (const nombre of AGREGADAS) {
+    const titulo = h.getRange(1, C[nombre] + 1);
+    if (titulo.getValue() !== nombre) titulo.setValue(nombre).setFontWeight('bold').setBackground('#ede9fe');
+  }
   return h;
 }
 
@@ -257,6 +260,21 @@ const ACCIONES = {
     });
   },
 
+  // "Ya pagué": la familia avisa que pagó. Queda la fecha en la hoja y se avisa por correo a los administradores.
+  avisoPago(d) {
+    return conCandado(() => {
+      const f = buscarPorToken(d.token);
+      if (!f) return { cuenta: null };
+      if (paseVigente(f) && diasRestantes(f) > 30) return { cuenta: perfil(f, d.token) }; // ya está activa
+      const antes = f.v[C['Avisó pago']] ? new Date(f.v[C['Avisó pago']]) : null;
+      f.v[C['Avisó pago']] = new Date();
+      escribir(f);
+      // Un solo correo cada 6 horas por cuenta (aunque toque "Ya pagué" muchas veces).
+      if (!antes || isNaN(antes) || Date.now() - antes.getTime() > 6 * 3600000) avisarAdmins(f);
+      return { cuenta: perfil(f, d.token), avisado: true };
+    });
+  },
+
   // ---- Panel de administrador ----
   adminListar(d) {
     exigirAdmin(d.token);
@@ -269,6 +287,7 @@ const ACCIONES = {
         venceEl: venceDe(f) ? venceDe(f).toISOString() : null,
         nota: f.v[C['Nota (código Culqi)']] || '',
         pagadoEn: f.v[C['Pagado el']] || null,
+        avisoPago: f.v[C['Avisó pago']] || null,
         creado: f.v[C['Registrado el']] || null,
       })).reverse(),
     };
@@ -286,6 +305,7 @@ const ACCIONES = {
           f.v[C['Vence el']] = sumarUnAnio(f);
           f.v[C['Pase completo']] = true;
           f.v[C['Pagado el']] = new Date();
+          f.v[C['Avisó pago']] = ''; // ya se atendió el aviso
         } else {
           f.v[C['Pase completo']] = false;
           f.v[C['Pagado el']] = '';
@@ -297,6 +317,29 @@ const ACCIONES = {
     });
   },
 };
+
+function diasRestantes(f) {
+  const v = venceDe(f);
+  return v ? (v - new Date()) / 86400000 : Infinity;
+}
+
+// Correo a todas las cuentas marcadas como Administrador.
+function avisarAdmins(f) {
+  const admins = filas().filter((x) => siONo(x.v[C['Administrador']])).map((x) => x.v[C['Correo']]).filter(Boolean);
+  if (!admins.length) return;
+  const correo = f.v[C['Correo']];
+  const nombre = f.v[C['Nombre del niño']];
+  try {
+    MailApp.sendEmail({
+      to: admins.join(','),
+      subject: '🔔 Pianito: ' + correo + ' dice que ya pagó',
+      body: 'La cuenta ' + correo + (nombre ? ' (' + nombre + ')' : '') + ' tocó "Ya pagué" en la app.\n\n' +
+        '1. Revisa en Culqi (Ventas) que el pago de ese correo haya llegado.\n' +
+        '2. En el Panel de Pianito, busca el correo y pulsa "Activar 1 año".\n\n' +
+        'Hoja de cuentas: ' + SpreadsheetApp.getActiveSpreadsheet().getUrl() + '\n\n🐸 Pianito',
+    });
+  } catch (e) { /* sin cupo de correos hoy: el aviso queda igual en la hoja */ }
+}
 
 function exigirAdmin(token) {
   const f = buscarPorToken(token);
@@ -315,6 +358,7 @@ function onEdit(e) {
     v.setMonth(v.getMonth() + DURACION_PASE_MESES);
     pagado.setValue(new Date());
     vence.setValue(v);
+    h.getRange(fila, C['Avisó pago'] + 1).setValue('');
   } else {
     pagado.setValue('');
     vence.setValue('');

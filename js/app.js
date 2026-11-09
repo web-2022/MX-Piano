@@ -237,15 +237,19 @@ $('#btn-ya-pague').addEventListener('click', async () => {
   const msg = $('#premium-mensaje');
   msg.classList.remove('bien');
   msg.textContent = 'Revisando…';
-  const c = await nube.actualizarPerfil().catch(() => null);
-  if (nube.paseVigente(c)) {
+  const { cuenta: c, avisado } = await nube.avisarPago().catch(() => ({}));
+  const dias = nube.diasDePase(c);
+  if (nube.paseVigente(c) && (dias === null || dias > 30)) {
     msg.classList.add('bien');
     msg.textContent = c.venceEl ? `¡Listo! Tu pase está activo hasta el ${nube.fechaCorta(c.venceEl)}. 🎉` : '¡Listo! Ya están abiertos todos los niveles. 🎉';
     mostrarCuentaEnAjustes();
     dibujarMapa();
     setTimeout(() => $('#dialogo-premium').close(), 1600);
+  } else if (avisado) {
+    msg.classList.add('bien');
+    msg.textContent = '🙌 ¡Gracias! Ya nos llegó tu aviso. Activamos tu cuenta apenas confirmemos el pago; luego vuelve a tocar "Ya pagué" o abre la app de nuevo.';
   } else {
-    msg.textContent = 'Todavía no vemos el pago activado. Si ya avisaste, espera unos minutos y vuelve a tocar.';
+    msg.textContent = 'Todavía no vemos el pago activado. Espera unos minutos y vuelve a tocar.';
   }
 });
 
