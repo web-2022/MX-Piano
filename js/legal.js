@@ -14,8 +14,10 @@ const DATOS = {
 document.querySelectorAll('[data-dato]').forEach((el) => {
   const v = DATOS[el.dataset.dato];
   if (v === '' || v === undefined || v === null) {
-    el.textContent = '(por completar)';
-    el.classList.add('pendiente');
+    // Dato todavía no configurado: se oculta su línea (o, dentro de un texto, se usa un genérico).
+    const fila = el.closest('.fila-dato');
+    if (fila) fila.remove();
+    else el.textContent = el.dataset.dato === 'correo' ? 'el correo de atención indicado en la app' : '';
   } else {
     el.textContent = v;
   }
@@ -57,3 +59,6 @@ if (form) {
     }
   });
 }
+
+// Si no quedó ningún dato del proveedor, se quita el recuadro.
+document.querySelectorAll('.proveedor').forEach((p) => { if (!p.querySelector('.fila-dato')) p.remove(); });

@@ -16,12 +16,12 @@
   </div>
 
   <div class="caja">
-    <p class="proveedor">
-      <b>Proveedor:</b> <span data-dato="razonSocial"></span><br>
-      <b>RUC:</b> <span data-dato="ruc"></span><br>
-      <b>Domicilio:</b> <span data-dato="direccion"></span><br>
-      <b>Nombre comercial:</b> <span data-dato="comercio"></span> · <span data-dato="marca"></span><br>
-      <b>Fecha:</b> <span id="fecha-hoy"></span>
+    <p class="proveedor proveedor-lineas">
+      <span class="fila-dato"><b>Proveedor:</b> <span data-dato="razonSocial"></span></span>
+      <span class="fila-dato"><b>RUC:</b> <span data-dato="ruc"></span></span>
+      <span class="fila-dato"><b>Domicilio:</b> <span data-dato="direccion"></span></span>
+      <span class="fila-dato"><b>Nombre comercial:</b> <span data-dato="comercio"></span> · <span data-dato="marca"></span></span>
+      <span class="fila-dato"><b>Fecha:</b> <span id="fecha-hoy"></span></span>
     </p>
     <p>Conforme al Código de Protección y Defensa del Consumidor, contamos con un Libro de Reclamaciones a tu disposición.
       Al enviar esta hoja recibirás <b>una copia en tu correo con un código de seguimiento</b>. Responderemos los reclamos
@@ -87,7 +87,7 @@
   <div class="pie">
     <a href="terminos.html">Términos y condiciones</a>
     <a href="privacidad.html">Política de privacidad</a>
-    <a data-correo href="#">Contacto: <span data-dato="correo"></span></a>
+    <a data-correo class="fila-dato" href="#">Contacto: <span data-dato="correo"></span></a>
   </div>
 </main>
 <script type="module" src="js/legal.js"></script>

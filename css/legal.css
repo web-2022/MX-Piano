@@ -40,3 +40,5 @@ button:disabled { opacity: .6; cursor: default; }
 .listo strong { font-size: 1.3rem; display: block; }
 .oculto { display: none !important; }
 @media (max-width: 560px) { .dos { grid-template-columns: 1fr; } }
+
+.proveedor-lineas .fila-dato { display: block; }
