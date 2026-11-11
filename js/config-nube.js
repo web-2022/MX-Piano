@@ -26,6 +26,6 @@ export const EMPRESA = {
   razonSocial: '',          // ej. 'GAMARRA QUISPE VICTOR MANUEL' o el nombre de tu empresa
   ruc: '',                  // 11 dígitos
   direccion: '',            // domicilio fiscal
-  correo: '',               // correo de atención al cliente
+  correo: 'bd-learning@outlook.com', // correo de atención al cliente
   devolucionDias: 7,        // días para pedir devolución si no usó el pase (puedes cambiarlo)
 };
