@@ -74,6 +74,7 @@
           y la <a href="privacidad.html" target="_blank">Política de privacidad</a>. Una cuenta se usa en hasta 2 dispositivos a la vez.</p>
       </form>
       <p id="mensaje-inicio" class="mensaje-inicio" role="status"></p>
+      <button type="button" class="boton-instalar oculto" data-instalar>📲 Instalar Pianito como app</button>
       <nav class="enlaces-legales"><a href="terminos.html" target="_blank">Términos</a> · <a href="privacidad.html" target="_blank">Privacidad</a> · <a href="reclamaciones.html" target="_blank">📕 Libro de Reclamaciones</a></nav>
     </div>
   </section>
@@ -204,6 +205,7 @@
           <button type="button" id="btn-salir-cuenta" class="boton-secundario">Cerrar sesión</button>
         </div>
       </div>
+      <button type="button" class="boton-secundario oculto" data-instalar>📲 Instalar Pianito como app</button>
       <button type="button" id="btn-borrar-progreso" class="boton-peligro">Borrar progreso</button>
       <nav class="enlaces-legales"><a href="terminos.html" target="_blank">Términos</a> · <a href="privacidad.html" target="_blank">Privacidad</a> · <a href="reclamaciones.html" target="_blank">📕 Libro de Reclamaciones</a></nav>
       <button value="cerrar" class="boton-grande">Listo</button>
@@ -332,6 +334,24 @@
       </fieldset>
       <p class="cuenta-legal">Solo cuenta cuando tu amigo paga su primer pase. No vale usar tu propio código. Ver <a href="terminos.html#invita" target="_blank">reglas</a>.</p>
       <button value="cerrar" class="boton-secundario">Cerrar</button>
+    </form>
+  </dialog>
+
+  <!-- Instalar en iPad / iPhone (Safari no tiene botón automático) -->
+  <dialog id="dialogo-instalar" class="dialogo dialogo-instalar">
+    <form method="dialog">
+      <h2>📲 Instalar Pianito</h2>
+      <p class="premium-texto">Así tendrás a Ranita en la pantalla de inicio, a pantalla completa y funcionando sin internet.</p>
+      <ol class="pasos-instalar">
+        <li><span class="ico-compartir" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M6 11H5v10h14V11h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span>Toca el botón <b>Compartir</b> de Safari: en el iPad está <b>arriba a la derecha</b>, en el iPhone <b>abajo</b>.<br><small>¿No lo ves? Toca <b>⋯</b> y luego <b>Compartir</b>.</small></span></li>
+        <li><span class="ico-paso" aria-hidden="true">➕</span>
+          <span>Baja y toca <b>"Agregar a pantalla de inicio"</b>.</span></li>
+        <li><span class="ico-paso" aria-hidden="true">✅</span>
+          <span>Toca <b>Agregar</b>. ¡Listo! Abre Pianito desde el ícono de Ranita.</span></li>
+      </ol>
+      <p id="instalar-no-safari" class="cuenta-legal oculto">Si no aparece la opción, abre esta página en <b>Safari</b>.</p>
+      <button value="cerrar" class="boton-grande">Entendido</button>
     </form>
   </dialog>
 

@@ -1281,3 +1281,15 @@ input { -webkit-user-select: text; user-select: text; font-family: inherit; }
 .premium-canje .premium-codigo-msg.bien { color: var(--exito); }
 .premium-codigo-form input::placeholder { text-transform: none; }
 #canje-input { text-transform: uppercase; }
+
+/* Instalar como app */
+.boton-instalar { margin-top: 12px; background: #fff; color: var(--primario); border: 2px solid #e9d5ff; border-radius: 999px; padding: 10px 18px; font: inherit; font-weight: 800; font-size: 1rem; cursor: pointer; box-shadow: 0 3px 0 #e9d5ff; }
+.boton-instalar:active { transform: translateY(2px); box-shadow: 0 1px 0 #e9d5ff; }
+.dialogo-instalar form { align-items: stretch; text-align: left; gap: 10px; }
+.dialogo-instalar h2 { margin: 0; color: var(--primario); text-align: center; }
+.dialogo-instalar .premium-texto { text-align: center; }
+.pasos-instalar { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.pasos-instalar li { display: flex; gap: 14px; align-items: center; background: #f5f3ff; border-radius: 16px; padding: 12px 14px; line-height: 1.4; }
+.pasos-instalar small { color: var(--tinta-suave); }
+.ico-compartir, .ico-paso { flex: none; width: 44px; height: 44px; border-radius: 12px; background: #fff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; box-shadow: 0 2px 0 #e6e1f5; }
+.ico-compartir svg { width: 28px; height: 28px; }

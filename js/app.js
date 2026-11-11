@@ -2071,6 +2071,32 @@ $('#btn-voz-borrar').addEventListener('click', async () => {
 if (new URLSearchParams(location.search).has('depurar')) window.pianito = { estado };
 
 // ================= PWA =================
+// Botón "Instalar Pianito": en Android/Chrome abre la instalación del navegador;
+// en iPad/iPhone (Safari no lo permite) muestra cómo hacerlo desde Compartir.
+const yaInstalada = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let pedidoInstalar = null;
+function mostrarBotonesInstalar() {
+  const ver = !yaInstalada() && (esIOS || !!pedidoInstalar);
+  document.querySelectorAll('[data-instalar]').forEach((b) => b.classList.toggle('oculto', !ver));
+}
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); pedidoInstalar = e; mostrarBotonesInstalar(); });
+window.addEventListener('appinstalled', () => { pedidoInstalar = null; mostrarBotonesInstalar(); });
+document.querySelectorAll('[data-instalar]').forEach((b) => b.addEventListener('click', async () => {
+  if (pedidoInstalar) {
+    pedidoInstalar.prompt();
+    try { await pedidoInstalar.userChoice; } catch { /* nada */ }
+    pedidoInstalar = null;
+    mostrarBotonesInstalar();
+    return;
+  }
+  $('#dialogo-ajustes').open && $('#dialogo-ajustes').close();
+  // Chrome o Firefox en iPad: el menú existe, pero Safari es lo más seguro.
+  $('#instalar-no-safari').classList.toggle('oculto', !/CriOS|FxiOS|EdgiOS/.test(navigator.userAgent));
+  $('#dialogo-instalar').showModal();
+}));
+mostrarBotonesInstalar();
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(() => {});
