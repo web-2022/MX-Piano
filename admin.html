@@ -47,6 +47,21 @@
     .aviso-pago { display: inline-block; margin-top: 4px; font-size: .8rem; font-weight: 800; color: #b45309; background: #fef3c7; border-radius: 999px; padding: .15em .6em; }
     .aviso-pagos:empty { display: none; }
     .comisiones { margin-bottom: 14px; }
+    .codigos { margin-bottom: 14px; }
+    .codigos summary { cursor: pointer; list-style: none; }
+    .codigos summary h2 { display: inline; margin: 0; font-size: 1.1rem; }
+    .codigos summary .nota-comisiones { display: block; margin-top: 4px; }
+    .codigos[open] summary { margin-bottom: 10px; }
+    #cod-texto { width: 100%; font-family: ui-monospace, monospace; font-size: .95rem; margin: 6px 0; }
+    .lote { border-top: 1px solid var(--linea); padding: 10px 0; }
+    .lote-cab { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .lote-cab b { flex: 1 1 14em; }
+    .lote-lista { margin-top: 8px; display: grid; gap: 4px; font-size: .9rem; }
+    .cod { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-family: ui-monospace, monospace; }
+    .cod .est { font-family: var(--fuente); font-weight: 800; font-size: .8rem; border-radius: 999px; padding: .1em .6em; background: #f1f0f7; color: var(--suave); }
+    .cod .est.Usado { background: var(--exito-fondo); color: var(--exito); }
+    .cod .est.Anulado { background: #fee2e2; color: var(--error); }
+    .cod button { padding: .25em .8em; font-size: .8rem; }
     .comisiones h2 { margin: 0 0 4px; font-size: 1.1rem; }
     .nota-comisiones { margin: 0 0 10px; color: var(--suave); font-size: .9rem; }
     .fila-comision { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--linea); }
@@ -107,6 +122,26 @@
         <p class="nota-comisiones">Págalas por Yape a fin de mes y pulsa "Marcar pagado". Las marcadas ✅ ya juntaron el mínimo.</p>
         <div id="lista-comisiones"></div>
       </div>
+      <details id="codigos" class="caja codigos">
+        <summary><h2>🎟️ Códigos de activación</h2><span class="nota-comisiones">Para vender en Hotmart, Mercado Libre, a colegios o para regalar. Cada código abre el pase una sola vez.</span></summary>
+        <form id="form-codigos" class="filtros">
+          <input id="cod-lote" maxlength="60" placeholder="Nombre del lote (ej. Hotmart noviembre, Colegio San José)" required>
+          <input id="cod-cantidad" type="number" min="1" max="500" value="10" aria-label="Cantidad" style="flex:0 0 7em">
+          <select id="cod-meses" aria-label="Meses">
+            <option value="12" selected>12 meses</option><option value="6">6 meses</option><option value="3">3 meses</option>
+            <option value="1">1 mes</option><option value="24">24 meses</option>
+          </select>
+          <button type="submit">Generar</button>
+        </form>
+        <div id="cod-nuevos" class="oculto">
+          <p class="mensaje bien" id="cod-msg"></p>
+          <textarea id="cod-texto" readonly rows="6"></textarea>
+          <div class="acciones"><button type="button" id="cod-copiar" class="suave">Copiar todos</button>
+            <button type="button" id="cod-csv" class="suave">Descargar CSV</button></div>
+        </div>
+        <input id="cod-buscar" type="search" placeholder="Buscar un código o un correo…" style="width:100%;margin:12px 0 6px">
+        <div id="cod-lotes"></div>
+      </details>
       <div class="caja">
         <div class="filtros">
           <input id="buscar" type="search" placeholder="Buscar por correo o nombre…">

@@ -200,6 +200,7 @@
         <div class="aj-cuenta-botones">
           <button type="button" id="btn-desbloquear-cuenta" class="boton-secundario">⭐ Desbloquear todo</button>
           <button type="button" id="btn-invita-ajustes" class="boton-secundario">🎁 Invita y gana</button>
+          <button type="button" id="btn-canje-ajustes" class="boton-secundario">🎟️ Canjear código</button>
           <button type="button" id="btn-salir-cuenta" class="boton-secundario">Cerrar sesión</button>
         </div>
       </div>
@@ -280,11 +281,19 @@
       <div id="premium-codigo" class="premium-codigo oculto">
         <p id="premium-codigo-ok" class="premium-codigo-ok oculto"></p>
         <div id="premium-codigo-form" class="premium-codigo-form">
-          <input id="premium-codigo-input" type="text" autocomplete="off" autocapitalize="characters" maxlength="20" placeholder="¿Te invitó alguien? Código">
+          <input id="premium-codigo-input" type="text" autocomplete="off" autocapitalize="characters" maxlength="20" placeholder="Código del amigo que te recomendó">
           <button type="button" id="btn-aplicar-codigo" class="boton-secundario">Aplicar</button>
         </div>
         <p id="premium-codigo-msg" class="premium-codigo-msg"></p>
       </div>
+      <details id="premium-canje" class="premium-canje">
+        <summary>🎟️ ¿Tienes un código de activación? (compra en otra tienda, colegio o regalo)</summary>
+        <div class="premium-codigo-form">
+          <input id="canje-input" type="text" autocomplete="off" autocapitalize="characters" maxlength="20" placeholder="PIANO-XXXX-XXXX">
+          <button type="button" id="btn-canjear" class="boton-secundario">Canjear</button>
+        </div>
+        <p id="canje-msg" class="premium-codigo-msg"></p>
+      </details>
       <ol class="premium-pasos">
         <li>Paga con el correo de tu cuenta: <strong id="premium-correo"></strong></li>
         <li id="premium-paso-aviso">Activamos tu cuenta apenas nos llega el pago (normalmente el mismo día).</li>

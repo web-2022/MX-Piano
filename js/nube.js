@@ -101,6 +101,12 @@ export async function aplicarCodigo(codigo) {
   guardarLocal(r.cuenta);
   return r.cuenta;
 }
+// Códigos de activación (Hotmart, Mercado Libre, colegios, regalos): abre el pase al instante.
+export async function canjearCodigo(codigo) {
+  const r = await llamar('canjearCodigo', { token: cuentaLocal()?.token, codigo });
+  guardarLocal(r.cuenta);
+  return r;
+}
 export const enlaceInvitacion = (codigo) => `${location.origin}${location.pathname.replace(/[^/]*$/, '')}?ref=${encodeURIComponent(codigo)}`;
 
 export async function olvideClave(correo) {

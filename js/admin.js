@@ -59,6 +59,7 @@ async function cargar() {
     const r = await llamar('adminListar', { token });
     perfiles = r.cuentas;
     dibujarComisiones(r.comisiones || []);
+    cargarCodigos();
     aviso($('#msg-panel'), '');
     dibujar();
     return true;
@@ -101,6 +102,83 @@ function dibujar() {
       </td>
     </tr>`).join('');
 }
+
+// ---- Códigos de activación ----
+let lotes = [];
+async function cargarCodigos() {
+  try {
+    lotes = (await llamar('adminCodigos', { token })).lotes || [];
+    dibujarCodigos();
+  } catch (e) { $('#cod-lotes').textContent = 'No se pudieron cargar los códigos: ' + e.message; }
+}
+function dibujarCodigos() {
+  const q = $('#cod-buscar').value.trim().toUpperCase();
+  $('#cod-lotes').innerHTML = lotes.length ? lotes.map((l, i) => {
+    const lista = l.codigos.filter((c) => !q || c.codigo.includes(q) || String(c.usadoPor).toUpperCase().includes(q));
+    if (q && !lista.length) return '';
+    return `<div class="lote" data-i="${i}">
+      <div class="lote-cab"><b>${escapar(l.lote)}</b><span>${l.meses} meses · ${fecha(l.creado)}</span>
+        <span>${l.usados}/${l.total} usados${l.anulados ? ` · ${l.anulados} anulados` : ''}</span>
+        <button class="suave ver-lote">${q ? 'Ocultar' : 'Ver códigos'}</button><button class="suave csv-lote">CSV</button></div>
+      <div class="lote-lista ${q ? '' : 'oculto'}">${lista.map((c) => `<div class="cod"><span>${escapar(c.codigo)}</span>
+        <span class="est ${escapar(c.estado)}">${escapar(c.estado)}</span>
+        ${c.usadoPor ? `<small>${escapar(c.usadoPor)} · ${fecha(c.usadoEl)}</small>` : ''}
+        ${c.estado === 'Disponible' ? `<button class="suave anular" data-codigo="${escapar(c.codigo)}">Anular</button>` : ''}</div>`).join('')}</div>
+    </div>`;
+  }).join('') : '<p class="nota-comisiones">Todavía no generaste códigos.</p>';
+}
+function descargarCsv(nombre, filas) {
+  const csv = filas.map((f) => f.map((x) => `"${String(x ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv' }));
+  a.download = nombre.replace(/[^\w-]+/g, '_') + '.csv';
+  a.click();
+}
+let ultimoLote = null;
+$('#form-codigos').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const boton = ev.target.querySelector('button[type="submit"]');
+  boton.disabled = true;
+  try {
+    const r = await llamar('adminGenerarCodigos', { token, lote: $('#cod-lote').value.trim(), cantidad: $('#cod-cantidad').value, meses: $('#cod-meses').value });
+    ultimoLote = r;
+    $('#cod-nuevos').classList.remove('oculto');
+    $('#cod-msg').textContent = `✔ ${r.codigos.length} códigos de ${r.meses} meses · lote "${r.lote}". Cópialos o descárgalos.`;
+    const base = location.href.replace(/admin\.html.*$/, '');
+    $('#cod-texto').value = r.codigos.map((c) => `${c}   ${base}?canje=${c}`).join('\n');
+    await cargarCodigos();
+  } catch (e) { aviso($('#msg-panel'), 'No se pudieron generar: ' + e.message); }
+  finally { boton.disabled = false; }
+});
+$('#cod-copiar').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('#cod-texto').value); $('#cod-copiar').textContent = '✔ Copiados'; } catch { $('#cod-texto').select(); }
+  setTimeout(() => { $('#cod-copiar').textContent = 'Copiar todos'; }, 1500);
+});
+$('#cod-csv').addEventListener('click', () => {
+  if (!ultimoLote) return;
+  const base = location.href.replace(/admin\.html.*$/, '');
+  descargarCsv('codigos-' + ultimoLote.lote, [['Código', 'Enlace para canjear', 'Meses', 'Lote'], ...ultimoLote.codigos.map((c) => [c, `${base}?canje=${c}`, ultimoLote.meses, ultimoLote.lote])]);
+});
+$('#cod-buscar').addEventListener('input', dibujarCodigos);
+$('#cod-lotes').addEventListener('click', async (ev) => {
+  const lote = ev.target.closest('.lote');
+  if (ev.target.matches('.ver-lote')) {
+    const lista = lote.querySelector('.lote-lista');
+    lista.classList.toggle('oculto');
+    ev.target.textContent = lista.classList.contains('oculto') ? 'Ver códigos' : 'Ocultar';
+  }
+  if (ev.target.matches('.csv-lote')) {
+    const l = lotes[lote.dataset.i];
+    descargarCsv('codigos-' + l.lote, [['Código', 'Estado', 'Usado por', 'Usado el', 'Meses', 'Lote'],
+      ...l.codigos.map((c) => [c.codigo, c.estado, c.usadoPor, c.usadoEl ? fecha(c.usadoEl) : '', l.meses, l.lote])]);
+  }
+  if (ev.target.matches('.anular')) {
+    const codigo = ev.target.dataset.codigo;
+    if (!confirm(`¿Anular ${codigo}? Ya no se podrá canjear.`)) return;
+    try { await llamar('adminAnularCodigo', { token, codigo }); await cargarCodigos(); aviso($('#msg-panel'), `Anulado ✔ ${codigo}`, true); }
+    catch (e) { aviso($('#msg-panel'), e.message); cargarCodigos(); }
+  }
+});
 
 function dibujarComisiones(lista) {
   $('#comisiones').classList.toggle('oculto', !lista.length);

@@ -118,12 +118,18 @@ function sonar(fn, ...args) {
 const REF_URL = new URLSearchParams(location.search).get('ref');
 try { if (REF_URL) localStorage.setItem('pianito-ref', REF_URL.trim().toUpperCase().slice(0, 20)); } catch { /* */ }
 const refPendiente = () => { try { return localStorage.getItem('pianito-ref') || ''; } catch { return ''; } };
+// Códigos de activación: enlace ?canje=PIANO-XXXX-XXXX (lo que se entrega al comprar en Hotmart, Mercado Libre, etc.)
+const CANJE_URL = new URLSearchParams(location.search).get('canje');
+try { if (CANJE_URL) localStorage.setItem('pianito-canje', CANJE_URL.trim().toUpperCase().slice(0, 20)); } catch { /* */ }
+const canjePendiente = () => { try { return localStorage.getItem('pianito-canje') || ''; } catch { return ''; } };
 
 function pasoInicio() {
   const pideCuenta = nube.configurada() && !nube.cuentaLocal();
   const ref = refPendiente();
-  $('#cuenta-ref').classList.toggle('oculto', !pideCuenta || !ref);
-  $('#cuenta-ref-codigo').textContent = ref;
+  const canje = canjePendiente();
+  $('#cuenta-ref').classList.toggle('oculto', !pideCuenta || !(ref || canje));
+  if (canje) $('#cuenta-ref').innerHTML = `🎟️ Tienes el código <b>${canje.replace(/[<>&]/g, '')}</b>: crea tu cuenta (o entra) y se activa tu pase.`;
+  else if (ref) $('#cuenta-ref').innerHTML = `🎁 Te invitó <b>${ref.replace(/[<>&]/g, '')}</b>: si compras el pase recibes ${nube.NUBE.referidos?.mesesAmigo ?? 2} meses extra.`;
   $('#form-cuenta').classList.toggle('oculto', !pideCuenta);
   $('#btn-empezar').classList.toggle('oculto', pideCuenta || !estado.ajustes.modo);
   $('#eleccion-edad').classList.toggle('oculto', pideCuenta || !!estado.ajustes.modo);
@@ -232,6 +238,32 @@ function mostrarCodigoEnPago(c) {
   $('#premium-codigo-form').classList.toggle('oculto', !!c?.invitadoPor);
   if (c?.invitadoPor) ok.textContent = `🎁 Código ${c.invitadoPor} aplicado: al activar tu pase recibes ${R().mesesAmigo} meses extra (${12 + R().mesesAmigo} meses en total).`;
 }
+// Abrir la ventana de pago con la sección de canje desplegada (y el código ya escrito si vino en el enlace).
+function abrirCanje(codigo = '') {
+  abrirPremium();
+  $('#premium-canje').open = true;
+  if (codigo) $('#canje-input').value = codigo;
+  $('#canje-msg').textContent = '';
+}
+$('#btn-canjear').addEventListener('click', async () => {
+  const msg = $('#canje-msg');
+  msg.classList.remove('bien');
+  const codigo = $('#canje-input').value.trim();
+  if (!codigo) { msg.textContent = 'Escribe el código (ej. PIANO-AB3K-7XQ2).'; return; }
+  msg.textContent = 'Revisando…';
+  try {
+    const r = await nube.canjearCodigo(codigo);
+    try { localStorage.removeItem('pianito-canje'); } catch { /* */ }
+    msg.classList.add('bien');
+    msg.textContent = `🎉 ¡Listo! Tienes ${r.meses} meses de pase completo, hasta el ${nube.fechaCorta(r.cuenta.venceEl)}.`;
+    $('#canje-input').value = '';
+    mostrarCuentaEnAjustes();
+    dibujarMapa();
+    setTimeout(() => $('#dialogo-premium').close(), 2500);
+  } catch (e) { msg.textContent = e.message; }
+});
+$('#btn-canje-ajustes').addEventListener('click', () => { $('#dialogo-ajustes').close(); abrirCanje(); });
+
 $('#btn-aplicar-codigo').addEventListener('click', async () => {
   const msg = $('#premium-codigo-msg');
   const codigo = $('#premium-codigo-input').value.trim();
@@ -333,6 +365,8 @@ function abrirPremium() {
   }
   $('#premium-mensaje').textContent = '';
   mostrarCodigoEnPago(c);
+  $('#premium-canje').open = false;
+  $('#canje-msg').textContent = '';
   $('#dialogo-premium').showModal();
 }
 $('#btn-ya-pague').addEventListener('click', async () => {
@@ -442,6 +476,8 @@ async function arrancar() {
   aplicarAjustesDetector();
   dibujarMapa();
   mostrar('pantalla-mapa');
+  // Llegó con un enlace de canje: se abre la ventana con el código ya escrito.
+  if (canjePendiente() && nube.cuentaLocal()) abrirCanje(canjePendiente());
 }
 
 document.addEventListener('visibilitychange', async () => {

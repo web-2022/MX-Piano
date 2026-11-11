@@ -1275,3 +1275,9 @@ input { -webkit-user-select: text; user-select: text; font-family: inherit; }
 .inv-premio .boton-secundario { align-self: flex-start; font-size: 1rem; padding: .5em 1.2em; }
 .boton-invita { background: #dcfce7 !important; color: #166534 !important; }
 .inv-premio .mensaje-inicio:empty { display: none; }
+.premium-canje { width: 100%; text-align: left; background: #f0f9ff; border-radius: 14px; padding: 8px 12px; }
+.premium-canje summary { cursor: pointer; font-weight: 800; color: #0369a1; font-size: .95rem; }
+.premium-canje[open] summary { margin-bottom: 8px; }
+.premium-canje .premium-codigo-msg.bien { color: var(--exito); }
+.premium-codigo-form input::placeholder { text-transform: none; }
+#canje-input { text-transform: uppercase; }

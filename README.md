@@ -332,6 +332,14 @@ Cada cuenta tiene un código propio (Ajustes ⚙️ → 🎁 Invita y gana, y a 
 - Los números están en `google/Codigo.gs` (MESES_AMIGO, MESES_INVITA, COMISION, MINIMO_PAGO, TOPE_MESES_ANIO) y en
   `js/config-nube.js` → `referidos` (textos de la app).
 
+### Códigos de activación (Hotmart, Mercado Libre, colegios, regalos)
+- En el Panel → **🎟️ Códigos de activación**: escribes un nombre de lote, la cantidad y los meses, y pulsas **Generar**.
+  Salen códigos como `PIANO-AB3K-7XQ2` con su enlace `…/MX-Piano/?canje=PIANO-AB3K-7XQ2`. **Copiar todos** o **Descargar CSV**.
+- El comprador abre el enlace (o escribe el código en la ventana de pago → "¿Tienes un código de activación?", o en
+  Ajustes → Canjear código). Si no tiene cuenta, primero la crea. El pase se abre al instante por esos meses.
+- Pestaña **"Códigos"** de la hoja: estado de cada código (Disponible / Usado / Anulado), quién lo usó y cuándo.
+  Un código se usa una sola vez. Límite: 10 intentos fallidos por hora por cuenta.
+
 ### Páginas legales (Perú)
 `terminos.html`, `privacidad.html` y `reclamaciones.html` (Libro de Reclamaciones virtual). Completa los datos del proveedor
 en `js/config-nube.js` → `EMPRESA` (razón social, RUC, domicilio, correo). Los reclamos se guardan en la pestaña

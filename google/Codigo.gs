@@ -419,6 +419,94 @@ const ACCIONES = {
     });
   },
 
+  // Canjear un código de activación (comprado en Hotmart, Mercado Libre, un colegio, un regalo…)
+  canjearCodigo(d) {
+    return conCandado(() => {
+      const f = buscarPorToken(d.token);
+      if (!f) throw new Error('Vuelve a entrar a tu cuenta.');
+      const correo = normal(f.v[C['Correo']]);
+      // Límite: 10 intentos fallidos por hora y por cuenta (para que nadie pruebe códigos al azar).
+      const cache = CacheService.getScriptCache();
+      const claveFallos = 'canje:' + correo;
+      const fallos = Number(cache.get(claveFallos) || 0);
+      if (fallos >= 10) throw new Error('Demasiados intentos. Espera una hora y vuelve a probar.');
+      const codigo = normalCanje(d.codigo);
+      const h = hojaCodigos();
+      const n = h.getLastRow() - 1;
+      const datos = n > 0 ? h.getRange(2, 1, n, COL_CODIGOS.length).getValues() : [];
+      const i = datos.findIndex((r) => String(r[0]) === codigo);
+      if (i < 0) { cache.put(claveFallos, String(fallos + 1), 3600); throw new Error('Ese código no existe. Revisa que esté bien escrito (ej. PIANO-AB3K-7XQ2).'); }
+      const r = datos[i];
+      if (r[5] === 'Usado') throw new Error('Ese código ya fue usado' + (normal(r[6]) === correo ? ' en tu cuenta.' : ' en otra cuenta.'));
+      if (r[5] === 'Anulado') throw new Error('Ese código fue anulado. Escríbenos si crees que es un error.');
+      const meses = Number(r[2]) || DURACION_PASE_MESES;
+      const base = paseVigente(f) ? (venceDe(f) || new Date()) : new Date();
+      f.v[C['Vence el']] = sumarMeses(base, meses);
+      f.v[C['Pase completo']] = true;
+      f.v[C['Pagado el']] = new Date();
+      f.v[C['Avisó pago']] = '';
+      f.v[C['Nota (código Culqi)']] = textoCelda('Código ' + codigo + (r[1] ? ' · ' + r[1] : ''), 120);
+      escribir(f);
+      h.getRange(i + 2, 6, 1, 3).setValues([['Usado', correo, new Date()]]);
+      return { cuenta: perfil(f, d.token), meses };
+    });
+  },
+
+  // Panel: generar un lote de códigos
+  adminGenerarCodigos(d) {
+    exigirAdmin(d.token);
+    const cantidad = Math.max(1, Math.min(500, Math.floor(Number(d.cantidad) || 0)));
+    const meses = Math.max(1, Math.min(36, Math.floor(Number(d.meses) || DURACION_PASE_MESES)));
+    const lote = textoCelda(d.lote || 'Sin nombre', 60);
+    return conCandado(() => {
+      const h = hojaCodigos();
+      const n = h.getLastRow() - 1;
+      const usados = new Set(n > 0 ? h.getRange(2, 1, n, 1).getValues().map((r) => String(r[0])) : []);
+      const ahora = new Date();
+      const nuevos = [];
+      while (nuevos.length < cantidad) {
+        const c = nuevoCodigoCanje();
+        if (usados.has(c)) continue;
+        usados.add(c);
+        nuevos.push([c, lote, meses, ahora, textoCelda(d.nota || '', 120), 'Disponible', '', '']);
+      }
+      h.getRange(h.getLastRow() + 1, 1, nuevos.length, COL_CODIGOS.length).setValues(nuevos);
+      return { codigos: nuevos.map((r) => r[0]), lote, meses };
+    });
+  },
+
+  // Panel: resumen por lote y búsqueda de un código
+  adminCodigos(d) {
+    exigirAdmin(d.token);
+    const h = hojaCodigos();
+    const n = h.getLastRow() - 1;
+    const datos = n > 0 ? h.getRange(2, 1, n, COL_CODIGOS.length).getValues() : [];
+    const lotes = {};
+    for (const r of datos) {
+      if (!lotes[r[1]]) lotes[r[1]] = { lote: r[1], meses: r[2], creado: r[3], total: 0, usados: 0, anulados: 0, codigos: [] };
+      const l = lotes[r[1]];
+      l.total++;
+      if (r[5] === 'Usado') l.usados++;
+      if (r[5] === 'Anulado') l.anulados++;
+      l.codigos.push({ codigo: r[0], estado: r[5], usadoPor: r[6] || '', usadoEl: r[7] || null });
+    }
+    return { lotes: Object.values(lotes).reverse() };
+  },
+
+  adminAnularCodigo(d) {
+    exigirAdmin(d.token);
+    return conCandado(() => {
+      const h = hojaCodigos();
+      const n = h.getLastRow() - 1;
+      const datos = n > 0 ? h.getRange(2, 1, n, 1).getValues() : [];
+      const i = datos.findIndex((r) => String(r[0]) === normalCanje(d.codigo));
+      if (i < 0) throw new Error('No existe ese código.');
+      if (h.getRange(i + 2, 6).getValue() === 'Usado') throw new Error('Ese código ya fue usado: no se puede anular.');
+      h.getRange(i + 2, 6).setValue('Anulado');
+      return {};
+    });
+  },
+
   // Comisiones: marcar como pagado lo que se le debía a alguien (después de hacerle el Yape)
   adminMarcarPagado(d) {
     exigirAdmin(d.token);
@@ -438,6 +526,30 @@ const ACCIONES = {
     });
   },
 };
+
+// ---------- Códigos de activación ----------
+const COL_CODIGOS = ['Código', 'Lote', 'Meses', 'Creado el', 'Nota', 'Estado', 'Usado por', 'Usado el'];
+function hojaCodigos() {
+  const libro = SpreadsheetApp.getActiveSpreadsheet();
+  let h = libro.getSheetByName('Códigos');
+  if (!h) {
+    h = libro.insertSheet('Códigos');
+    h.getRange(1, 1, 1, COL_CODIGOS.length).setValues([COL_CODIGOS]).setFontWeight('bold').setBackground('#e0f2fe');
+    h.setFrozenRows(1);
+  }
+  return h;
+}
+// PIANO-XXXX-XXXX, sin letras que se confunden (I, O, 0, 1)
+function nuevoCodigoCanje() {
+  const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bloque = () => { let b = ''; for (let i = 0; i < 4; i++) b += letras[Math.floor(Math.random() * letras.length)]; return b; };
+  return 'PIANO-' + bloque() + '-' + bloque();
+}
+// Acepta el código con o sin guiones, en minúsculas o con espacios.
+function normalCanje(c) {
+  const x = String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^PIANO/, '');
+  return x.length === 8 ? 'PIANO-' + x.slice(0, 4) + '-' + x.slice(4) : 'PIANO-' + x;
+}
 
 // ---------- Invita y gana ----------
 const COL_REFERIDOS = ['Fecha', 'Código', 'Quién invitó', 'Amigo que pagó', 'Premio', 'Cantidad', 'Estado', 'Pagado el'];
