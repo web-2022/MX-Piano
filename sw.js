@@ -1,6 +1,6 @@
 // Service worker: guarda la app para que funcione sin internet.
 // Cambia VERSION cada vez que publiques cambios, para que el iPad descargue lo nuevo.
-const VERSION = 'pianito-v35';
+const VERSION = 'pianito-v36';
 const ARCHIVOS = [
   './',
   './index.html',

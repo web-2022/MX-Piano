@@ -354,6 +354,12 @@ function abrirPremium() {
     : dias !== null && dias > 0 ? `Tu pase vence el ${nube.fechaCorta(c.venceEl)}. Si renuevas ahora, se suma un año desde esa fecha.` : '';
   const pagar = $('#btn-pagar');
   if (N.culqiLink) pagar.href = N.culqiLink; else pagar.removeAttribute('href');
+  const hot = $('#btn-hotmart');
+  if (N.hotmartLink) {
+    // Llena el correo en el pago de Hotmart, así el código llega al mismo correo de la cuenta.
+    hot.href = N.hotmartLink + (c?.correo ? `?email=${encodeURIComponent(c.correo)}` : '');
+    hot.classList.remove('oculto');
+  } else hot.classList.add('oculto');
   const wa = $('#btn-whatsapp');
   if (N.whatsapp) {
     const texto = `Hola, pagué Pianito. Mi correo es ${c?.correo || ''}`;

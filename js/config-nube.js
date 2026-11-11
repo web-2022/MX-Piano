@@ -8,6 +8,8 @@ export const NUBE = {
 
   // Culqi → Links de pago: crea un link con el precio y pégalo aquí
   culqiLink: 'https://express.culqi.com/pago/B8E48C18BA',
+  // Hotmart (PayPal y tarjetas internacionales): el comprador recibe un código de activación por correo
+  hotmartLink: 'https://pay.hotmart.com/M108441925N',
   precio: 'S/ 49.90',       // texto que ve el papá en la ventana de pago
   whatsapp: '',             // tu número con código de país, sin + (ej. '51987654321'), para avisar el pago
 
