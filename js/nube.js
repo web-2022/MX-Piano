@@ -77,8 +77,8 @@ export async function avisarPago() {
   }
 }
 
-export async function registrar(correo, clave, nombre) {
-  const r = await llamar('registrar', { correo, clave, nombre });
+export async function registrar(correo, clave, nombre, ref) {
+  const r = await llamar('registrar', { correo, clave, nombre, ref });
   guardarLocal(r.cuenta);
   return { cuenta: r.cuenta };
 }
@@ -90,6 +90,19 @@ export async function entrar(correo, clave) {
 }
 
 // Envía un código de 6 números al correo.
+// Invita y gana: elegir premio y escribir el código de un amigo.
+export async function premioReferido(premio, yape) {
+  const r = await llamar('premioReferido', { token: cuentaLocal()?.token, premio, yape });
+  guardarLocal(r.cuenta);
+  return r.cuenta;
+}
+export async function aplicarCodigo(codigo) {
+  const r = await llamar('aplicarCodigo', { token: cuentaLocal()?.token, codigo });
+  guardarLocal(r.cuenta);
+  return r.cuenta;
+}
+export const enlaceInvitacion = (codigo) => `${location.origin}${location.pathname.replace(/[^/]*$/, '')}?ref=${encodeURIComponent(codigo)}`;
+
 export async function olvideClave(correo) {
   await llamar('olvide', { correo });
 }

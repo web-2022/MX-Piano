@@ -16,6 +16,9 @@ export const NUBE = {
 
   // Máximo de dispositivos a la vez por cuenta (debe coincidir con MAX_DISPOSITIVOS en google/Codigo.gs)
   dispositivos: 2,
+
+  // Invita y gana (deben coincidir con las constantes de google/Codigo.gs)
+  referidos: { mesesAmigo: 2, mesesInvita: 2, comision: 10, minimoPago: 30, topeMesesAnio: 12 },
 };
 
 // Datos del proveedor: aparecen en Términos, Privacidad y el Libro de Reclamaciones (obligatorios en Perú).

@@ -58,6 +58,7 @@ async function cargar() {
   try {
     const r = await llamar('adminListar', { token });
     perfiles = r.cuentas;
+    dibujarComisiones(r.comisiones || []);
     aviso($('#msg-panel'), '');
     dibujar();
     return true;
@@ -87,7 +88,7 @@ function dibujar() {
   $('#vacio').classList.toggle('oculto', lista.length > 0);
   $('#filas').innerHTML = lista.map((p) => `
     <tr data-correo="${escapar(p.correo)}">
-      <td class="correo">${escapar(p.correo)}${p.avisoPago ? `<br><span class="aviso-pago">🔔 Dice que pagó · ${fechaHora(p.avisoPago)}</span>` : ''}</td>
+      <td class="correo">${escapar(p.correo)}${p.invitadoPor ? `<br><span class="ref">🎁 llegó con ${escapar(p.invitadoPor)}</span>` : ''}${p.avisoPago ? `<br><span class="aviso-pago">🔔 Dice que pagó · ${fechaHora(p.avisoPago)}</span>` : ''}</td>
       <td>${escapar(p.nombre) || '<small>—</small>'}</td>
       <td><small>${fecha(p.creado)}</small></td>
       <td><span class="estado ${p.premium ? 'pago' : p.vencido ? 'vencido' : ''}">${p.premium ? '⭐ Pase completo' : p.vencido ? 'Vencido' : 'Gratis'}</span>
@@ -100,6 +101,32 @@ function dibujar() {
       </td>
     </tr>`).join('');
 }
+
+function dibujarComisiones(lista) {
+  $('#comisiones').classList.toggle('oculto', !lista.length);
+  $('#lista-comisiones').innerHTML = lista.map((c) => `
+    <div class="fila-comision" data-correo="${escapar(c.correo)}">
+      <span>${c.listo ? '✅' : '⏳'}</span><b>${escapar(c.correo)}</b>
+      <span class="monto">S/ ${c.monto}</span>
+      <span class="yape">Yape: ${escapar(c.yape || 'sin número')}</span>
+      <button class="suave pagar-comision">Marcar pagado</button>
+    </div>`).join('');
+}
+$('#lista-comisiones').addEventListener('click', async (ev) => {
+  if (!ev.target.matches('.pagar-comision')) return;
+  const fila = ev.target.closest('.fila-comision');
+  const correo = fila.dataset.correo;
+  if (!confirm(`¿Ya le pagaste por Yape a ${correo}? Se marcará como pagado.`)) return;
+  ev.target.disabled = true;
+  try {
+    const r = await llamar('adminMarcarPagado', { token, correo });
+    await cargar();
+    aviso($('#msg-panel'), `Pagado ✔ S/ ${r.pagado} a ${correo}`, true);
+  } catch (e) {
+    aviso($('#msg-panel'), 'No se pudo marcar: ' + e.message);
+    ev.target.disabled = false;
+  }
+});
 
 async function cambiar(correo, cambios, boton, redibujar = true) {
   boton.disabled = true;

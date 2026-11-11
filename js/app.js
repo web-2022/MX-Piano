@@ -114,8 +114,16 @@ function sonar(fn, ...args) {
 // ================= Inicio =================
 // Con cuentas activadas, primero el registro. Después, la primera vez se pregunta la edad;
 // luego el botón "¡A tocar!" va directo.
+// Invita y gana: si llegó con un enlace ?ref=CODIGO, se guarda para usarlo al registrarse.
+const REF_URL = new URLSearchParams(location.search).get('ref');
+try { if (REF_URL) localStorage.setItem('pianito-ref', REF_URL.trim().toUpperCase().slice(0, 20)); } catch { /* */ }
+const refPendiente = () => { try { return localStorage.getItem('pianito-ref') || ''; } catch { return ''; } };
+
 function pasoInicio() {
   const pideCuenta = nube.configurada() && !nube.cuentaLocal();
+  const ref = refPendiente();
+  $('#cuenta-ref').classList.toggle('oculto', !pideCuenta || !ref);
+  $('#cuenta-ref-codigo').textContent = ref;
   $('#form-cuenta').classList.toggle('oculto', !pideCuenta);
   $('#btn-empezar').classList.toggle('oculto', pideCuenta || !estado.ajustes.modo);
   $('#eleccion-edad').classList.toggle('oculto', pideCuenta || !!estado.ajustes.modo);
@@ -153,7 +161,8 @@ $('#form-cuenta').addEventListener('submit', async (ev) => {
   avisoInicio('Un momento…', true);
   try {
     if (modoCuenta === 'registro') {
-      await nube.registrar(correo, clave, nombre);
+      await nube.registrar(correo, clave, nombre, refPendiente());
+      try { localStorage.removeItem('pianito-ref'); } catch { /* */ }
     } else {
       await nube.entrar(correo, clave);
     }
@@ -209,6 +218,85 @@ $('#btn-guardar-clave').addEventListener('click', async () => {
   } catch (e) { msg.textContent = e.message; }
 });
 
+// ---- Invita y gana ----
+const R = () => nube.NUBE.referidos || { mesesAmigo: 2, mesesInvita: 2, comision: 10, minimoPago: 30, topeMesesAnio: 12 };
+
+// En la ventana de pago: código de un amigo (solo antes del primer pago).
+function mostrarCodigoEnPago(c) {
+  const caja = $('#premium-codigo');
+  const yaPago = !!(c?.premium || c?.venceEl);
+  caja.classList.toggle('oculto', !c || (!c.invitadoPor && yaPago));
+  $('#premium-codigo-msg').textContent = '';
+  const ok = $('#premium-codigo-ok');
+  ok.classList.toggle('oculto', !c?.invitadoPor);
+  $('#premium-codigo-form').classList.toggle('oculto', !!c?.invitadoPor);
+  if (c?.invitadoPor) ok.textContent = `🎁 Código ${c.invitadoPor} aplicado: al activar tu pase recibes ${R().mesesAmigo} meses extra (${12 + R().mesesAmigo} meses en total).`;
+}
+$('#btn-aplicar-codigo').addEventListener('click', async () => {
+  const msg = $('#premium-codigo-msg');
+  const codigo = $('#premium-codigo-input').value.trim();
+  if (!codigo) { msg.textContent = 'Escribe el código que te pasó tu amigo.'; return; }
+  msg.textContent = 'Revisando…';
+  try {
+    const c = await nube.aplicarCodigo(codigo);
+    mostrarCodigoEnPago(c);
+  } catch (e) { msg.textContent = e.message; }
+});
+
+function abrirInvita() {
+  const c = nube.cuentaLocal();
+  if (!c) return;
+  pintarInvita(c);
+  $('#inv-mensaje').textContent = '';
+  $('#dialogo-invita').showModal();
+  // Los números (amigos, meses, soles) se actualizan en segundo plano.
+  nube.actualizarPerfil().then((x) => { if (x) pintarInvita(x); }).catch(() => {});
+}
+function pintarInvita(c) {
+  const r = c.referidos || { amigos: 0, meses: 0, porCobrar: 0, cobrado: 0 };
+  $('#inv-codigo').textContent = c.codigo || '…';
+  const enlace = c.codigo ? nube.enlaceInvitacion(c.codigo) : nube.enlaceInvitacion('');
+  const texto = `Mi hijo está aprendiendo piano con Pianito 🐸🎹, una app que escucha el piano y le enseña jugando. ` +
+    `Pruébala gratis y, si compras el pase con mi código ${c.codigo}, te regalan ${R().mesesAmigo} meses extra: ${enlace}`;
+  $('#btn-inv-whatsapp').href = `https://wa.me/?text=${encodeURIComponent(texto)}`;
+  const partes = [`👪 ${r.amigos} ${r.amigos === 1 ? 'amigo se unió' : 'amigos se unieron'} con tu código`];
+  if (r.meses) partes.push(`🎁 ganaste ${r.meses} meses`);
+  if (r.porCobrar) partes.push(`💵 S/ ${r.porCobrar} por cobrar` + (r.porCobrar < R().minimoPago ? ` (pagamos desde S/ ${R().minimoPago})` : ' (te pagamos a fin de mes)'));
+  if (r.cobrado) partes.push(`✔ S/ ${r.cobrado} cobrados`);
+  $('#inv-stats').textContent = partes.join(' · ');
+  const premio = c.premioReferido === 'dinero' ? 'dinero' : 'meses';
+  document.querySelectorAll('[name="inv-premio"]').forEach((x) => { x.checked = x.value === premio; });
+  $('#inv-yape-fila').classList.toggle('oculto', premio !== 'dinero');
+  $('#inv-yape').placeholder = c.yape ? `Guardado: ${c.yape}` : '9XXXXXXXX';
+}
+document.querySelectorAll('[name="inv-premio"]').forEach((x) => x.addEventListener('change', () => {
+  $('#inv-yape-fila').classList.toggle('oculto', x.value !== 'dinero' || !x.checked);
+}));
+$('#btn-inv-guardar').addEventListener('click', async () => {
+  const msg = $('#inv-mensaje');
+  const premio = document.querySelector('[name="inv-premio"]:checked')?.value || 'meses';
+  let yape = $('#inv-yape').value.trim();
+  const c = nube.cuentaLocal();
+  if (premio === 'dinero' && !yape && c?.yape && c.premioReferido === 'dinero') { msg.textContent = 'Ya está guardado.'; return; }
+  msg.classList.remove('bien');
+  msg.textContent = 'Guardando…';
+  try {
+    const x = await nube.premioReferido(premio, yape);
+    pintarInvita(x);
+    $('#inv-yape').value = '';
+    msg.classList.add('bien');
+    msg.textContent = premio === 'dinero' ? '✔ Listo: recibirás S/ 10 por Yape por cada amigo.' : '✔ Listo: recibirás meses gratis por cada amigo.';
+  } catch (e) { msg.textContent = e.message; }
+});
+$('#btn-inv-copiar').addEventListener('click', async () => {
+  const codigo = nube.cuentaLocal()?.codigo;
+  if (!codigo) return;
+  try { await navigator.clipboard.writeText(codigo); $('#btn-inv-copiar').textContent = '✔ Copiado'; } catch { /* */ }
+  setTimeout(() => { $('#btn-inv-copiar').textContent = 'Copiar'; }, 1500);
+});
+$('#btn-invita-ajustes').addEventListener('click', () => { $('#dialogo-ajustes').close(); abrirInvita(); });
+$('#btn-invita-resultado').addEventListener('click', abrirInvita);
+
 // La cuenta se abrió en otros dispositivos (máximo 2) o se cambió la contraseña: volver a entrar.
 function sesionCerrada(correo) {
   document.querySelectorAll('dialog[open]').forEach((d) => d.close());
@@ -244,6 +332,7 @@ function abrirPremium() {
     wa.classList.add('oculto');
   }
   $('#premium-mensaje').textContent = '';
+  mostrarCodigoEnPago(c);
   $('#dialogo-premium').showModal();
 }
 $('#btn-ya-pague').addEventListener('click', async () => {
@@ -297,6 +386,7 @@ function mostrarCuentaEnAjustes() {
   boton.textContent = vigente ? '⭐ Renovar un año' : c.venceEl ? '⭐ Renovar el pase' : '⭐ Desbloquear todo';
   // Se muestra si no tiene pase, si venció o si le queda un mes o menos.
   boton.classList.toggle('oculto', vigente && (dias === null || dias > 30));
+  $('#btn-invita-ajustes').classList.toggle('oculto', !c.codigo);
 }
 mostrarCuentaEnAjustes();
 $('#btn-desbloquear-cuenta').addEventListener('click', () => { $('#dialogo-ajustes').close(); abrirPremium(); });
@@ -1258,6 +1348,8 @@ function terminarLeccion(opciones = {}) {
     .join('');
   $('#btn-orquesta').classList.toggle('oculto', !tieneMelodia(j.leccion));
   $('#btn-orquesta').textContent = '🎻 Escuchar mi canción con orquesta';
+  // Invita y gana: a veces, tras una clase perfecta (cuando la familia está contenta).
+  $('#btn-invita-resultado').classList.toggle('oculto', !(estrellas === 3 && nube.cuentaLocal()?.codigo && Math.random() < 0.35));
   mostrar('pantalla-resultado');
   if (estrellas > 0) confeti();
   sonar(sonidoFinal);

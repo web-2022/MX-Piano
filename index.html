@@ -58,6 +58,7 @@
           <button type="button" class="cuenta-pestana" data-cuenta="entrar">Ya tengo cuenta</button>
         </div>
         <p class="cuenta-nota">Para el papá o la mamá · Las 3 primeras clases y los juegos son gratis</p>
+        <p id="cuenta-ref" class="cuenta-ref oculto">🎁 Te invitó <b id="cuenta-ref-codigo"></b>: si compras el pase recibes 2 meses extra.</p>
         <label class="campo-cuenta campo-nombre">Nombre del niño o niña
           <input id="cuenta-nombre" type="text" autocomplete="off" maxlength="40" placeholder="Ej. Sofía">
         </label>
@@ -168,6 +169,7 @@
         <button id="btn-mapa" class="boton-grande">Seguir ➜</button>
       </div>
       <button id="btn-orquesta" class="boton-orquesta oculto">🎻 Escuchar mi canción con orquesta</button>
+      <button id="btn-invita-resultado" class="boton-orquesta boton-invita oculto">🎁 ¿Les gusta Pianito? Invita a un amigo y gana</button>
     </div>
   </section>
 
@@ -197,6 +199,7 @@
         <p><strong>Cuenta:</strong> <span id="aj-cuenta-correo"></span><br><span id="aj-cuenta-plan"></span></p>
         <div class="aj-cuenta-botones">
           <button type="button" id="btn-desbloquear-cuenta" class="boton-secundario">⭐ Desbloquear todo</button>
+          <button type="button" id="btn-invita-ajustes" class="boton-secundario">🎁 Invita y gana</button>
           <button type="button" id="btn-salir-cuenta" class="boton-secundario">Cerrar sesión</button>
         </div>
       </div>
@@ -274,6 +277,14 @@
       <p class="premium-texto">Las 3 primeras clases y los juegos son gratis. Con el pase completo de un año se abren las <strong>164 clases de los 35 niveles</strong>: canciones, ritmo, acordes, pedal, lectura de partituras y baladas románticas, hasta nivel experto.</p>
       <p class="premium-precio"><span id="premium-precio"></span><small>por un año · pago único, sin cobros automáticos</small></p>
       <a id="btn-pagar" class="boton-grande boton-pagar" target="_blank" rel="noopener">Pagar con tarjeta, Yape o Plin 💳</a>
+      <div id="premium-codigo" class="premium-codigo oculto">
+        <p id="premium-codigo-ok" class="premium-codigo-ok oculto"></p>
+        <div id="premium-codigo-form" class="premium-codigo-form">
+          <input id="premium-codigo-input" type="text" autocomplete="off" autocapitalize="characters" maxlength="20" placeholder="¿Te invitó alguien? Código">
+          <button type="button" id="btn-aplicar-codigo" class="boton-secundario">Aplicar</button>
+        </div>
+        <p id="premium-codigo-msg" class="premium-codigo-msg"></p>
+      </div>
       <ol class="premium-pasos">
         <li>Paga con el correo de tu cuenta: <strong id="premium-correo"></strong></li>
         <li id="premium-paso-aviso">Activamos tu cuenta apenas nos llega el pago (normalmente el mismo día).</li>
@@ -289,6 +300,29 @@
         <button type="button" id="btn-ya-pague" class="boton-secundario">✅ Ya pagué</button>
         <button value="cerrar" class="boton-secundario">Ahora no</button>
       </div>
+    </form>
+  </dialog>
+
+  <!-- Invita y gana -->
+  <dialog id="dialogo-invita" class="dialogo dialogo-invita">
+    <form method="dialog">
+      <h2>🎁 Invita y gana</h2>
+      <p class="premium-texto">Comparte tu código. Cuando un amigo compra el pase con él, <b>recibe 2 meses extra</b> y tú ganas tu premio.</p>
+      <div class="inv-codigo"><span id="inv-codigo">—</span><button type="button" id="btn-inv-copiar" class="boton-secundario">Copiar</button></div>
+      <a id="btn-inv-whatsapp" class="boton-grande boton-pagar" target="_blank" rel="noopener">Compartir por WhatsApp 💬</a>
+      <p id="inv-stats" class="inv-stats"></p>
+      <fieldset class="inv-premio">
+        <legend>Tu premio por cada amigo que paga</legend>
+        <label><input type="radio" name="inv-premio" value="meses"> <span>🎁 <b>2 meses gratis</b> de pase completo (hasta 12 al año)</span></label>
+        <label><input type="radio" name="inv-premio" value="dinero"> <span>💵 <b>S/ 10 por Yape</b> (pagamos a fin de mes cuando juntas S/ 30)</span></label>
+        <label id="inv-yape-fila" class="campo-cuenta oculto">Tu número de Yape
+          <input id="inv-yape" type="tel" inputmode="numeric" maxlength="9" placeholder="9XXXXXXXX">
+        </label>
+        <button type="button" id="btn-inv-guardar" class="boton-secundario">Guardar</button>
+        <p id="inv-mensaje" class="mensaje-inicio" role="status"></p>
+      </fieldset>
+      <p class="cuenta-legal">Solo cuenta cuando tu amigo paga su primer pase. No vale usar tu propio código. Ver <a href="terminos.html#invita" target="_blank">reglas</a>.</p>
+      <button value="cerrar" class="boton-secundario">Cerrar</button>
     </form>
   </dialog>
 

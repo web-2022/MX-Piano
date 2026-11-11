@@ -22,8 +22,17 @@ const COLUMNAS = [
   'hash', 'sal', 'tokens', 'intentos', 'bloqueo_hasta', 'codigo', 'codigo_vence',
   // Agregadas después (van al final para no mover los datos que ya existen):
   'Vence el', 'Avisó pago', 'Recordatorio',
+  // Programa "Invita y gana":
+  'Código propio', 'Invitado por', 'Premio', 'Yape', 'Referido procesado',
 ];
-const AGREGADAS = ['Vence el', 'Avisó pago', 'Recordatorio'];
+const AGREGADAS = ['Vence el', 'Avisó pago', 'Recordatorio', 'Código propio', 'Invitado por', 'Premio', 'Yape', 'Referido procesado'];
+
+// ---- Invita y gana (deben coincidir con "referidos" en js/config-nube.js) ----
+const MESES_AMIGO = 2;          // meses extra para quien compra con un código
+const MESES_INVITA = 2;         // meses gratis para quien invitó (premio "meses")
+const COMISION = 10;            // soles para quien invitó (premio "dinero")
+const MINIMO_PAGO = 30;         // se paga por Yape cuando junta al menos esto
+const TOPE_MESES_ANIO = 12;     // máximo de meses gratis ganados en 12 meses
 const DURACION_PASE_MESES = 12;
 const C = Object.fromEntries(COLUMNAS.map((n, i) => [n, i]));
 const VUELTAS = 300;            // vueltas del cifrado de la contraseña
@@ -129,6 +138,7 @@ function sumarUnAnio(f) {
 
 function perfil(f, token) {
   return {
+    ...datosReferidos(f),
     correo: f.v[C['Correo']],
     nombre: f.v[C['Nombre del niño']] || '',
     premium: paseVigente(f),
@@ -149,6 +159,7 @@ function abrirSesion(f) {
   f.v[C.intentos] = 0;
   f.v[C.bloqueo_hasta] = '';
   f.v[C['Último ingreso']] = new Date();
+  asegurarCodigo(f);
   escribir(f);
   return token;
 }
@@ -184,6 +195,9 @@ const ACCIONES = {
       v[C.sal] = sal;
       v[C.hash] = cifrar(d.clave, sal);
       v[C.intentos] = 0;
+      // Llegó con el código de alguien (enlace ?ref= o escrito a mano)
+      const ref = normalCodigo(d.ref);
+      if (ref && buscarPorCodigo(ref)) v[C['Invitado por']] = ref;
       const h = hoja();
       h.appendRow(v);
       const fila = h.getLastRow();
@@ -215,7 +229,43 @@ const ACCIONES = {
   perfil(d) {
     const f = buscarPorToken(d.token);
     if (!f) return { cuenta: null };
+    if (!f.v[C['Código propio']]) conCandado(() => { asegurarCodigo(f); escribir(f); }); // cuentas antiguas
     return { cuenta: perfil(f, d.token) };
+  },
+
+  // Invita y gana: elegir premio (meses gratis o S/ por Yape)
+  premioReferido(d) {
+    return conCandado(() => {
+      const f = buscarPorToken(d.token);
+      if (!f) throw new Error('Vuelve a entrar a tu cuenta.');
+      if (d.premio === 'dinero') {
+        const yape = String(d.yape || '').replace(/\D/g, '');
+        if (!/^9\d{8}$/.test(yape)) throw new Error('Escribe tu número de Yape (9 dígitos, empieza con 9).');
+        f.v[C['Premio']] = 'dinero';
+        f.v[C['Yape']] = "'" + yape; // como texto, para que la hoja no lo cambie
+      } else {
+        f.v[C['Premio']] = 'meses';
+      }
+      escribir(f);
+      return { cuenta: perfil(f, d.token) };
+    });
+  },
+
+  // Escribir el código de un amigo antes del primer pago
+  aplicarCodigo(d) {
+    return conCandado(() => {
+      const f = buscarPorToken(d.token);
+      if (!f) throw new Error('Vuelve a entrar a tu cuenta.');
+      const codigo = normalCodigo(d.codigo);
+      if (f.v[C['Invitado por']]) throw new Error('Ya tienes un código de invitación aplicado.');
+      if (f.v[C['Pagado el']] || f.v[C['Referido procesado']]) throw new Error('El código solo se puede usar antes del primer pago.');
+      const inv = buscarPorCodigo(codigo);
+      if (!inv) throw new Error('Ese código no existe. Revisa que esté bien escrito.');
+      if (inv.fila === f.fila) throw new Error('No puedes usar tu propio código.');
+      f.v[C['Invitado por']] = codigo;
+      escribir(f);
+      return { cuenta: perfil(f, d.token) };
+    });
   },
 
   salir(d) {
@@ -337,7 +387,10 @@ const ACCIONES = {
         pagadoEn: f.v[C['Pagado el']] || null,
         avisoPago: f.v[C['Avisó pago']] || null,
         creado: f.v[C['Registrado el']] || null,
+        codigo: f.v[C['Código propio']] || '',
+        invitadoPor: f.v[C['Invitado por']] || '',
       })).reverse(),
+      comisiones: comisionesPendientes(),
     };
   },
 
@@ -354,6 +407,7 @@ const ACCIONES = {
           f.v[C['Pase completo']] = true;
           f.v[C['Pagado el']] = new Date();
           f.v[C['Avisó pago']] = ''; // ya se atendió el aviso
+          procesarReferido(f, true);  // primer pago con código: premios para los dos
         } else {
           f.v[C['Pase completo']] = false;
           f.v[C['Pagado el']] = '';
@@ -364,7 +418,148 @@ const ACCIONES = {
       return { venceEl: venceDe(f) ? venceDe(f).toISOString() : null };
     });
   },
+
+  // Comisiones: marcar como pagado lo que se le debía a alguien (después de hacerle el Yape)
+  adminMarcarPagado(d) {
+    exigirAdmin(d.token);
+    return conCandado(() => {
+      const h = hojaReferidos();
+      const n = h.getLastRow() - 1;
+      if (n < 1) return { pagado: 0 };
+      const datos = h.getRange(2, 1, n, COL_REFERIDOS.length).getValues();
+      let total = 0;
+      datos.forEach((r, i) => {
+        if (normal(r[2]) === normal(d.correo) && r[4] === 'dinero' && r[6] === 'Pendiente') {
+          total += Number(r[5]) || 0;
+          h.getRange(i + 2, 7, 1, 2).setValues([['Pagado', new Date()]]);
+        }
+      });
+      return { pagado: total };
+    });
+  },
 };
+
+// ---------- Invita y gana ----------
+const COL_REFERIDOS = ['Fecha', 'Código', 'Quién invitó', 'Amigo que pagó', 'Premio', 'Cantidad', 'Estado', 'Pagado el'];
+function hojaReferidos() {
+  const libro = SpreadsheetApp.getActiveSpreadsheet();
+  let h = libro.getSheetByName('Referidos');
+  if (!h) {
+    h = libro.insertSheet('Referidos');
+    h.getRange(1, 1, 1, COL_REFERIDOS.length).setValues([COL_REFERIDOS]).setFontWeight('bold').setBackground('#dcfce7');
+    h.setFrozenRows(1);
+  }
+  return h;
+}
+function filasReferidos() {
+  const h = hojaReferidos();
+  const n = h.getLastRow() - 1;
+  return n < 1 ? [] : h.getRange(2, 1, n, COL_REFERIDOS.length).getValues();
+}
+const normalCodigo = (c) => String(c || '').trim().toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 20);
+function buscarPorCodigo(codigo) {
+  const c = normalCodigo(codigo);
+  if (!c) return null;
+  return filas().find((f) => String(f.v[C['Código propio']]) === c) || null;
+}
+// Código propio: hasta 5 letras del nombre (o del correo) + 3 caracteres al azar. Ej.: SOFIA-7K2
+function asegurarCodigo(f) {
+  if (f.v[C['Código propio']]) return;
+  const base = (String(f.v[C['Nombre del niño']] || '') || String(f.v[C['Correo']]).split('@')[0])
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 5) || 'PIANO';
+  const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const usados = new Set(filas().map((x) => String(x.v[C['Código propio']])));
+  let codigo;
+  do {
+    let azar = '';
+    for (let i = 0; i < 3; i++) azar += letras[Math.floor(Math.random() * letras.length)];
+    codigo = base + '-' + azar;
+  } while (usados.has(codigo));
+  f.v[C['Código propio']] = codigo;
+}
+function sumarMeses(fecha, meses) {
+  const d = new Date(fecha);
+  d.setMonth(d.getMonth() + meses);
+  return d;
+}
+// Lo que ve cada familia en su tarjeta "Invita y gana"
+function datosReferidos(f) {
+  const correo = normal(f.v[C['Correo']]);
+  const mios = filasReferidos().filter((r) => normal(r[2]) === correo);
+  const suma = (fn) => mios.filter(fn).reduce((t, r) => t + (Number(r[5]) || 0), 0);
+  const yape = String(f.v[C['Yape']] || '').replace(/\D/g, '');
+  return {
+    codigo: f.v[C['Código propio']] || '',
+    invitadoPor: f.v[C['Invitado por']] || '',
+    premioReferido: f.v[C['Premio']] === 'dinero' ? 'dinero' : 'meses',
+    yape: yape ? yape.slice(0, 3) + '•••' + yape.slice(-2) : '',
+    referidos: {
+      amigos: mios.length,
+      meses: suma((r) => r[4] === 'meses'),
+      porCobrar: suma((r) => r[4] === 'dinero' && r[6] === 'Pendiente'),
+      cobrado: suma((r) => r[4] === 'dinero' && r[6] === 'Pagado'),
+    },
+  };
+}
+// Al activar el PRIMER pago de una cuenta que llegó con código: +2 meses al amigo y premio para quien invitó.
+function procesarReferido(f, conCorreo) {
+  if (f.v[C['Referido procesado']] || !f.v[C['Invitado por']]) return;
+  f.v[C['Referido procesado']] = new Date();
+  const inv = buscarPorCodigo(f.v[C['Invitado por']]);
+  if (!inv || inv.fila === f.fila) return;
+  // 1. El amigo: meses extra sobre su pase
+  f.v[C['Vence el']] = sumarMeses(venceDe(f) || new Date(), MESES_AMIGO);
+  // 2. Quien invitó
+  const log = hojaReferidos();
+  const ahora = new Date();
+  let premio, cantidad, estado, mensaje;
+  if (inv.v[C['Premio']] === 'dinero') {
+    premio = 'dinero'; cantidad = COMISION; estado = 'Pendiente';
+    const yaTiene = datosReferidos(inv).referidos.porCobrar + COMISION;
+    mensaje = 'Ganaste S/ ' + COMISION + '. Llevas S/ ' + yaTiene + ' por cobrar' +
+      (yaTiene >= MINIMO_PAGO ? '; te lo enviaremos por Yape a fin de mes.' : ' (pagamos por Yape desde S/ ' + MINIMO_PAGO + ').');
+  } else {
+    premio = 'meses';
+    const hace1anio = sumarMeses(ahora, -12);
+    const ganados = filasReferidos().filter((r) => normal(r[2]) === normal(inv.v[C['Correo']]) && r[4] === 'meses' && new Date(r[0]) > hace1anio)
+      .reduce((t, r) => t + (Number(r[5]) || 0), 0);
+    if (ganados + MESES_INVITA <= TOPE_MESES_ANIO) {
+      cantidad = MESES_INVITA; estado = 'Aplicado';
+      const base = paseVigente(inv) ? (venceDe(inv) || ahora) : ahora;
+      inv.v[C['Vence el']] = sumarMeses(base, MESES_INVITA);
+      inv.v[C['Pase completo']] = true;
+      escribir(inv);
+      mensaje = 'Ganaste ' + MESES_INVITA + ' meses gratis de pase completo. Ahora tu pase vence el ' +
+        Utilities.formatDate(venceDe(inv), 'America/Lima', 'dd/MM/yyyy') + '.';
+    } else {
+      cantidad = 0; estado = 'Tope anual';
+      mensaje = 'Ya alcanzaste el máximo de ' + TOPE_MESES_ANIO + ' meses gratis este año. ¡Gracias por recomendarnos!';
+    }
+  }
+  log.appendRow([ahora, f.v[C['Invitado por']], inv.v[C['Correo']], f.v[C['Correo']], premio, cantidad, estado, '']);
+  if (!conCorreo) return;
+  try {
+    MailApp.sendEmail({
+      to: inv.v[C['Correo']],
+      subject: '🎉 Pianito: tu amigo se unió con tu código',
+      body: 'Hola,\n\nUna familia compró el pase completo de Pianito con tu código ' + f.v[C['Invitado por']] + '.\n' + mensaje +
+        '\n\nSigue compartiendo tu código desde la app (Ajustes ⚙️ → Invita y gana): ' + LINK_APP + '\n\n🐸 Pianito',
+    });
+  } catch (e) { /* sin cupo de correos */ }
+}
+// Lo que se debe por Yape (para el Panel)
+function comisionesPendientes() {
+  const porCorreo = {};
+  for (const r of filasReferidos()) {
+    if (r[4] !== 'dinero' || r[6] !== 'Pendiente') continue;
+    const c = normal(r[2]);
+    porCorreo[c] = (porCorreo[c] || 0) + (Number(r[5]) || 0);
+  }
+  return Object.keys(porCorreo).map((correo) => {
+    const f = buscarPorCorreo(correo);
+    return { correo, monto: porCorreo[correo], yape: f ? String(f.v[C['Yape']] || '').replace(/\D/g, '') : '', listo: porCorreo[correo] >= MINIMO_PAGO };
+  }).sort((a, b) => b.monto - a.monto);
+}
 
 function diasRestantes(f) {
   const v = venceDe(f);
@@ -477,6 +672,11 @@ function onEdit(e) {
     pagado.setValue(new Date());
     vence.setValue(v);
     h.getRange(fila, C['Avisó pago'] + 1).setValue('');
+    // Si llegó con código y es su primer pago, se aplican los premios (sin correo: la hoja no puede enviarlos).
+    try {
+      const f = filas().find((x) => x.fila === fila);
+      if (f && f.v[C['Invitado por']] && !f.v[C['Referido procesado']]) { procesarReferido(f, false); escribir(f); }
+    } catch (err) { /* nada */ }
   } else {
     pagado.setValue('');
     vence.setValue('');

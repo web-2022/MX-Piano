@@ -46,6 +46,15 @@
     .estado.vencido { background: #fef3c7; color: #b45309; }
     .aviso-pago { display: inline-block; margin-top: 4px; font-size: .8rem; font-weight: 800; color: #b45309; background: #fef3c7; border-radius: 999px; padding: .15em .6em; }
     .aviso-pagos:empty { display: none; }
+    .comisiones { margin-bottom: 14px; }
+    .comisiones h2 { margin: 0 0 4px; font-size: 1.1rem; }
+    .nota-comisiones { margin: 0 0 10px; color: var(--suave); font-size: .9rem; }
+    .fila-comision { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--linea); }
+    .fila-comision b { min-width: 14em; overflow-wrap: anywhere; }
+    .fila-comision .monto { font-weight: 900; font-size: 1.1rem; }
+    .fila-comision .yape { color: var(--suave); }
+    .fila-comision button { margin-left: auto; }
+    .ref { display: inline-block; margin-top: 4px; font-size: .78rem; font-weight: 700; color: #166534; background: #dcfce7; border-radius: 999px; padding: .1em .55em; }
     .aviso-pagos { margin: 0 0 8px; font-weight: 800; color: #b45309; background: #fef3c7; border-radius: 12px; padding: 8px 12px; }
     .nota { width: 100%; font-size: .9rem; padding: .4em .6em; }
     .acciones { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -92,6 +101,11 @@
         <div class="cifra"><b id="n-total">0</b><span>cuentas</span></div>
         <div class="cifra"><b id="n-pago">0</b><span>con pase vigente</span></div>
         <div class="cifra"><b id="n-gratis">0</b><span>gratis</span></div>
+      </div>
+      <div id="comisiones" class="caja comisiones oculto">
+        <h2>💵 Comisiones por pagar (Invita y gana)</h2>
+        <p class="nota-comisiones">Págalas por Yape a fin de mes y pulsa "Marcar pagado". Las marcadas ✅ ya juntaron el mínimo.</p>
+        <div id="lista-comisiones"></div>
       </div>
       <div class="caja">
         <div class="filtros">

@@ -321,6 +321,17 @@ Al entrar en un tercero, el más antiguo se desconecta y, al abrir la app, ve un
 - Por correo (desde tu Gmail): 15 días antes y el día que vence, con el link de pago. Lo hace el programa de Google
   una vez al día, con la primera visita del día. Columna "Recordatorio" en la hoja para no repetir.
 
+### Invita y gana
+Cada cuenta tiene un código propio (Ajustes ⚙️ → 🎁 Invita y gana, y a veces al terminar una clase con 3 estrellas).
+- Se comparte por WhatsApp con un enlace `?ref=CÓDIGO`: quien se registra desde ese enlace queda "invitado". También se puede
+  escribir el código en la ventana de pago, antes del primer pago.
+- Al **activar el primer pase** de un invitado (botón "Activar 1 año" del Panel o casilla de la hoja), el programa de Google:
+  le suma **2 meses** al invitado y le da a quien invitó **2 meses gratis** (tope 12 al año) **o S/ 10** si eligió dinero.
+- Todo queda en la pestaña **"Referidos"** de la hoja. En el Panel aparece "💵 Comisiones por pagar": pagas por Yape
+  (desde S/ 30) y pulsas "Marcar pagado".
+- Los números están en `google/Codigo.gs` (MESES_AMIGO, MESES_INVITA, COMISION, MINIMO_PAGO, TOPE_MESES_ANIO) y en
+  `js/config-nube.js` → `referidos` (textos de la app).
+
 ### Páginas legales (Perú)
 `terminos.html`, `privacidad.html` y `reclamaciones.html` (Libro de Reclamaciones virtual). Completa los datos del proveedor
 en `js/config-nube.js` → `EMPRESA` (razón social, RUC, domicilio, correo). Los reclamos se guardan en la pestaña
