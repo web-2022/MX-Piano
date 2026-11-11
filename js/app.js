@@ -183,11 +183,14 @@ $('#btn-olvide').addEventListener('click', async () => {
 });
 
 if (nube.configurada()) {
+  const habiaSesion = !!nube.cuentaLocal()?.token;
   // Al abrir la app con internet se revisa si ya pagó (el permiso se da desde el panel).
-  nube.actualizarPerfil().then(() => {
+  const correoAntes = nube.cuentaLocal()?.correo || '';
+  nube.actualizarPerfil().then((c) => {
     mostrarCuentaEnAjustes();
     pasoInicio();
-    if ($('#pantalla-mapa').classList.contains('activa')) dibujarMapa();
+    if (habiaSesion && !c) sesionCerrada(correoAntes);
+    else if ($('#pantalla-mapa').classList.contains('activa')) dibujarMapa();
   }).catch(() => {});
 }
 $('#btn-guardar-clave').addEventListener('click', async () => {
@@ -205,6 +208,16 @@ $('#btn-guardar-clave').addEventListener('click', async () => {
     mostrarCuentaEnAjustes();
   } catch (e) { msg.textContent = e.message; }
 });
+
+// La cuenta se abrió en otros dispositivos (máximo 2) o se cambió la contraseña: volver a entrar.
+function sesionCerrada(correo) {
+  document.querySelectorAll('dialog[open]').forEach((d) => d.close());
+  mostrar('pantalla-inicio');
+  pasoInicio();
+  elegirModoCuenta('entrar');
+  $('#cuenta-correo').value = correo;
+  avisoInicio(`Se cerró la sesión en este dispositivo: la cuenta se abrió en otros ${nube.NUBE.dispositivos} (o se cambió la contraseña). Una cuenta funciona en ${nube.NUBE.dispositivos} dispositivos a la vez. Vuelve a entrar para usarla aquí.`);
+}
 
 // ---- Desbloquear (pago con Culqi; la cuenta se activa desde el panel de administrador) ----
 function abrirPremium() {
@@ -343,6 +356,16 @@ async function arrancar() {
 
 document.addEventListener('visibilitychange', async () => {
   if (document.hidden) return;
+  // Al volver a la app: ¿sigue abierta la sesión (máx. 2 dispositivos) y el pase al día?
+  if (nube.configurada() && nube.cuentaLocal()?.token) {
+    const correo = nube.cuentaLocal().correo;
+    nube.actualizarPerfil().then((c) => {
+      mostrarCuentaEnAjustes();
+      // (si está en medio de una clase, no se interrumpe: se pedirá entrar la próxima vez)
+      if (!c && !$('#pantalla-juego')?.classList.contains('activa')) sesionCerrada(correo);
+      else if (c && $('#pantalla-mapa').classList.contains('activa')) dibujarMapa();
+    }).catch(() => {});
+  }
   if (estado.ctx?.state === 'suspended') estado.ctx.resume();
   // En iPad, al volver a la app el micrófono puede haberse cortado: se vuelve a abrir.
   if (estado.micListo && estado.detector.necesitaReiniciar()) {
@@ -376,6 +399,15 @@ function botonParada(leccion, { bloqueada, siguiente, est }) {
 function dibujarMapa() {
   const mapa = $('#mapa');
   mapa.innerHTML = '';
+  // Aviso cuando al pase le quedan 15 días o menos.
+  const dias = nube.diasDePase(nube.cuentaLocal());
+  if (dias !== null && dias > 0 && dias <= 15) {
+    const aviso = document.createElement('button');
+    aviso.className = 'aviso-vence';
+    aviso.innerHTML = `⏰ Tu pase completo vence en <b>${dias} ${dias === 1 ? 'día' : 'días'}</b>. Toca aquí para renovarlo (el año nuevo se suma, no pierdes días).`;
+    aviso.addEventListener('click', abrirPremium);
+    mapa.appendChild(aviso);
+  }
   let anteriorCompletada = true;
   let siguienteMarcada = false;
   let total = 0;

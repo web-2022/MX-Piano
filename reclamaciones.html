@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Libro de Reclamaciones · Pianito</title>
+  <link rel="icon" href="icons/icono-192.png">
+  <link rel="stylesheet" href="css/legal.css">
+</head>
+<body>
+<main>
+  <div class="cabecera">
+    <img src="img/rana.png" alt="">
+    <h1>📕 Libro de Reclamaciones<small>Hoja de reclamación virtual</small></h1>
+    <a href="./">← Volver a Pianito</a>
+  </div>
+
+  <div class="caja">
+    <p class="proveedor">
+      <b>Proveedor:</b> <span data-dato="razonSocial"></span><br>
+      <b>RUC:</b> <span data-dato="ruc"></span><br>
+      <b>Domicilio:</b> <span data-dato="direccion"></span><br>
+      <b>Nombre comercial:</b> <span data-dato="comercio"></span> · <span data-dato="marca"></span><br>
+      <b>Fecha:</b> <span id="fecha-hoy"></span>
+    </p>
+    <p>Conforme al Código de Protección y Defensa del Consumidor, contamos con un Libro de Reclamaciones a tu disposición.
+      Al enviar esta hoja recibirás <b>una copia en tu correo con un código de seguimiento</b>. Responderemos los reclamos
+      en un plazo máximo de <b>15 días hábiles</b>.</p>
+
+    <form id="form-reclamo" novalidate>
+      <fieldset>
+        <legend>1. Tus datos (consumidor)</legend>
+        <div class="dos">
+          <label>Nombres <input name="nombres" required maxlength="60" autocomplete="given-name"></label>
+          <label>Apellidos <input name="apellidos" required maxlength="60" autocomplete="family-name"></label>
+        </div>
+        <div class="dos">
+          <label>Tipo de documento
+            <select name="tipoDoc" required>
+              <option value="DNI">DNI</option><option value="CE">Carné de extranjería</option>
+              <option value="Pasaporte">Pasaporte</option><option value="RUC">RUC</option>
+            </select>
+          </label>
+          <label>Número de documento <input name="numDoc" required maxlength="20" inputmode="numeric"></label>
+        </div>
+        <label>Domicilio <input name="domicilio" required maxlength="150" autocomplete="street-address"></label>
+        <div class="dos">
+          <label>Teléfono <input name="telefono" required maxlength="20" inputmode="tel" autocomplete="tel"></label>
+          <label>Correo electrónico <input name="correo" type="email" required maxlength="100" autocomplete="email"></label>
+        </div>
+        <label>Si eres menor de edad: nombre y documento de tu padre, madre o apoderado
+          <input name="apoderado" maxlength="120"><small class="ayuda">Déjalo vacío si eres mayor de edad.</small></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>2. Bien contratado</legend>
+        <label>Producto o servicio <input id="precio-bien" name="bien" required maxlength="150"></label>
+        <label>Monto reclamado (S/) <input name="monto" maxlength="20" inputmode="decimal" placeholder="Ej. 49.90"></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>3. Detalle</legend>
+        <div class="tipos">
+          <label><input type="radio" name="tipo" value="reclamo" checked> <span><b>Reclamo</b>: no estoy conforme con el producto o servicio.</span></label>
+          <label><input type="radio" name="tipo" value="queja"> <span><b>Queja</b>: no estoy conforme con la atención recibida.</span></label>
+        </div>
+        <label>¿Qué pasó? <textarea name="detalle" required maxlength="2000"></textarea></label>
+        <label>¿Qué solución pides? <textarea name="pedido" required maxlength="1000"></textarea></label>
+      </fieldset>
+
+      <label class="linea"><input type="checkbox" name="acepto"> <span>Declaro que los datos son verdaderos y acepto que se usen solo para atender mi reclamo, según la
+        <a href="privacidad.html" target="_blank">Política de privacidad</a>.</span></label>
+      <p id="msg-reclamo" class="mensaje" role="status"></p>
+      <button type="submit">Enviar hoja de reclamación</button>
+      <small class="ayuda">La formulación del reclamo no impide acudir a otras vías de solución de controversias ni es requisito previo para
+        interponer una denuncia ante el INDECOPI.</small>
+    </form>
+
+    <div id="listo" class="listo oculto" role="status">
+      <strong>✅ Tu hoja fue registrada</strong>
+      Código: <span id="listo-codigo"></span><br>
+      Fecha: <span id="listo-fecha"></span><br>
+      Te enviamos una copia a <span id="listo-correo"></span>. Te responderemos a más tardar el <span id="listo-limite"></span>.
+    </div>
+  </div>
+
+  <div class="pie">
+    <a href="terminos.html">Términos y condiciones</a>
+    <a href="privacidad.html">Política de privacidad</a>
+    <a data-correo href="#">Contacto: <span data-dato="correo"></span></a>
+  </div>
+</main>
+<script type="module" src="js/legal.js"></script>
+</body>
+</html>

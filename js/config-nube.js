@@ -13,4 +13,19 @@ export const NUBE = {
 
   // Clases gratis: las primeras de este número en el viaje (los juegos siempre son gratis)
   clasesGratis: 3,
+
+  // Máximo de dispositivos a la vez por cuenta (debe coincidir con MAX_DISPOSITIVOS en google/Codigo.gs)
+  dispositivos: 2,
+};
+
+// Datos del proveedor: aparecen en Términos, Privacidad y el Libro de Reclamaciones (obligatorios en Perú).
+// ⚠️ Completa razón social, RUC, dirección y correo antes de anunciar la app.
+export const EMPRESA = {
+  marca: 'Pianito',
+  comercio: 'MK Academia Virtual',
+  razonSocial: '',          // ej. 'GAMARRA QUISPE VICTOR MANUEL' o el nombre de tu empresa
+  ruc: '',                  // 11 dígitos
+  direccion: '',            // domicilio fiscal
+  correo: '',               // correo de atención al cliente
+  devolucionDias: 7,        // días para pedir devolución si no usó el pase (puedes cambiarlo)
 };

@@ -21,13 +21,17 @@ const COLUMNAS = [
   // Columnas técnicas (no las edites):
   'hash', 'sal', 'tokens', 'intentos', 'bloqueo_hasta', 'codigo', 'codigo_vence',
   // Agregadas después (van al final para no mover los datos que ya existen):
-  'Vence el', 'Avisó pago',
+  'Vence el', 'Avisó pago', 'Recordatorio',
 ];
-const AGREGADAS = ['Vence el', 'Avisó pago'];
+const AGREGADAS = ['Vence el', 'Avisó pago', 'Recordatorio'];
 const DURACION_PASE_MESES = 12;
 const C = Object.fromEntries(COLUMNAS.map((n, i) => [n, i]));
 const VUELTAS = 300;            // vueltas del cifrado de la contraseña
-const MAX_TOKENS = 6;           // sesiones abiertas a la vez por cuenta (iPad, celular, compu…)
+const MAX_DISPOSITIVOS = 2;     // una cuenta se puede usar a la vez en 2 dispositivos como máximo
+const MAX_DISPOSITIVOS_ADMIN = 6; // los administradores, en más (iPad, celular, compu, panel…)
+const LINK_PAGO = 'https://express.culqi.com/pago/B8E48C18BA'; // para los correos de renovación
+const LINK_APP = 'https://web-2022.github.io/MX-Piano/';
+const DIAS_AVISO = 15;          // el correo de "tu pase vence pronto" sale 15 días antes
 const MAX_INTENTOS = 8;         // intentos fallidos antes de bloquear 15 minutos
 
 // ---------- Entrada ----------
@@ -39,6 +43,7 @@ function doPost(e) {
     if (!accion) throw new Error('Acción desconocida');
     r = accion(d);
     r.ok = true;
+    tareaDiaria();
   } catch (err) {
     r = { ok: false, error: String(err.message || err) };
   }
@@ -138,7 +143,9 @@ function abrirSesion(f) {
   const token = nuevoToken();
   const tokens = String(f.v[C.tokens] || '').split(',').filter(Boolean);
   tokens.push(token);
-  f.v[C.tokens] = tokens.slice(-MAX_TOKENS).join(',');
+  // Si ya hay 2 dispositivos, el más antiguo se desconecta (la próxima vez que abra la app le pedirá entrar).
+  const max = siONo(f.v[C['Administrador']]) ? MAX_DISPOSITIVOS_ADMIN : MAX_DISPOSITIVOS;
+  f.v[C.tokens] = tokens.slice(-max).join(',');
   f.v[C.intentos] = 0;
   f.v[C.bloqueo_hasta] = '';
   f.v[C['Último ingreso']] = new Date();
@@ -275,6 +282,47 @@ const ACCIONES = {
     });
   },
 
+  // Libro de Reclamaciones virtual: se guarda en la hoja "Reclamaciones" y se envía copia por correo.
+  reclamo(d) {
+    const t = (x, max) => textoCelda(x, max || 200);
+    const obligatorios = ['tipo', 'nombres', 'apellidos', 'tipoDoc', 'numDoc', 'domicilio', 'telefono', 'correo', 'bien', 'detalle', 'pedido'];
+    for (const k of obligatorios) if (!String(d[k] || '').trim()) throw new Error('Falta completar: ' + k);
+    validarCorreo(normal(d.correo));
+    if (!d.acepto) throw new Error('Debes marcar la declaración de veracidad.');
+    return conCandado(() => {
+      const h = hojaReclamos();
+      const n = h.getLastRow(); // la fila 1 son los títulos
+      const hoy = new Date();
+      const codigo = 'LR-' + hoy.getFullYear() + '-' + String(n).padStart(4, '0');
+      const limite = sumarDiasHabiles(hoy, 15);
+      h.appendRow([codigo, hoy, d.tipo === 'queja' ? 'Queja' : 'Reclamo', t(d.nombres, 60), t(d.apellidos, 60),
+        t(d.tipoDoc, 20) + ' ' + t(d.numDoc, 20), t(d.domicilio, 150), t(d.telefono, 20), normal(d.correo),
+        t(d.bien, 150), t(d.monto, 20), t(d.detalle, 2000), t(d.pedido, 1000), t(d.apoderado, 120), 'Pendiente', limite, '', '']);
+      const resumen = 'Código: ' + codigo + '\nFecha: ' + hoy.toLocaleString('es-PE') + '\nTipo: ' + (d.tipo === 'queja' ? 'Queja' : 'Reclamo') +
+        '\nNombre: ' + t(d.nombres, 60) + ' ' + t(d.apellidos, 60) + '\nDocumento: ' + t(d.tipoDoc, 20) + ' ' + t(d.numDoc, 20) +
+        '\nCorreo: ' + normal(d.correo) + '\nTeléfono: ' + t(d.telefono, 20) + '\nDomicilio: ' + t(d.domicilio, 150) +
+        (d.apoderado ? '\nPadre, madre o apoderado: ' + t(d.apoderado, 120) : '') +
+        '\n\nBien contratado: ' + t(d.bien, 150) + '\nMonto: ' + (t(d.monto, 20) || '-') +
+        '\n\nDetalle:\n' + t(d.detalle, 2000) + '\n\nPedido del consumidor:\n' + t(d.pedido, 1000);
+      try {
+        MailApp.sendEmail({
+          to: normal(d.correo),
+          subject: 'Pianito: copia de tu ' + (d.tipo === 'queja' ? 'queja' : 'reclamo') + ' ' + codigo,
+          body: 'Recibimos tu hoja de reclamación. Esta es tu copia.\n\n' + resumen +
+            '\n\nTe responderemos a este correo a más tardar el ' + limite.toLocaleDateString('es-PE') + ' (15 días hábiles).\n\n🐸 Pianito',
+        });
+        const admins = correosAdmins();
+        if (admins.length) MailApp.sendEmail({
+          to: admins.join(','),
+          subject: '📕 Pianito: nuevo ' + (d.tipo === 'queja' ? 'queja' : 'reclamo') + ' ' + codigo + ' (responder antes del ' + limite.toLocaleDateString('es-PE') + ')',
+          body: resumen + '\n\nResponde al consumidor por correo antes del ' + limite.toLocaleDateString('es-PE') +
+            ' y anota la respuesta en la hoja "Reclamaciones".\n' + SpreadsheetApp.getActiveSpreadsheet().getUrl(),
+        });
+      } catch (e) { /* sin cupo de correos: el reclamo queda guardado igual */ }
+      return { codigo, fecha: hoy.toISOString(), limite: limite.toISOString() };
+    });
+  },
+
   // ---- Panel de administrador ----
   adminListar(d) {
     exigirAdmin(d.token);
@@ -323,9 +371,11 @@ function diasRestantes(f) {
   return v ? (v - new Date()) / 86400000 : Infinity;
 }
 
+const correosAdmins = () => filas().filter((x) => siONo(x.v[C['Administrador']])).map((x) => x.v[C['Correo']]).filter(Boolean);
+
 // Correo a todas las cuentas marcadas como Administrador.
 function avisarAdmins(f) {
-  const admins = filas().filter((x) => siONo(x.v[C['Administrador']])).map((x) => x.v[C['Correo']]).filter(Boolean);
+  const admins = correosAdmins();
   if (!admins.length) return;
   const correo = f.v[C['Correo']];
   const nombre = f.v[C['Nombre del niño']];
@@ -339,6 +389,74 @@ function avisarAdmins(f) {
         'Hoja de cuentas: ' + SpreadsheetApp.getActiveSpreadsheet().getUrl() + '\n\n🐸 Pianito',
     });
   } catch (e) { /* sin cupo de correos hoy: el aviso queda igual en la hoja */ }
+}
+
+// ---------- Libro de Reclamaciones ----------
+const COL_RECLAMOS = ['Código', 'Fecha', 'Tipo', 'Nombres', 'Apellidos', 'Documento', 'Domicilio', 'Teléfono', 'Correo',
+  'Bien contratado', 'Monto', 'Detalle', 'Pedido', 'Apoderado (si es menor)', 'Estado', 'Responder antes del', 'Respuesta', 'Respondido el'];
+function hojaReclamos() {
+  const libro = SpreadsheetApp.getActiveSpreadsheet();
+  let h = libro.getSheetByName('Reclamaciones');
+  if (!h) {
+    h = libro.insertSheet('Reclamaciones');
+    h.getRange(1, 1, 1, COL_RECLAMOS.length).setValues([COL_RECLAMOS]).setFontWeight('bold').setBackground('#fee2e2');
+    h.setFrozenRows(1);
+  }
+  return h;
+}
+// Días hábiles: de lunes a viernes (no descuenta feriados; si cae uno en medio, responde un día antes).
+function sumarDiasHabiles(desde, dias) {
+  const d = new Date(desde);
+  while (dias > 0) {
+    d.setDate(d.getDate() + 1);
+    const dia = d.getDay();
+    if (dia !== 0 && dia !== 6) dias--;
+  }
+  return d;
+}
+
+// ---------- Avisos de vencimiento (una vez al día, con la primera visita del día) ----------
+function tareaDiaria() {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const hoy = Utilities.formatDate(new Date(), 'America/Lima', 'yyyy-MM-dd');
+    if (props.getProperty('ultimaTarea') === hoy) return;
+    props.setProperty('ultimaTarea', hoy);
+    enviarRecordatorios();
+  } catch (e) { /* nunca debe romper la respuesta a la app */ }
+}
+
+function enviarRecordatorios() {
+  conCandado(() => {
+    for (const f of filas()) {
+      if (!siONo(f.v[C['Pase completo']])) continue;
+      const vence = venceDe(f);
+      if (!vence) continue;
+      const dias = Math.ceil((vence - new Date()) / 86400000);
+      const fechaTxt = Utilities.formatDate(vence, 'America/Lima', 'dd/MM/yyyy');
+      const marca = String(f.v[C['Recordatorio']] || '');
+      let tipo = null;
+      if (dias > 0 && dias <= DIAS_AVISO && marca !== 'pronto:' + fechaTxt) tipo = 'pronto';
+      else if (dias <= 0 && dias > -7 && marca !== 'vencio:' + fechaTxt) tipo = 'vencio';
+      if (!tipo) continue;
+      const nombre = f.v[C['Nombre del niño']];
+      try {
+        MailApp.sendEmail({
+          to: f.v[C['Correo']],
+          subject: tipo === 'pronto' ? '⏰ Pianito: tu pase completo vence el ' + fechaTxt : 'Pianito: tu pase completo venció',
+          body: (tipo === 'pronto'
+            ? 'Hola,\n\nEl pase completo de Pianito' + (nombre ? ' de ' + nombre : '') + ' vence el ' + fechaTxt + ' (en ' + dias + ' días).\n' +
+              'Si renuevas antes, el nuevo año se suma desde esa fecha: no pierdes ningún día.'
+            : 'Hola,\n\nEl pase completo de Pianito' + (nombre ? ' de ' + nombre : '') + ' venció el ' + fechaTxt + '.\n' +
+              'El progreso y las estrellas se conservan: al renovar, sigue justo donde se quedó.') +
+            '\n\n1. Renueva aquí (S/ 49.90 por un año): ' + LINK_PAGO + '\n   Usa el mismo correo de tu cuenta: ' + f.v[C['Correo']] +
+            '\n2. Abre Pianito y toca "Ya pagué": ' + LINK_APP + '\n\n¡Gracias por aprender con nosotros! 🐸 Pianito',
+        });
+        f.v[C['Recordatorio']] = tipo + ':' + fechaTxt;
+        escribir(f);
+      } catch (e) { return; } // sin cupo de correos hoy: se intenta mañana
+    }
+  });
 }
 
 function exigirAdmin(token) {

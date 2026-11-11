@@ -312,6 +312,21 @@ El pago (S/ 49.90) da **un año** de pase completo. Al activarlo se anota solo *
 Al vencer, la cuenta vuelve a las clases gratis y la app muestra "Renueva tu pase". Renovar antes de que venza suma el año
 desde el vencimiento (no se pierden días). Si "Vence el" está vacío, el pase no vence (útil para tu propia cuenta).
 
+### Dispositivos
+Una cuenta funciona en **2 dispositivos a la vez** (`MAX_DISPOSITIVOS` en `google/Codigo.gs` y `dispositivos` en `js/config-nube.js`).
+Al entrar en un tercero, el más antiguo se desconecta y, al abrir la app, ve un aviso para volver a entrar. Los administradores: 6.
+
+### Avisos de vencimiento
+- En la app: franja "⏰ Tu pase vence en N días" cuando faltan 15 días o menos.
+- Por correo (desde tu Gmail): 15 días antes y el día que vence, con el link de pago. Lo hace el programa de Google
+  una vez al día, con la primera visita del día. Columna "Recordatorio" en la hoja para no repetir.
+
+### Páginas legales (Perú)
+`terminos.html`, `privacidad.html` y `reclamaciones.html` (Libro de Reclamaciones virtual). Completa los datos del proveedor
+en `js/config-nube.js` → `EMPRESA` (razón social, RUC, domicilio, correo). Los reclamos se guardan en la pestaña
+"Reclamaciones" de la hoja, con código correlativo y fecha límite (15 días hábiles); llega copia al consumidor y aviso a los administradores.
+Son borradores: revísalos con un abogado o contador.
+
 ### Cuando una familia paga
 Busca su correo y marca **Pase completo** (en la hoja o con **✅ Activar** en `admin.html`); anota el código de la operación
 de Culqi en **Nota**. La familia toca **“Ya pagué”** o vuelve a abrir la app.
